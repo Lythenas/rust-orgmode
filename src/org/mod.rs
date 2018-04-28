@@ -136,9 +136,9 @@ impl FromStr for OrgState {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if (ORG_TODO_STATES.contains(&s)) {
+        if ORG_TODO_STATES.contains(&s) {
             Ok(OrgState::Todo(s.to_string()))
-        } else if (ORG_DONE_STATES.contains(&s)) {
+        } else if ORG_DONE_STATES.contains(&s) {
             Ok(OrgState::Done(s.to_string()))
         } else {
             Ok(OrgState::None)

@@ -1,3 +1,9 @@
+use chrono::prelude::*;
+use chrono::NaiveDate;
+use chrono::NaiveDateTime;
+use regex::Captures;
+use regex::Regex;
+
 use org::*;
 
 /// Error returned by [`parse_node`]. The variants should be self expanatory.
@@ -52,11 +58,11 @@ fn count_prefix_chars(s: &str, needle: char) -> usize {
     s.chars().take_while(|c| c == &needle).count()
 }
 
-/// Parses the second line of a org node. This line can contain any of closed, scheduled and deadline
+/// parses the second line of a org node. this line can contain any of closed, scheduled and deadline
 /// date or none of them.
 ///
-/// The dates are preceded by their respective keyword (`CLOSED`, `DEADLINE`, `SCHEDULED`) followed
-/// by a `:`, a space and the actual date. The date of closed is inactive and therefore surrounded by square brackets (`[`, `]`). The date of scheduled and deadline are plain timestamps or timestamps with a repeat interval and therefore surrounded by angle brackets (`<`, `>`).
+/// the dates are preceded by their respective keyword (`closed`, `deadline`, `scheduled`) followed
+/// by a `:`, a space and the actual date. the date of closed is inactive and therefore surrounded by square brackets (`[`, `]`). the date of scheduled and deadline are plain timestamps or timestamps with a repeat interval and therefore surrounded by angle brackets (`<`, `>`).
 fn parse_special_node_timestamps(
     line: &str,
 ) -> (
@@ -73,7 +79,47 @@ pub enum OrgTimestampParseError {
 }
 
 pub fn parse_timestamp(s: &str) -> Result<OrgTimestamp, OrgTimestampParseError> {
-    Err(OrgTimestampParseError::ParseError)
+    let trimmed = s.trim();
+
+    let date_regex = Regex::new(r"(?P<prefix>[<\[])(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})( (?P<weekday>[A-Z][a-z]{2}))?( (?P<rest>.*))?(?P<suffix>[>\]])").unwrap();
+    let time_regex = Regex::new(r"(?P<hours>\d{2}):(?P<minutes>\d{2})").unwrap();
+
+    let caps = date_regex.captures(trimmed);
+
+    let date = match &caps {
+        Some(caps) => get_date_from_captures(&caps).ok_or(OrgTimestampParseError::ParseError),
+        None => Err(OrgTimestampParseError::ParseError),
+    }?;
+
+    let time_caps = caps.and_then(|caps| time_regex.captures(caps.name("rest")?.as_str()));
+
+    let time = time_caps.and_then(|caps| get_time_from_captures(&caps));
+
+    Ok(match time {
+        Some(time) => OrgTimestamp::ActiveDateTime(date.and_time(time)),
+        None => OrgTimestamp::ActiveDate(date),
+    })
+}
+
+fn get_date_from_captures<'t>(caps: &Captures<'t>) -> Option<NaiveDate> {
+    //println!("Date: {:#?}", caps);
+    let year = caps.name("year")?.as_str().parse().ok()?;
+    let month = caps.name("month")?.as_str().parse().ok()?;
+    let day = caps.name("day")?.as_str().parse().ok()?;
+
+    NaiveDate::from_ymd_opt(year, month, day)
+}
+
+fn get_time_from_captures<'t>(caps: &Captures<'t>) -> Option<NaiveTime> {
+    //println!("Time: {:#?}", caps);
+    let hours = caps.name("hours")?.as_str().parse().ok()?;
+    let minutes = caps.name("minutes")?.as_str().parse().ok()?;
+
+    NaiveTime::from_hms_opt(hours, minutes, 0)
+}
+
+fn surrounded_with(s: &str, start: char, end: char) -> bool {
+    s.starts_with(start) && s.ends_with(end)
 }
 
 #[cfg(test)]
@@ -117,10 +163,23 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_parse_timestamp() {
         assert_eq!(
+            parse_timestamp("<2018-06-22 Fri>"),
+            Ok(OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 6, 22)))
+        );
+        assert_eq!(
+            parse_timestamp("<2018-06-22>"),
+            Ok(OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 6, 22)))
+        );
+        assert_eq!(
             parse_timestamp("<2018-06-22 Fri 14:00>"),
+            Ok(OrgTimestamp::ActiveDateTime(naive_date_time(
+                2018, 6, 22, 14, 0, 0
+            )))
+        );
+        assert_eq!(
+            parse_timestamp("<2018-06-22 14:00>"),
             Ok(OrgTimestamp::ActiveDateTime(naive_date_time(
                 2018, 6, 22, 14, 0, 0
             )))
