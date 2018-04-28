@@ -1,7 +1,7 @@
 mod parser;
 
-use std::str::FromStr;
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use chrono::prelude::*;
 use chrono::Duration;
@@ -19,8 +19,9 @@ pub enum OrgParseError {
 impl From<OrgNodeParseError> for OrgParseError {
     fn from(error: OrgNodeParseError) -> Self {
         match error {
-            OrgNodeParseError::ExpectedNewHeadline =>
+            OrgNodeParseError::ExpectedNewHeadline => {
                 OrgParseError::Syntax("Expected new headline".to_string())
+            }
         }
     }
 }
@@ -49,7 +50,7 @@ impl From<OrgNodeParseError> for OrgParseError {
 /// orgfile.set_preface("Example notebook");
 ///
 /// let mut file = File::create("notebook.org")?;
-/// file.write_all(orgfile.to_string())?; 
+/// file.write_all(orgfile.to_string())?;
 /// ```
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct OrgFile {
@@ -82,9 +83,10 @@ pub struct OrgNode {
     state: OrgState,
     priority: Priority,
     tags: Vec<String>,
-    scheduled: Option<OrgDate>,
-    deadline: Option<OrgDate>,
-    closed: Option<OrgDate>,
+    scheduled: Option<OrgTimestamp>,
+    deadline: Option<OrgTimestamp>,
+    closed: Option<OrgTimestamp>,
+    timestamps: Vec<OrgTimestamp>,
     properties: OrgProperties,
     content: OrgContent,
     level: u8,
@@ -93,15 +95,15 @@ pub struct OrgNode {
 }
 
 impl FromStr for OrgNode {
-    type Err = OrgParseError;
+    type Err = OrgNodeParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parser::parse_node(s).map_err(|e| e.into())
+        parser::parse_node(s)
     }
 }
 
 /// Contains all the string accepted as [`OrgState::Todo`].
-/// 
+///
 /// TODO make this configurable
 static ORG_TODO_STATES: [&'static str; 2] = ["TODO", "NEXT"];
 
@@ -144,34 +146,41 @@ impl FromStr for OrgState {
     }
 }
 
-/// Represents a date in a org file. The date can eighter be just a date (without time), a date
-/// with time, an interval (containing a start and end date with time) or a repeatable date with
-/// time.
-///
-/// TODO rework this (possibly as struct)
+/// Represents a date in a org file. See [https://orgmode.org/manual/Timestamps.html].
 #[derive(Debug, PartialEq, Eq)]
-pub enum OrgDate {
-    Date(NaiveDate),
-    DateTime(NaiveDateTime),
-    Interval {
-        start: NaiveDateTime,
-        end: NaiveDateTime
+pub enum OrgTimestamp {
+    InactiveDate(NaiveDate),
+    InactiveDateTime(NaiveDateTime),
+    ActiveDate(NaiveDate),
+    ActiveDateTime(NaiveDateTime),
+    TimeRange {
+        date: NaiveDate,
+        start_time: NaiveTime,
+        end_time: NaiveTime,
     },
-    Repeat(NaiveDateTime, Duration),
+    DateRange {
+        start: NaiveDate,
+        end: NaiveDate,
+    },
+    DateTimeRange {
+        start: NaiveDateTime,
+        end: NaiveDateTime,
+    },
+    RepeatingDate(NaiveDate, Duration),
+    RepeatingDateTime(NaiveDateTime, Duration),
 }
 
-impl Default for OrgDate {
+impl Default for OrgTimestamp {
     fn default() -> Self {
-        OrgDate::Date(Utc::today().naive_utc())
+        OrgTimestamp::ActiveDateTime(Utc::now().naive_utc())
     }
 }
 
-impl FromStr for OrgDate {
-    type Err = ::chrono::format::ParseError;
+impl FromStr for OrgTimestamp {
+    type Err = OrgTimestampParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TODO parse
-        Ok(OrgDate::Date(Utc::today().naive_utc()))
+        parser::parse_timestamp(s)
     }
 }
 
@@ -190,7 +199,7 @@ impl FromStr for OrgContent {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(OrgContent {
-            value: s.to_string()
+            value: s.to_string(),
         })
     }
 }
@@ -201,11 +210,11 @@ impl FromStr for OrgContent {
 macro_rules! parsable_simple_enum {
     ($name:ident, $( $x:ident ),+ ) => {
         use std::fmt;
-        
+
         #[derive(Clone, Debug, PartialEq, Eq, Hash)]
         pub enum $name {
             $(
-                $x,  
+                $x,
             )+
         }
 
@@ -234,14 +243,16 @@ macro_rules! parsable_simple_enum {
     };
 }
 
-parsable_simple_enum!(Priority, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z);
+parsable_simple_enum!(
+    Priority, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
+);
 
 impl Default for Priority {
     fn default() -> Self {
         Priority::A
     }
 }
- 
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,11 +264,11 @@ mod tests {
         assert_eq!(Ok(OrgState::Done("DONE".to_string())), "DONE".parse());
         assert_eq!(Ok(OrgState::None), "".parse());
     }
-    
+
     #[test]
     fn test_parsable_simple_enum_generation() {
         parsable_simple_enum!(TestEnum, One, Two, Three);
-        
+
         let one = TestEnum::from_str("One").unwrap();
         assert_eq!(one, TestEnum::One);
         assert_eq!(format!("{}", one), "One");
@@ -280,7 +291,5 @@ mod tests {
             assert!(prio.is_ok());
         }
     }
-
-
 
 }
