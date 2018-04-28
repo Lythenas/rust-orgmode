@@ -1,8 +1,12 @@
+mod parser;
+
 use std::str::FromStr;
 use std::collections::HashMap;
 
 use chrono::prelude::*;
 use chrono::Duration;
+
+use org::parser::*;
 
 /// An error which can be returned when parsing an [`OrgFile`] or any of its containing parts.
 #[derive(Debug, PartialEq, Eq)]
@@ -10,6 +14,15 @@ pub enum OrgParseError {
     Unknown,
     Partial(Box<OrgParseError>, OrgFile),
     Syntax(String),
+}
+
+impl From<OrgNodeParseError> for OrgParseError {
+    fn from(error: OrgNodeParseError) -> Self {
+        match error {
+            OrgNodeParseError::ExpectedNewHeadline =>
+                OrgParseError::Syntax("Expected new headline".to_string())
+        }
+    }
 }
 
 /// Represents a org file.
@@ -83,8 +96,7 @@ impl FromStr for OrgNode {
     type Err = OrgParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TODO parse
-        Err(OrgParseError::Unknown)
+        parser::parse_node(s).map_err(|e| e.into())
     }
 }
 
@@ -189,7 +201,6 @@ impl FromStr for OrgContent {
 macro_rules! parsable_simple_enum {
     ($name:ident, $( $x:ident ),+ ) => {
         use std::fmt;
-        use std::str::FromStr;
         
         #[derive(Clone, Debug, PartialEq, Eq, Hash)]
         pub enum $name {
