@@ -146,7 +146,7 @@ impl FromStr for OrgState {
     }
 }
 
-/// Represents a date in a org file. See [https://orgmode.org/manual/Timestamps.html].
+/// Represents a date in an org file. See [https://orgmode.org/manual/Timestamps.html].
 #[derive(Debug, PartialEq, Eq)]
 pub enum OrgTimestamp {
     InactiveDate(NaiveDate),
@@ -168,6 +168,62 @@ pub enum OrgTimestamp {
     },
     RepeatingDate(NaiveDate, Duration),
     RepeatingDateTime(NaiveDateTime, Duration),
+}
+
+impl OrgTimestamp {
+
+    /// Returns `true` if the org timestamp is active.
+    ///
+    /// This is the case if it is not one of [`InactiveDate`] or [`InactiveDateTime`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::org::OrgTimestamp;
+    ///
+    /// let x = OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// assert_eq!(x.is_active(), true);
+    ///
+    /// let x = OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// assert_eq!(x.is_active(), false);
+    /// ```
+    ///
+    /// [`InactiveDate`]: #variant.InactiveDate
+    /// [`InactiveDateTime`]: #variant.InactiveDateTime
+    pub fn is_active(&self) -> bool {
+        use org::OrgTimestamp::*;
+        match self {
+            InactiveDate(_) => false,
+            InactiveDateTime(_) => false,
+            _ => true,
+        }
+    }
+
+    /// Returns `true` if the org timestamp is inactive.
+    ///
+    /// This is the case if it is eighter [`InactiveDate`] or [`InactiveDateTime`].
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::org::OrgTimestamp;
+    ///
+    /// let x = OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// assert_eq!(x.is_active(), true);
+    ///
+    /// let x = OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// assert_eq!(x.is_active(), false);
+    /// ```
+    ///
+    /// [`InactiveDate`]: #variant.InactiveDate
+    /// [`InactiveDateTime`]: #variant.InactiveDateTime
+    pub fn is_inactive(&self) -> bool {
+        !self.is_active()
+    }
 }
 
 impl Default for OrgTimestamp {
@@ -290,6 +346,21 @@ mod tests {
             let prio = Priority::from_str(&char::from_u32(i).unwrap().to_string());
             assert!(prio.is_ok());
         }
+    }
+
+    #[test]
+    fn active_org_timestamp() {
+        let ts = OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 1, 1));
+        assert_eq!(ts.is_inactive(), true);
+        assert_eq!(ts.is_active(), false);
+
+        let ts2 = OrgTimestamp::InactiveDateTime(NaiveDate::from_ymd(2018, 1, 1).and_time(NaiveTime::from_hms(0, 0, 0)));
+        assert_eq!(ts2.is_inactive(), true);
+        assert_eq!(ts2.is_active(), false);
+
+        let ts3 = OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 1, 1));
+        assert_eq!(ts3.is_active(), true);
+        assert_eq!(ts3.is_inactive(), false);
     }
 
 }
