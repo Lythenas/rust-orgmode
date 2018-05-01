@@ -1,4 +1,4 @@
-mod parser;
+mod timestamp;
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -6,7 +6,7 @@ use std::str::FromStr;
 use chrono::prelude::*;
 use chrono::Duration;
 
-use org::parser::*;
+pub use org::timestamp::*;
 
 /// An error which can be returned when parsing an [`OrgFile`] or any of its containing parts.
 #[derive(Debug, PartialEq, Eq)]
@@ -97,9 +97,72 @@ pub struct OrgNode {
 impl FromStr for OrgNode {
     type Err = OrgNodeParseError;
 
+    /// Parse a node (and recursively all of its sub-nodes) from the given string.
+    ///
+    /// Returns an error if it doesn't find a correctly formatted headline at the start of the
+    /// given string. Stops when the string ends or if it finds another headline with same level.
+    ///
+    /// *org nodes* look something like this:
+    ///
+    /// ```org
+    /// * [#A] Some Headline :tag1: :tag2:
+    /// SCHEDULED: <2018-04-26 Thu 14:00 .+1w>
+    ///
+    /// Some text here is optional. This section can contains anything, including tables, lists, etc.
+    ///
+    /// ** TODO Read something :tag2:
+    /// DEADLINE: <2018-04-30 Mon 12:00>
+    ///
+    /// ** DONE Draw something :tag1:
+    /// CLOSED: [2018-04-24 Tue 09:50] DEADLINE: <2018-04-24 Tue 10:00>
+    /// *** DONE Draw the head
+    /// CLOSED: [2018-04-24 Tue 08:50]
+    /// *** DONE Draw the body
+    /// CLOSED: [2018-04-24 Tue 09:10]
+    /// *** DONE Draw the clothes
+    /// CLOSED: [2018-04-24 Tue 09:40]
+    /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parser::parse_node(s)
+        let mut lines = s.lines();
+
+        let first_line = lines.next();
+        let second_line = lines.next();
+
+        let level = count_prefix_chars(s, '*');
+
+        if (level == 0) {
+            return Err(OrgNodeParseError::ExpectedNewHeadline);
+        }
+
+        let (closed, scheduled, deadline) = parse_special_node_timestamps(second_line.unwrap());
+
+        Ok(OrgNode::default())
     }
+}
+
+/// Error returned by [`OrgNode::from_str`]. The variants should be self expanatory.
+#[derive(Debug, PartialEq, Eq)]
+pub enum OrgNodeParseError {
+    ExpectedNewHeadline,
+}
+
+fn count_prefix_chars(s: &str, needle: char) -> usize {
+    s.chars().take_while(|c| c == &needle).count()
+}
+
+/// parses the second line of a org node. this line can contain any of closed, scheduled and deadline
+/// date or none of them.
+///
+/// the dates are preceded by their respective keyword (`closed`, `deadline`, `scheduled`) followed
+/// by a `:`, a space and the actual date. the date of closed is inactive and therefore surrounded by square brackets (`[`, `]`). the date of scheduled and deadline are plain timestamps or timestamps with a repeat interval and therefore surrounded by angle brackets (`<`, `>`).
+fn parse_special_node_timestamps(
+    line: &str,
+) -> (
+    Option<OrgTimestamp>,
+    Option<OrgTimestamp>,
+    Option<OrgTimestamp>,
+) {
+    return (None, None, None);
 }
 
 /// Contains all the string accepted as [`OrgState::Todo`].
@@ -143,100 +206,6 @@ impl FromStr for OrgState {
         } else {
             Ok(OrgState::None)
         }
-    }
-}
-
-/// Represents a date in an org file. See [https://orgmode.org/manual/Timestamps.html].
-#[derive(Debug, PartialEq, Eq)]
-pub enum OrgTimestamp {
-    InactiveDate(NaiveDate),
-    InactiveDateTime(NaiveDateTime),
-    ActiveDate(NaiveDate),
-    ActiveDateTime(NaiveDateTime),
-    TimeRange {
-        date: NaiveDate,
-        start_time: NaiveTime,
-        end_time: NaiveTime,
-    },
-    DateRange {
-        start: NaiveDate,
-        end: NaiveDate,
-    },
-    DateTimeRange {
-        start: NaiveDateTime,
-        end: NaiveDateTime,
-    },
-    RepeatingDate(NaiveDate, Duration),
-    RepeatingDateTime(NaiveDateTime, Duration),
-}
-
-impl OrgTimestamp {
-
-    /// Returns `true` if the org timestamp is active.
-    ///
-    /// This is the case if it is not one of [`InactiveDate`] or [`InactiveDateTime`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate chrono;
-    /// # extern crate orgmode;
-    /// # use chrono::NaiveDate;
-    /// # use orgmode::org::OrgTimestamp;
-    ///
-    /// let x = OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 04, 28));
-    /// assert_eq!(x.is_active(), true);
-    ///
-    /// let x = OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 04, 28));
-    /// assert_eq!(x.is_active(), false);
-    /// ```
-    ///
-    /// [`InactiveDate`]: #variant.InactiveDate
-    /// [`InactiveDateTime`]: #variant.InactiveDateTime
-    pub fn is_active(&self) -> bool {
-        use org::OrgTimestamp::*;
-        match self {
-            InactiveDate(_) => false,
-            InactiveDateTime(_) => false,
-            _ => true,
-        }
-    }
-
-    /// Returns `true` if the org timestamp is inactive.
-    ///
-    /// This is the case if it is eighter [`InactiveDate`] or [`InactiveDateTime`].
-    ///
-    /// ```
-    /// # extern crate chrono;
-    /// # extern crate orgmode;
-    /// # use chrono::NaiveDate;
-    /// # use orgmode::org::OrgTimestamp;
-    ///
-    /// let x = OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 04, 28));
-    /// assert_eq!(x.is_active(), true);
-    ///
-    /// let x = OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 04, 28));
-    /// assert_eq!(x.is_active(), false);
-    /// ```
-    ///
-    /// [`InactiveDate`]: #variant.InactiveDate
-    /// [`InactiveDateTime`]: #variant.InactiveDateTime
-    pub fn is_inactive(&self) -> bool {
-        !self.is_active()
-    }
-}
-
-impl Default for OrgTimestamp {
-    fn default() -> Self {
-        OrgTimestamp::ActiveDateTime(Utc::now().naive_utc())
-    }
-}
-
-impl FromStr for OrgTimestamp {
-    type Err = OrgTimestampParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parser::parse_timestamp(s)
     }
 }
 
@@ -354,7 +323,9 @@ mod tests {
         assert_eq!(ts.is_inactive(), true);
         assert_eq!(ts.is_active(), false);
 
-        let ts2 = OrgTimestamp::InactiveDateTime(NaiveDate::from_ymd(2018, 1, 1).and_time(NaiveTime::from_hms(0, 0, 0)));
+        let ts2 = OrgTimestamp::InactiveDateTime(
+            NaiveDate::from_ymd(2018, 1, 1).and_time(NaiveTime::from_hms(0, 0, 0)),
+        );
         assert_eq!(ts2.is_inactive(), true);
         assert_eq!(ts2.is_active(), false);
 

@@ -6,72 +6,6 @@ use regex::Regex;
 
 use org::*;
 
-/// Error returned by [`parse_node`]. The variants should be self expanatory.
-#[derive(Debug, PartialEq, Eq)]
-pub enum OrgNodeParseError {
-    ExpectedNewHeadline,
-}
-
-/// Parse a node (and recursively all of its sub-nodes) from the given string.
-///
-/// Returns an error if it doesn't find a correctly formatted headline at the start of the
-/// given string. Stops when the string ends or if it finds another headline with same level.
-///
-/// *org nodes* look something like this:
-///
-/// ```org
-/// * [#A] Some Headline :tag1: :tag2:
-/// SCHEDULED: <2018-04-26 Thu 14:00 .+1w>
-///
-/// Some text here is optional. This section can contains anything, including tables, lists, etc.
-///
-/// ** TODO Read something :tag2:
-/// DEADLINE: <2018-04-30 Mon 12:00>
-///
-/// ** DONE Draw something :tag1:
-/// CLOSED: [2018-04-24 Tue 09:50] DEADLINE: <2018-04-24 Tue 10:00>
-/// *** DONE Draw the head
-/// CLOSED: [2018-04-24 Tue 08:50]
-/// *** DONE Draw the body
-/// CLOSED: [2018-04-24 Tue 09:10]
-/// *** DONE Draw the clothes
-/// CLOSED: [2018-04-24 Tue 09:40]
-/// ```
-pub fn parse_node(text: &str) -> Result<OrgNode, OrgNodeParseError> {
-    let mut lines = text.lines();
-
-    let first_line = lines.next();
-    let second_line = lines.next();
-
-    let level = count_prefix_chars(text, '*');
-
-    if (level == 0) {
-        return Err(OrgNodeParseError::ExpectedNewHeadline);
-    }
-
-    let (closed, scheduled, deadline) = parse_special_node_timestamps(second_line.unwrap());
-
-    Ok(OrgNode::default())
-}
-
-fn count_prefix_chars(s: &str, needle: char) -> usize {
-    s.chars().take_while(|c| c == &needle).count()
-}
-
-/// parses the second line of a org node. this line can contain any of closed, scheduled and deadline
-/// date or none of them.
-///
-/// the dates are preceded by their respective keyword (`closed`, `deadline`, `scheduled`) followed
-/// by a `:`, a space and the actual date. the date of closed is inactive and therefore surrounded by square brackets (`[`, `]`). the date of scheduled and deadline are plain timestamps or timestamps with a repeat interval and therefore surrounded by angle brackets (`<`, `>`).
-fn parse_special_node_timestamps(
-    line: &str,
-) -> (
-    Option<OrgTimestamp>,
-    Option<OrgTimestamp>,
-    Option<OrgTimestamp>,
-) {
-    return (None, None, None);
-}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum OrgTimestampParseError {
@@ -82,24 +16,111 @@ pub enum OrgTimestampParseError {
 
 type TimestampResult = Result<OrgTimestamp, OrgTimestampParseError>;
 
-/// Helper function to parse timestamps in any of the org formats.
-pub fn parse_timestamp(s: &str) -> TimestampResult {
-    let trimmed = s.trim();
+/// Represents a date in an org file. See [https://orgmode.org/manual/Timestamps.html].
+#[derive(Debug, PartialEq, Eq)]
+pub enum OrgTimestamp {
+    InactiveDate(NaiveDate),
+    InactiveDateTime(NaiveDateTime),
+    ActiveDate(NaiveDate),
+    ActiveDateTime(NaiveDateTime),
+    TimeRange {
+        date: NaiveDate,
+        start_time: NaiveTime,
+        end_time: NaiveTime,
+    },
+    DateRange {
+        start: NaiveDate,
+        end: NaiveDate,
+    },
+    DateTimeRange {
+        start: NaiveDateTime,
+        end: NaiveDateTime,
+    },
+    RepeatingDate(NaiveDate, Duration),
+    RepeatingDateTime(NaiveDateTime, Duration),
+}
 
-    let range = Regex::new(r"<(.+)>--<(.+)>").unwrap();
-    let inactive = Regex::new(r"\[(.+)\]").unwrap();
-    let active = Regex::new(r"<(.+)>").unwrap();
-
-    if let Some(caps) = range.captures(trimmed) {
-        return parse_range_timestamp(caps.get(1).unwrap().as_str(), caps.get(2).unwrap().as_str());
-    } else if let Some(caps) = inactive.captures(trimmed) {
-        return parse_inactive_timestamp(caps.get(1).unwrap().as_str());
-    } else if let Some(caps) = active.captures(trimmed) {
-        return parse_active_timestamp(caps.get(1).unwrap().as_str());
-    } else {
-        return Err(OrgTimestampParseError::NoTimestampFound)
+impl OrgTimestamp {
+    /// Returns `true` if the org timestamp is active.
+    ///
+    /// This is the case if it is not one of [`InactiveDate`] or [`InactiveDateTime`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::org::OrgTimestamp;
+    ///
+    /// let x = OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// assert_eq!(x.is_active(), true);
+    ///
+    /// let x = OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// assert_eq!(x.is_active(), false);
+    /// ```
+    ///
+    /// [`InactiveDate`]: #variant.InactiveDate
+    /// [`InactiveDateTime`]: #variant.InactiveDateTime
+    pub fn is_active(&self) -> bool {
+        use org::OrgTimestamp::*;
+        match self {
+            InactiveDate(_) => false,
+            InactiveDateTime(_) => false,
+            _ => true,
+        }
     }
 
+    /// Returns `true` if the org timestamp is inactive.
+    ///
+    /// This is the case if it is eighter [`InactiveDate`] or [`InactiveDateTime`].
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::org::OrgTimestamp;
+    ///
+    /// let x = OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// assert_eq!(x.is_active(), true);
+    ///
+    /// let x = OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// assert_eq!(x.is_active(), false);
+    /// ```
+    ///
+    /// [`InactiveDate`]: #variant.InactiveDate
+    /// [`InactiveDateTime`]: #variant.InactiveDateTime
+    pub fn is_inactive(&self) -> bool {
+        !self.is_active()
+    }
+}
+
+impl Default for OrgTimestamp {
+    fn default() -> Self {
+        OrgTimestamp::ActiveDateTime(Utc::now().naive_utc())
+    }
+}
+
+impl FromStr for OrgTimestamp {
+    type Err = OrgTimestampParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let trimmed = s.trim();
+
+        let range = Regex::new(r"<(.+)>--<(.+)>").unwrap();
+        let inactive = Regex::new(r"\[(.+)\]").unwrap();
+        let active = Regex::new(r"<(.+)>").unwrap();
+
+        if let Some(caps) = range.captures(trimmed) {
+            return parse_range_timestamp(caps.get(1).unwrap().as_str(), caps.get(2).unwrap().as_str());
+        } else if let Some(caps) = inactive.captures(trimmed) {
+            return parse_inactive_timestamp(caps.get(1).unwrap().as_str());
+        } else if let Some(caps) = active.captures(trimmed) {
+            return parse_active_timestamp(caps.get(1).unwrap().as_str());
+        } else {
+            return Err(OrgTimestampParseError::NoTimestampFound);
+        }
+    }
 }
 
 /// Helper function that only parses timestamps in the format `<start>--<end>`.
@@ -155,10 +176,6 @@ fn get_time_from_captures<'t>(caps: &Captures<'t>) -> Option<NaiveTime> {
     NaiveTime::from_hms_opt(hours, minutes, 0)
 }
 
-fn surrounded_with(s: &str, start: char, end: char) -> bool {
-    s.starts_with(start) && s.ends_with(end)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -202,21 +219,21 @@ mod tests {
     #[test]
     fn test_parse_timestamp() {
         assert_eq!(
-            parse_timestamp("<2018-06-22 Fri>"),
+            "<2018-06-22 Fri>".parse(),
             Ok(OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 6, 22)))
         );
         assert_eq!(
-            parse_timestamp("<2018-06-22>"),
+            "<2018-06-22>".parse(),
             Ok(OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 6, 22)))
         );
         assert_eq!(
-            parse_timestamp("<2018-06-22 Fri 14:00>"),
+            "<2018-06-22 Fri 14:00>".parse(),
             Ok(OrgTimestamp::ActiveDateTime(naive_date_time(
                 2018, 6, 22, 14, 0, 0
             )))
         );
         assert_eq!(
-            parse_timestamp("<2018-06-22 14:00>"),
+            "<2018-06-22 14:00>".parse(),
             Ok(OrgTimestamp::ActiveDateTime(naive_date_time(
                 2018, 6, 22, 14, 0, 0
             )))
