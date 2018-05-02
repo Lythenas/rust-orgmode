@@ -6,7 +6,7 @@ use regex::Regex;
 
 use org::*;
 
-
+/// The error type returned by [`OrgTimestamp::from_str`].
 #[derive(Debug, PartialEq, Eq)]
 pub enum OrgTimestampParseError {
     ParseError,
@@ -101,21 +101,28 @@ impl Default for OrgTimestamp {
     }
 }
 
+lazy_static! {
+    static ref REGEX_TIMESTAMP_RANGE: Regex = Regex::new(r"<(.+)>--<(.+)>").unwrap();
+    static ref REGEX_TIMESTAMP_INACTIVE: Regex = Regex::new(r"\[(.+)\]").unwrap();
+    static ref REGEX_TIMESTAMP_ACTIVE: Regex = Regex::new(r"<(.+)>").unwrap();
+    static ref REGEX_DATE: Regex = Regex::new(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})( (?P<weekday>[A-Z][a-z]{2}))?( (?P<rest>.*))?").unwrap();
+    static ref REGEX_TIME: Regex = Regex::new(r"(?P<hours>\d{2}):(?P<minutes>\d{2})").unwrap();
+}
+
 impl FromStr for OrgTimestamp {
     type Err = OrgTimestampParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim();
 
-        let range = Regex::new(r"<(.+)>--<(.+)>").unwrap();
-        let inactive = Regex::new(r"\[(.+)\]").unwrap();
-        let active = Regex::new(r"<(.+)>").unwrap();
-
-        if let Some(caps) = range.captures(trimmed) {
-            return parse_range_timestamp(caps.get(1).unwrap().as_str(), caps.get(2).unwrap().as_str());
-        } else if let Some(caps) = inactive.captures(trimmed) {
+        if let Some(caps) = REGEX_TIMESTAMP_RANGE.captures(trimmed) {
+            return parse_range_timestamp(
+                caps.get(1).unwrap().as_str(),
+                caps.get(2).unwrap().as_str(),
+            );
+        } else if let Some(caps) = REGEX_TIMESTAMP_INACTIVE.captures(trimmed) {
             return parse_inactive_timestamp(caps.get(1).unwrap().as_str());
-        } else if let Some(caps) = active.captures(trimmed) {
+        } else if let Some(caps) = REGEX_TIMESTAMP_ACTIVE.captures(trimmed) {
             return parse_active_timestamp(caps.get(1).unwrap().as_str());
         } else {
             return Err(OrgTimestampParseError::NoTimestampFound);
@@ -139,17 +146,15 @@ fn parse_inactive_timestamp(timestamp: &str) -> TimestampResult {
 fn parse_active_timestamp(timestamp: &str) -> TimestampResult {
     // TODO move this all to another function because it is also needed in parse_range_timestamp
     // and parse_inactive_timestamp
-    let date_regex = Regex::new(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})( (?P<weekday>[A-Z][a-z]{2}))?( (?P<rest>.*))?").unwrap();
-    let time_regex = Regex::new(r"(?P<hours>\d{2}):(?P<minutes>\d{2})").unwrap();
 
-    let caps = date_regex.captures(timestamp);
+    let caps = REGEX_DATE.captures(timestamp);
 
     let date = match &caps {
         Some(caps) => get_date_from_captures(&caps).ok_or(OrgTimestampParseError::ParseError),
         None => Err(OrgTimestampParseError::ParseError),
     }?;
 
-    let time_caps = caps.and_then(|caps| time_regex.captures(caps.name("rest")?.as_str()));
+    let time_caps = caps.and_then(|caps| REGEX_TIME.captures(caps.name("rest")?.as_str()));
 
     let time = time_caps.and_then(|caps| get_time_from_captures(&caps));
 
