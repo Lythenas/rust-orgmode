@@ -4,6 +4,7 @@ use chrono::NaiveDateTime;
 use regex::Captures;
 use regex::Regex;
 
+use org::helpers::*;
 use org::*;
 
 /// The error type returned by [`OrgTimestamp::from_str`].
@@ -155,15 +156,19 @@ fn parse_active_timestamp(timestamp: &str) -> TimestampResult {
         None => Err(OrgTimestampParseError::ParseError),
     }?;
 
-    Ok(if let Some((start_time, end_time)) = caps.as_ref().and_then(|caps| REGEX_TIME_RANGE.captures(caps.name("rest")?.as_str()))
-        .and_then(|caps| get_time_range_from_captures(&caps)) {
+    Ok(if let Some((start_time, end_time)) = caps.as_ref()
+        .and_then(|caps| REGEX_TIME_RANGE.captures(caps.name("rest")?.as_str()))
+        .and_then(|caps| get_time_range_from_captures(&caps))
+    {
         OrgTimestamp::TimeRange {
             date,
             start_time,
             end_time,
         }
-    } else if let Some(time) = caps.as_ref().and_then(|caps| REGEX_TIME.captures(caps.name("rest")?.as_str()))
-        .and_then(|caps| get_time_from_captures(&caps)) {
+    } else if let Some(time) = caps.as_ref()
+        .and_then(|caps| REGEX_TIME.captures(caps.name("rest")?.as_str()))
+        .and_then(|caps| get_time_from_captures(&caps))
+    {
         OrgTimestamp::ActiveDateTime(date.and_time(time))
     } else {
         OrgTimestamp::ActiveDate(date)
@@ -172,36 +177,32 @@ fn parse_active_timestamp(timestamp: &str) -> TimestampResult {
 
 fn get_date_from_captures<'t>(caps: &Captures<'t>) -> Option<NaiveDate> {
     //println!("Date: {:#?}", caps);
-    let year = caps.name("year")?.as_str().parse().ok()?;
-    let month = caps.name("month")?.as_str().parse().ok()?;
-    let day = caps.name("day")?.as_str().parse().ok()?;
+    let year = caps.parse_name("year")?;
+    let month = caps.parse_name("month")?;
+    let day = caps.parse_name("day")?;
 
     NaiveDate::from_ymd_opt(year, month, day)
 }
 
 fn get_time_from_captures<'t>(caps: &Captures<'t>) -> Option<NaiveTime> {
     //println!("Time: {:#?}", caps);
-    let hours = caps.name("hours")?.as_str().parse().ok()?;
-    let minutes = caps.name("minutes")?.as_str().parse().ok()?;
+    let hours = caps.parse_name("hours")?;
+    let minutes = caps.parse_name("minutes")?;
 
     NaiveTime::from_hms_opt(hours, minutes, 0)
 }
 
 fn get_time_range_from_captures<'t>(caps: &Captures<'t>) -> Option<(NaiveTime, NaiveTime)> {
     println!("Time: {:#?}", caps);
-    let start_hours = get_from_caps(&caps, "start_hours")?;
-    let start_minutes = get_from_caps(&caps, "start_minutes")?;
-    let end_hours = get_from_caps(&caps, "end_hours")?;
-    let end_minutes = get_from_caps(&caps, "end_minutes")?;
+    let start_hours = caps.parse_name("start_hours")?;
+    let start_minutes = caps.parse_name("start_minutes")?;
+    let end_hours = caps.parse_name("end_hours")?;
+    let end_minutes = caps.parse_name("end_minutes")?;
 
     let start = NaiveTime::from_hms_opt(start_hours, start_minutes, 0)?;
     let end = NaiveTime::from_hms_opt(end_hours, end_minutes, 0)?;
 
     Some((start, end))
-}
-
-fn get_from_caps<'t, T: FromStr>(caps: &Captures<'t>, name: &'static str) -> Option<T> {
-    caps.name(&name)?.as_str().parse().ok()
 }
 
 #[cfg(test)]
