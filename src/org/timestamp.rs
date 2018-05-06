@@ -140,39 +140,55 @@ fn parse_range_timestamp(start: &str, end: &str) -> TimestampResult {
 
 /// Helper function that only parses timestamps in the format `[timestamp]`.
 fn parse_inactive_timestamp(timestamp: &str) -> TimestampResult {
-    // TODO
-    Err(OrgTimestampParseError::NotImplemented)
+    let caps = REGEX_DATE.captures(timestamp);
+
+    let date = try_date(caps.as_ref())?;
+
+    Ok(if let Some(time) = try_time(caps.as_ref()) {
+        OrgTimestamp::InactiveDateTime(date.and_time(time))
+    } else {
+        OrgTimestamp::InactiveDate(date)
+    })
 }
 
 /// Helper function that only parses timestamps in the format `<timestamp>`.
 fn parse_active_timestamp(timestamp: &str) -> TimestampResult {
-    // TODO move this all to another function because it is also needed in parse_range_timestamp
-    // and parse_inactive_timestamp
-
     let caps = REGEX_DATE.captures(timestamp);
 
-    let date = match &caps {
+    let date = try_date(caps.as_ref())?;
+
+    Ok(
+        if let Some((start_time, end_time)) = try_time_range(caps.as_ref()) {
+            OrgTimestamp::TimeRange {
+                date,
+                start_time,
+                end_time,
+            }
+        } else if let Some(time) = try_time(caps.as_ref()) {
+            OrgTimestamp::ActiveDateTime(date.and_time(time))
+        } else {
+            OrgTimestamp::ActiveDate(date)
+        },
+    )
+}
+
+fn try_date(caps: Option<&Captures>) -> Result<NaiveDate, OrgTimestampParseError> {
+    match &caps {
         Some(caps) => get_date_from_captures(&caps).ok_or(OrgTimestampParseError::ParseError),
         None => Err(OrgTimestampParseError::ParseError),
-    }?;
+    }
+}
 
-    Ok(if let Some((start_time, end_time)) = caps.as_ref()
+fn try_time_range(caps: Option<&Captures>) -> Option<(NaiveTime, NaiveTime)> {
+    caps.as_ref()
         .and_then(|caps| REGEX_TIME_RANGE.captures(caps.name("rest")?.as_str()))
         .and_then(|caps| get_time_range_from_captures(&caps))
-    {
-        OrgTimestamp::TimeRange {
-            date,
-            start_time,
-            end_time,
-        }
-    } else if let Some(time) = caps.as_ref()
+}
+
+fn try_time(caps: Option<&Captures>) -> Option<NaiveTime> {
+    caps.as_ref()
         .and_then(|caps| REGEX_TIME.captures(caps.name("rest")?.as_str()))
         .and_then(|caps| get_time_from_captures(&caps))
-    {
-        OrgTimestamp::ActiveDateTime(date.and_time(time))
-    } else {
-        OrgTimestamp::ActiveDate(date)
-    })
 }
 
 fn get_date_from_captures<'t>(caps: &Captures<'t>) -> Option<NaiveDate> {
@@ -246,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_timestamp() {
+    fn test_parse_active_timestamp() {
         assert_eq!(
             "<2018-06-22 Fri>".parse(),
             Ok(OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 6, 22)))
@@ -274,6 +290,30 @@ mod tests {
                 start_time: NaiveTime::from_hms(13, 0, 0),
                 end_time: NaiveTime::from_hms(14, 30, 0)
             })
+        );
+    }
+
+    #[test]
+    fn test_parse_inactive_timestamp() {
+        assert_eq!(
+            "[2018-06-22 Fri]".parse(),
+            Ok(OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 6, 22)))
+        );
+        assert_eq!(
+            "[2018-06-22]".parse(),
+            Ok(OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 6, 22)))
+        );
+        assert_eq!(
+            "[2018-06-22 Fri 14:00]".parse(),
+            Ok(OrgTimestamp::InactiveDateTime(naive_date_time(
+                2018, 6, 22, 14, 0, 0
+            )))
+        );
+        assert_eq!(
+            "[2018-06-22 14:00]".parse(),
+            Ok(OrgTimestamp::InactiveDateTime(naive_date_time(
+                2018, 6, 22, 14, 0, 0
+            )))
         );
     }
 }
