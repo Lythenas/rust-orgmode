@@ -13,7 +13,7 @@ pub enum OrgTimestampParseError {
     ParseError,
     NoTimestampFound,
     NotImplemented,
-    Unknown,
+    InvalidRange,
 }
 
 type TimestampResult = Result<OrgTimestamp, OrgTimestampParseError>;
@@ -97,6 +97,21 @@ impl Default for OrgTimestamp {
     }
 }
 
+impl From<SimpleTimestamp> for OrgTimestamp {
+    fn from(ts: SimpleTimestamp) -> OrgTimestamp {
+        match ts {
+            SimpleTimestamp::Date(date) => OrgTimestamp::InactiveDate(date),
+            SimpleTimestamp::DateTime(date) => OrgTimestamp::InactiveDateTime(date),
+        }
+    }
+}
+
+/// Helper enum for easier matching in the parse functions
+enum SimpleTimestamp {
+    Date(NaiveDate),
+    DateTime(NaiveDateTime),
+}
+
 lazy_static! {
     static ref REGEX_TIMESTAMP_RANGE: Regex = Regex::new(r"<(.+)>--<(.+)>").unwrap();
     static ref REGEX_TIMESTAMP_INACTIVE: Regex = Regex::new(r"\[(.+)\]").unwrap();
@@ -118,7 +133,7 @@ impl FromStr for OrgTimestamp {
                 caps.get(2).unwrap().as_str(),
             );
         } else if let Some(caps) = REGEX_TIMESTAMP_INACTIVE.captures(trimmed) {
-            return parse_inactive_timestamp(caps.get(1).unwrap().as_str());
+            return parse_simple_timestamp(caps.get(1).unwrap().as_str()).map(|ts| ts.into());
         } else if let Some(caps) = REGEX_TIMESTAMP_ACTIVE.captures(trimmed) {
             return parse_active_timestamp(caps.get(1).unwrap().as_str());
         } else {
@@ -129,44 +144,37 @@ impl FromStr for OrgTimestamp {
 
 /// Helper function that only parses timestamps in the format `<start>--<end>`.
 fn parse_range_timestamp(start: &str, end: &str) -> TimestampResult {
-    let start_timestamp = parse_inactive_timestamp(start)?;
-    let end_timestamp = parse_inactive_timestamp(end)?;
+    use self::SimpleTimestamp::*;
 
-    let range = match start_timestamp {
-        OrgTimestamp::InactiveDateTime(start_datetime) => match end_timestamp {
-            OrgTimestamp::InactiveDateTime(end_datetime) => {
-                OrgTimestamp::DateTimeRange(start_datetime, end_datetime)
-            }
-            OrgTimestamp::InactiveDate(end_date) => {
-                OrgTimestamp::DateTimeRange(start_datetime, end_date.and_hms(23, 59, 59))
-            }
-            // TODO use helper enum so this isn't needed
-            _ => return Err(OrgTimestampParseError::Unknown),
-        },
-        OrgTimestamp::InactiveDate(start_date) => match end_timestamp {
-            OrgTimestamp::InactiveDateTime(end_datetime) => {
-                OrgTimestamp::DateTimeRange(start_date.and_hms(0, 0, 0), end_datetime)
-            }
-            OrgTimestamp::InactiveDate(end_date) => OrgTimestamp::DateRange(start_date, end_date),
-            _ => return Err(OrgTimestampParseError::Unknown),
-        },
-        _ => return Err(OrgTimestampParseError::Unknown),
+    let start = parse_simple_timestamp(start)?;
+    let end = parse_simple_timestamp(end)?;
+
+    // convert the two simple timestamps to a DateRange/DateTimeRange
+    let range = match (start, end) {
+        (Date(start), Date(end)) => OrgTimestamp::DateRange(start, end),
+        (DateTime(start), Date(end)) => OrgTimestamp::DateTimeRange(start, end.and_hms(23, 59, 59)),
+        (Date(start), DateTime(end)) => OrgTimestamp::DateTimeRange(start.and_hms(0, 0, 0), end),
+        (DateTime(start), DateTime(end)) => OrgTimestamp::DateTimeRange(start, end),
     };
 
-    // TODO validate start is lower that end
-    Ok(range)
+    // validate the date/datetime range
+    match range {
+        OrgTimestamp::DateRange(start, end) if start >= end => Err(OrgTimestampParseError::InvalidRange),
+        OrgTimestamp::DateTimeRange(start, end) if start >= end => Err(OrgTimestampParseError::InvalidRange),
+        valid => Ok(valid),
+    }
 }
 
 /// Helper function that only parses timestamps in the format `[timestamp]`.
-fn parse_inactive_timestamp(timestamp: &str) -> TimestampResult {
+fn parse_simple_timestamp(timestamp: &str) -> Result<SimpleTimestamp, OrgTimestampParseError> {
     let caps = REGEX_DATE.captures(timestamp);
 
     let date = try_date(caps.as_ref())?;
 
     Ok(if let Some(time) = try_time(caps.as_ref()) {
-        OrgTimestamp::InactiveDateTime(date.and_time(time))
+        SimpleTimestamp::DateTime(date.and_time(time))
     } else {
-        OrgTimestamp::InactiveDate(date)
+        SimpleTimestamp::Date(date)
     })
 }
 
