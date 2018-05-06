@@ -13,6 +13,7 @@ pub enum OrgTimestampParseError {
     ParseError,
     NoTimestampFound,
     NotImplemented,
+    Unknown,
 }
 
 type TimestampResult = Result<OrgTimestamp, OrgTimestampParseError>;
@@ -29,14 +30,8 @@ pub enum OrgTimestamp {
         start_time: NaiveTime,
         end_time: NaiveTime,
     },
-    DateRange {
-        start: NaiveDate,
-        end: NaiveDate,
-    },
-    DateTimeRange {
-        start: NaiveDateTime,
-        end: NaiveDateTime,
-    },
+    DateRange(NaiveDate, NaiveDate),
+    DateTimeRange(NaiveDateTime, NaiveDateTime),
     RepeatingDate(NaiveDate, Duration),
     RepeatingDateTime(NaiveDateTime, Duration),
 }
@@ -134,8 +129,32 @@ impl FromStr for OrgTimestamp {
 
 /// Helper function that only parses timestamps in the format `<start>--<end>`.
 fn parse_range_timestamp(start: &str, end: &str) -> TimestampResult {
-    // TODO
-    Err(OrgTimestampParseError::NotImplemented)
+    let start_timestamp = parse_inactive_timestamp(start)?;
+    let end_timestamp = parse_inactive_timestamp(end)?;
+
+    let range = match start_timestamp {
+        OrgTimestamp::InactiveDateTime(start_datetime) => match end_timestamp {
+            OrgTimestamp::InactiveDateTime(end_datetime) => {
+                OrgTimestamp::DateTimeRange(start_datetime, end_datetime)
+            }
+            OrgTimestamp::InactiveDate(end_date) => {
+                OrgTimestamp::DateTimeRange(start_datetime, end_date.and_hms(23, 59, 59))
+            }
+            // TODO use helper enum so this isn't needed
+            _ => return Err(OrgTimestampParseError::Unknown),
+        },
+        OrgTimestamp::InactiveDate(start_date) => match end_timestamp {
+            OrgTimestamp::InactiveDateTime(end_datetime) => {
+                OrgTimestamp::DateTimeRange(start_date.and_hms(0, 0, 0), end_datetime)
+            }
+            OrgTimestamp::InactiveDate(end_date) => OrgTimestamp::DateRange(start_date, end_date),
+            _ => return Err(OrgTimestampParseError::Unknown),
+        },
+        _ => return Err(OrgTimestampParseError::Unknown),
+    };
+
+    // TODO validate start is lower that end
+    Ok(range)
 }
 
 /// Helper function that only parses timestamps in the format `[timestamp]`.
@@ -314,6 +333,38 @@ mod tests {
             Ok(OrgTimestamp::InactiveDateTime(naive_date_time(
                 2018, 6, 22, 14, 0, 0
             )))
+        );
+    }
+
+    #[test]
+    fn test_parse_range_timestamp() {
+        assert_eq!(
+            "<2018-06-22 Fri>--<2018-06-23 Sun>".parse(),
+            Ok(OrgTimestamp::DateRange(
+                NaiveDate::from_ymd(2018, 6, 22),
+                NaiveDate::from_ymd(2018, 6, 23)
+            ))
+        );
+        assert_eq!(
+            "<2018-06-22 Fri 20:00>--<2018-06-23 Sun>".parse(),
+            Ok(OrgTimestamp::DateTimeRange(
+                NaiveDate::from_ymd(2018, 6, 22).and_hms(20, 0, 0),
+                NaiveDate::from_ymd(2018, 6, 23).and_hms(23, 59, 59)
+            ))
+        );
+        assert_eq!(
+            "<2018-06-22 Fri>--<2018-06-23 Sun 12:30>".parse(),
+            Ok(OrgTimestamp::DateTimeRange(
+                NaiveDate::from_ymd(2018, 6, 22).and_hms(0, 0, 0),
+                NaiveDate::from_ymd(2018, 6, 23).and_hms(12, 30, 0)
+            ))
+        );
+        assert_eq!(
+            "<2018-06-22 Fri 13:00>--<2018-06-23 Sun 13:00>".parse(),
+            Ok(OrgTimestamp::DateTimeRange(
+                NaiveDate::from_ymd(2018, 6, 22).and_hms(13, 0, 0),
+                NaiveDate::from_ymd(2018, 6, 23).and_hms(13, 0, 0)
+            ))
         );
     }
 }
