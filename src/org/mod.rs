@@ -6,6 +6,8 @@ use std::str::FromStr;
 
 use chrono::prelude::*;
 use chrono::Duration;
+use regex::Captures;
+use regex::Regex;
 
 pub use org::timestamp::*;
 
@@ -135,7 +137,11 @@ impl FromStr for OrgNode {
             return Err(OrgNodeParseError::ExpectedNewHeadline);
         }
 
-        let (closed, scheduled, deadline) = parse_special_node_timestamps(second_line.unwrap());
+        let SpecialNodeTimestamps {
+            deadline,
+            scheduled,
+            closed,
+        } = parse_special_node_timestamps(second_line.unwrap());
 
         Ok(OrgNode::default())
     }
@@ -147,23 +153,83 @@ pub enum OrgNodeParseError {
     ExpectedNewHeadline,
 }
 
+/// Count the number of `needle` chars that are a prefix of the given string.
 fn count_prefix_chars(s: &str, needle: char) -> usize {
     s.chars().take_while(|c| c == &needle).count()
 }
 
-/// parses the second line of a org node. this line can contain any of closed, scheduled and deadline
+/// Helper struct returned by [`parse_special_node_timestamps`].
+#[derive(Debug, PartialEq, Eq, Default)]
+struct SpecialNodeTimestamps {
+    deadline: Option<OrgTimestamp>,
+    scheduled: Option<OrgTimestamp>,
+    closed: Option<OrgTimestamp>,
+}
+
+impl SpecialNodeTimestamps {
+    fn and(self, other: Self) -> Self {
+        SpecialNodeTimestamps {
+            deadline: self.deadline.or(other.deadline),
+            scheduled: self.scheduled.or(other.scheduled),
+            closed: self.closed.or(other.closed),
+        }
+    }
+}
+
+impl<'a, 'b> From<(Option<&'a str>, Option<&'b str>)> for SpecialNodeTimestamps {
+    fn from((kind, timestamp): (Option<&str>, Option<&str>)) -> Self {
+        let map_true = |x| if x { Some(()) } else { None };
+        let map_to_timestamp = |_| timestamp.and_then(|t| t.parse().ok());
+
+        let deadline = kind
+            .map(|x| x == "DEADLINE")
+            .and_then(map_true)
+            .and_then(map_to_timestamp);
+        let scheduled = kind
+            .map(|x| x == "SCHEDULED")
+            .and_then(map_true)
+            .and_then(map_to_timestamp);
+        let closed = kind
+            .map(|x| x == "CLOSED")
+            .and_then(map_true)
+            .and_then(map_to_timestamp);
+
+        SpecialNodeTimestamps {
+            deadline,
+            scheduled,
+            closed,
+        }
+    }
+}
+
+/// Parses the second line of a org node. This line can contain any of closed, scheduled and deadline
 /// date or none of them.
 ///
-/// the dates are preceded by their respective keyword (`closed`, `deadline`, `scheduled`) followed
-/// by a `:`, a space and the actual date. the date of closed is inactive and therefore surrounded by square brackets (`[`, `]`). the date of scheduled and deadline are plain timestamps or timestamps with a repeat interval and therefore surrounded by angle brackets (`<`, `>`).
-fn parse_special_node_timestamps(
-    line: &str,
-) -> (
-    Option<OrgTimestamp>,
-    Option<OrgTimestamp>,
-    Option<OrgTimestamp>,
-) {
-    return (None, None, None);
+/// The dates are preceded by their respective keyword (`CLOSED`, `DEADLINE`, `SCHEDULED`) followed
+/// by a `:`, a space and the actual date. The date of closed is inactive and therefore surrounded by square brackets (`[`, `]`). The date of scheduled and deadline are plain timestamps or timestamps with a repeat interval and therefore surrounded by angle brackets (`<`, `>`).
+fn parse_special_node_timestamps(line: &str) -> SpecialNodeTimestamps {
+    lazy_static! {
+        static ref RE_OUTER: Regex =
+            Regex::new(r"^\s*((?:DEADLINE|SCHEDULED|CLOSED):\s+(?:\[.+\]|<.+>)\s*)+").unwrap();
+        static ref RE_ITEM: Regex =
+            Regex::new(r"(?P<kind>DEADLINE|SCHEDULED|CLOSED):\s+(?P<ts>\[.+\]|<.+>)").unwrap();
+    }
+
+    RE_OUTER
+        .find(line)
+        .map(|truncated| {
+            RE_ITEM
+                .captures_iter(truncated.as_str())
+                .map(|cap| {
+                    (
+                        cap.name("kind").map(|m| m.as_str()),
+                        cap.name("ts").map(|m| m.as_str()),
+                    )
+                })
+                .map(|x| x.into())
+                .fold(SpecialNodeTimestamps::default(), |acc, x| acc.and(x))
+        })
+        .unwrap_or_default()
 }
 
 /// Contains all the string accepted as [`OrgState::Todo`].
@@ -345,17 +411,54 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_parse_special_node_timestamps() {
         assert_eq!(
             parse_special_node_timestamps("DEADLINE: <2018-02-19 Mon 14:24>"),
-            (
-                Some(OrgTimestamp::ActiveDateTime(
+            SpecialNodeTimestamps {
+                deadline: Some(OrgTimestamp::ActiveDateTime(
                     NaiveDate::from_ymd(2018, 2, 19).and_hms(14, 24, 0)
                 )),
-                None,
-                None
-            )
+                scheduled: None,
+                closed: None
+            }
+        );
+        assert_eq!(
+            parse_special_node_timestamps(
+                "CLOSED: [2018-02-11 15:33] DEADLINE: <2018-02-19 Mon 14:24>"
+            ),
+            SpecialNodeTimestamps {
+                deadline: Some(OrgTimestamp::ActiveDateTime(
+                    NaiveDate::from_ymd(2018, 2, 19).and_hms(14, 24, 0)
+                )),
+                scheduled: None,
+                closed: Some(OrgTimestamp::InactiveDateTime(
+                    NaiveDate::from_ymd(2018, 2, 11).and_hms(15, 33, 0)
+                ))
+            }
+        );
+        assert_eq!(
+            parse_special_node_timestamps("CLOSED: [2018-02-11] SCHEDULED: <2018-02-11>"),
+            SpecialNodeTimestamps {
+                deadline: None,
+                scheduled: Some(OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 2, 11))),
+                closed: Some(OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 2, 11)))
+            }
+        );
+        assert_eq!(
+            parse_special_node_timestamps("Some text that is not a recognized timestamp."),
+            SpecialNodeTimestamps {
+                deadline: None,
+                scheduled: None,
+                closed: None,
+            }
+        );
+        assert_eq!(
+            parse_special_node_timestamps("Text before timestamps CLOSED: [2018-05-18] and after"),
+            SpecialNodeTimestamps {
+                deadline: None,
+                scheduled: None,
+                closed: None
+            }
         );
     }
 
