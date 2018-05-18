@@ -159,8 +159,12 @@ fn parse_range_timestamp(start: &str, end: &str) -> TimestampResult {
 
     // validate the date/datetime range
     match range {
-        OrgTimestamp::DateRange(start, end) if start >= end => Err(OrgTimestampParseError::InvalidRange),
-        OrgTimestamp::DateTimeRange(start, end) if start >= end => Err(OrgTimestampParseError::InvalidRange),
+        OrgTimestamp::DateRange(start, end) if start >= end => {
+            Err(OrgTimestampParseError::InvalidRange)
+        }
+        OrgTimestamp::DateTimeRange(start, end) if start >= end => {
+            Err(OrgTimestampParseError::InvalidRange)
+        }
         valid => Ok(valid),
     }
 }
@@ -252,15 +256,6 @@ fn get_time_range_from_captures<'t>(caps: &Captures<'t>) -> Option<(NaiveTime, N
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_count_prefix_chars() {
-        assert_eq!(count_prefix_chars("* abc", '*'), 1);
-        assert_eq!(count_prefix_chars("*** abc *", '*'), 3);
-        assert_eq!(count_prefix_chars("****** abc ** asd *", '*'), 6);
-        assert_eq!(count_prefix_chars("* abc ** a", '*'), 1);
-        assert_eq!(count_prefix_chars("abs * abc", '*'), 0);
-    }
-
     /// Helper function to generate a NaiveDateTime easily
     fn naive_date_time(
         year: i32,
@@ -271,21 +266,6 @@ mod tests {
         sec: u32,
     ) -> NaiveDateTime {
         NaiveDate::from_ymd(year, month, day).and_time(NaiveTime::from_hms(hour, min, sec))
-    }
-
-    #[test]
-    #[ignore]
-    fn test_parse_special_node_timestamps() {
-        assert_eq!(
-            parse_special_node_timestamps("DEADLINE: <2018-02-19 Mon 14:24>"),
-            (
-                Some(OrgTimestamp::ActiveDateTime(naive_date_time(
-                    2018, 2, 19, 14, 24, 0
-                ))),
-                None,
-                None
-            )
-        );
     }
 
     #[test]

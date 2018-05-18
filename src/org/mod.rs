@@ -284,6 +284,15 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_count_prefix_chars() {
+        assert_eq!(count_prefix_chars("* abc", '*'), 1);
+        assert_eq!(count_prefix_chars("*** abc *", '*'), 3);
+        assert_eq!(count_prefix_chars("****** abc ** asd *", '*'), 6);
+        assert_eq!(count_prefix_chars("* abc ** a", '*'), 1);
+        assert_eq!(count_prefix_chars("abs * abc", '*'), 0);
+    }
+
+    #[test]
     fn test_parse_org_state() {
         assert_eq!(Ok(OrgState::Todo("TODO".to_string())), "TODO".parse());
         assert_eq!(Ok(OrgState::Todo("NEXT".to_string())), "NEXT".parse());
@@ -333,6 +342,21 @@ mod tests {
         let ts3 = OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 1, 1));
         assert_eq!(ts3.is_active(), true);
         assert_eq!(ts3.is_inactive(), false);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_parse_special_node_timestamps() {
+        assert_eq!(
+            parse_special_node_timestamps("DEADLINE: <2018-02-19 Mon 14:24>"),
+            (
+                Some(OrgTimestamp::ActiveDateTime(
+                    NaiveDate::from_ymd(2018, 2, 19).and_hms(14, 24, 0)
+                )),
+                None,
+                None
+            )
+        );
     }
 
 }
