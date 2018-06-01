@@ -5,7 +5,6 @@ use failure::Error;
 use nom::{is_alphabetic, is_digit, IResult};
 use regex::Regex;
 use std::str;
-use macros::GenericError;
 
 use Timestamp;
 
