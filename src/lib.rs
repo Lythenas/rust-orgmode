@@ -5,7 +5,11 @@ extern crate regex;
 #[macro_use]
 extern crate nom;
 extern crate failure;
+#[macro_use]
+extern crate failure_derive;
 
+#[macro_use]
+pub mod macros;
 #[macro_use]
 mod enum_from_str;
 
@@ -16,8 +20,6 @@ use std::str::FromStr;
 
 use chrono::prelude::*;
 use chrono::Duration;
-use regex::Captures;
-use regex::Regex;
 
 pub use parse::*;
 
