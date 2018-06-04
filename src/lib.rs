@@ -162,19 +162,12 @@ impl Timestamp {
 //        .unwrap_or_default()
 //}
 
-/// Contains all the string accepted as [`OrgState::Todo`].
-static ORG_TODO_STATES: [&'static str; 2] = ["TODO", "NEXT"];
-
-/// Contains all the string accepted as [`OrgState::Done`].
-static ORG_DONE_STATES: [&'static str; 1] = ["DONE"];
-
 /// The state of a [`OrgNode`]. Can be eighter `Todo` or `Done`. The enum variants accept an
 /// additional string because the actual keyword signaling the state of the `OrgNode` can be
 /// anything.
 ///
-/// Currently only keywords specified in [`ORG_TODO_STATES`] are parsed as `Todo`. All other
-/// keywords is parsed as `Done`. No keyword present a.k.a an empty string will be parsed as
-/// `None`.
+/// `TODO` and `NEXT` will be parsed as `State::Todo` and `DONE` will be parsed as `State::Done`.
+/// An empty string will be parsed as `State::None`.
 #[derive(Debug, PartialEq, Eq)]
 pub enum State {
     Todo(String),

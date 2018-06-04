@@ -78,7 +78,7 @@ fn datetime_without_weekday(s: &str) -> IResult<&str, NaiveDateTime, Error> {
 }
 
 named!(datetime<&str, NaiveDateTime, Error>,
-       alt!(dbg_dmp!(call!(datetime_with_weekday)) | dbg_dmp!(call!(datetime_without_weekday))));
+       alt!(call!(datetime_with_weekday) | call!(datetime_without_weekday)));
 
 named!(active_datetime<&str, Timestamp, Error>,
     do_parse!(
@@ -120,47 +120,112 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_active_timestamps() {
-        assert_eq!(
-            timestamp("<2018-06-13 Wed 20:11>").ok(),
-            Some((
-                "",
-                Timestamp::ActiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0))
-            ))
-        );
-        assert_eq!(
-            timestamp("<2018-06-14 11:45>").ok(),
-            Some((
-                "",
-                Timestamp::ActiveDateTime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0))
-            ))
-        );
-        assert_eq!(
-            timestamp("<2018-06-13 Wed>").ok(),
-            Some(("", Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 13))))
-        );
-        assert_eq!(
-            timestamp("<2018-06-22>").ok(),
-            Some(("", Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 22))))
-        );
+    fn test_active_time_range() {}
+
+    mod active_datetime {
+        use super::*;
+
+        #[test]
+        fn with_weekday() {
+            assert_eq!(
+                timestamp("<2018-06-13 Wed 20:11>").ok(),
+                Some((
+                    "",
+                    Timestamp::ActiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0))
+                ))
+            );
+            assert!(timestamp("<2018-06-13 Mon 11:33>").is_err());
+        }
+
+        #[test]
+        fn without_weekday() {
+            assert_eq!(
+                timestamp("<2018-06-14 11:45>").ok(),
+                Some((
+                    "",
+                    Timestamp::ActiveDateTime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0))
+                ))
+            );
+        }
+
     }
 
-    #[test]
-    fn test_inactive_timestamps() {
-        assert_eq!(
-            timestamp("[2018-06-13 Wed 11:13]").ok(),
-            Some((
-                "",
-                Timestamp::InactiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0))
-            ))
-        );
-        assert_eq!(
-            timestamp("[2018-06-13 Wed]").ok(),
-            Some((
-                "",
-                Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
-            ))
-        );
+    mod active_date {
+        use super::*;
+
+        #[test]
+        fn with_weekday() {
+            assert_eq!(
+                timestamp("<2018-06-13 Wed>").ok(),
+                Some(("", Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 13))))
+            );
+            assert!(timestamp("<2018-06-13 Mon>").ok());
+        }
+
+        #[test]
+        fn without_weekday() {
+            assert_eq!(
+                timestamp("<2018-06-22>").ok(),
+                Some(("", Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 22))))
+            );
+        }
+
+    }
+
+    mod inactive_datetime {
+        use super::*;
+
+        #[test]
+        fn with_weekday() {
+            assert_eq!(
+                timestamp("[2018-06-13 Wed 11:13]").ok(),
+                Some((
+                    "",
+                    Timestamp::InactiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0))
+                ))
+            );
+            assert!(timestamp("[2018-06-13 Mon 11:13]").is_err());
+        }
+
+        #[test]
+        fn without_weekday() {
+            assert_eq!(
+                timestamp("[2018-06-13 11:39]").ok(),
+                Some((
+                    "",
+                    Timestamp::InactiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 39, 0))
+                ))
+            );
+        }
+
+    }
+
+    mod inactive_date {
+        use super::*;
+
+        #[test]
+        fn with_weekday() {
+            assert_eq!(
+                timestamp("[2018-06-13 Wed]").ok(),
+                Some((
+                    "",
+                    Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
+                ))
+            );
+            assert!(timestamp("[2018-06-13 Mon]").is_err());
+        }
+
+        #[test]
+        fn without_weekday() {
+            assert_eq!(
+                timestamp("[2018-06-13]").ok(),
+                Some((
+                    "",
+                    Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
+                ))
+            );
+        }
+
     }
 
     #[test]
@@ -180,26 +245,26 @@ mod tests {
     #[test]
     fn test_parse_date() {
         assert_eq!(
-            date("2018-05-13"),
-            Ok(("", NaiveDate::from_ymd(2018, 05, 13)))
+            date("2018-05-13").ok(),
+            Some(("", NaiveDate::from_ymd(2018, 05, 13)))
         );
         assert_eq!(
-            date("2018-05-13 Sun"),
-            Ok(("", NaiveDate::from_ymd(2018, 05, 13)))
+            date("2018-05-13 Sun").ok(),
+            Some(("", NaiveDate::from_ymd(2018, 05, 13)))
         );
         assert!(date("adadasd").is_err());
     }
 
     #[test]
     fn test_parse_datetime() {
-        //assert_eq!(
-        //    datetime("2018-05-13 12:40"),
-        //    Ok(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
-        //);
-        //assert_eq!(
-        //    datetime("2018-05-13 Sun 12:40"),
-        //    Ok(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
-        //);
+        assert_eq!(
+            datetime("2018-05-13 12:40").ok(),
+            Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
+        );
+        assert_eq!(
+            datetime("2018-05-13 Sun 12:40").ok(),
+            Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
+        );
         assert!(datetime("aasdadas").is_err());
     }
 
