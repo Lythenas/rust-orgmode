@@ -96,17 +96,69 @@ named!(inactive_datetime<&str, Timestamp, Error>,
     )
 );
 
+named!(active_date<&str, Timestamp, Error>,
+    do_parse!(
+        s: u32_to_failure!(in_angle_brackets) >>
+        ts: u32_to_failure!(expr_res!(date(s))) >>
+        (Timestamp::ActiveDate(ts.1))
+    )
+);
+
+named!(inactive_date<&str, Timestamp, Error>,
+    do_parse!(
+        s: u32_to_failure!(call!(in_square_brackets)) >>
+        ts: u32_to_failure!(expr_res!(date(s))) >>
+        (Timestamp::InactiveDate(ts.1))
+    )
+);
+
+named!(timestamp<&str, Timestamp, Error>,
+       alt!(call!(active_date) | call!(active_datetime) | call!(inactive_date) | call!(inactive_datetime)));
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_active_datetime() {
+    fn test_active_timestamps() {
         assert_eq!(
-            active_datetime("<2018-05-13 14:44>").ok(),
+            timestamp("<2018-06-13 Wed 20:11>").ok(),
             Some((
                 "",
-                Timestamp::ActiveDateTime(NaiveDate::from_ymd(2018, 05, 13).and_hms(14, 44, 0))
+                Timestamp::ActiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0))
+            ))
+        );
+        assert_eq!(
+            timestamp("<2018-06-14 11:45>").ok(),
+            Some((
+                "",
+                Timestamp::ActiveDateTime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0))
+            ))
+        );
+        assert_eq!(
+            timestamp("<2018-06-13 Wed>").ok(),
+            Some(("", Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 13))))
+        );
+        assert_eq!(
+            timestamp("<2018-06-22>").ok(),
+            Some(("", Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 22))))
+        );
+    }
+
+    #[test]
+    fn test_inactive_timestamps() {
+        assert_eq!(
+            timestamp("[2018-06-13 Wed 11:13]").ok(),
+            Some((
+                "",
+                Timestamp::InactiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0))
+            ))
+        );
+        assert_eq!(
+            timestamp("[2018-06-13 Wed]").ok(),
+            Some((
+                "",
+                Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
             ))
         );
     }

@@ -1,4 +1,3 @@
-
 /// Used as intermediate error type to convert between noms u32 and failures Error.
 #[derive(Debug, PartialEq, Eq, Fail)]
 #[fail(display = "Generic parse error: {}", _0)]
