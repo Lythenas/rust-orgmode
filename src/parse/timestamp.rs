@@ -33,6 +33,8 @@ named!(
     delimited!(char!('['), is_not!("]"), char!(']'))
 );
 
+// TODO do date and time parsing manually. This makes e.g. ranges easier
+
 fn date_with_weekday(s: &str) -> IResult<&str, NaiveDate> {
     match NaiveDate::parse_from_str(s, "%Y-%m-%d %a") {
         Ok(d) => Ok(("", d)),
@@ -112,15 +114,93 @@ named!(inactive_date<&str, Timestamp, Error>,
     )
 );
 
+fn date_with_time_range(s: &str) -> IResult<&str, Timestamp, Error> {
+    use macros::GenericError;
+    // s = 2018-06-04 Mon 12:00-13:00
+    println!("{:?}", s);
+    let parts: Vec<_> = s.rsplitn(2, ' ').collect();
+
+    let range = &parts[0];
+    let date = &parts[1];
+
+    if !range.contains('-') {
+        return Err(::nom::Err::Error(error_position!(
+            s,
+            ::nom::ErrorKind::Custom(GenericError::from(2).into())
+        )));
+    }
+
+    let times: Vec<_> = range
+        .split('-')
+        .map(|time| NaiveTime::parse_from_str(time, "%H:%M"))
+        .collect();
+    let start_time = times[0].map_err(|_| {
+        ::nom::Err::Error(error_position!(
+            s,
+            ::nom::ErrorKind::Custom(GenericError::from(1).into())
+        ))
+    })?;
+    let end_time = times[1].map_err(|_| {
+        ::nom::Err::Error(error_position!(
+            s,
+            ::nom::ErrorKind::Custom(GenericError::from(1).into())
+        ))
+    })?;
+    let date = match NaiveDate::parse_from_str(&date, "%Y-%m-%d")
+        .or_else(|_| NaiveDate::parse_from_str(&date, "%Y-%m-%d %a"))
+    {
+        Ok(d) => d,
+        Err(_) => {
+            return Err(::nom::Err::Error(error_position!(
+                s,
+                ::nom::ErrorKind::Custom(GenericError::from(2).into())
+            )))
+        }
+    };
+
+    Ok((
+        "",
+        Timestamp::TimeRange {
+            date,
+            start_time,
+            end_time,
+        },
+    ))
+}
+
+named!(active_time_range<&str, Timestamp, Error>,
+    do_parse!(
+        s: u32_to_failure!(in_angle_brackets) >>
+        tr: u32_to_failure!(expr_res!(date_with_time_range(s))) >>
+        (tr.1)
+    )
+);
+
 named!(timestamp<&str, Timestamp, Error>,
-       alt!(call!(active_date) | call!(active_datetime) | call!(inactive_date) | call!(inactive_datetime)));
+       alt!(call!(active_date) | call!(active_datetime) | call!(active_time_range) | call!(inactive_date) | call!(inactive_datetime)));
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_active_time_range() {}
+    mod active_timerange {
+        use super::*;
+
+        #[test]
+        fn with_weekday() {
+            assert_eq!(
+                timestamp("<2018-06-04 Mon 13:00-14:30>").ok(),
+                Some((
+                    "",
+                    Timestamp::TimeRange {
+                        date: NaiveDate::from_ymd(2018, 06, 04),
+                        start_time: NaiveTime::from_hms(13, 0, 0),
+                        end_time: NaiveTime::from_hms(14, 30, 0)
+                    }
+                ))
+            );
+        }
+    }
 
     mod active_datetime {
         use super::*;
@@ -159,7 +239,7 @@ mod tests {
                 timestamp("<2018-06-13 Wed>").ok(),
                 Some(("", Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 13))))
             );
-            assert!(timestamp("<2018-06-13 Mon>").ok());
+            assert!(timestamp("<2018-06-13 Mon>").is_err());
         }
 
         #[test]
@@ -181,7 +261,9 @@ mod tests {
                 timestamp("[2018-06-13 Wed 11:13]").ok(),
                 Some((
                     "",
-                    Timestamp::InactiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0))
+                    Timestamp::InactiveDateTime(
+                        NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0)
+                    )
                 ))
             );
             assert!(timestamp("[2018-06-13 Mon 11:13]").is_err());
@@ -193,7 +275,9 @@ mod tests {
                 timestamp("[2018-06-13 11:39]").ok(),
                 Some((
                     "",
-                    Timestamp::InactiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 39, 0))
+                    Timestamp::InactiveDateTime(
+                        NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 39, 0)
+                    )
                 ))
             );
         }
