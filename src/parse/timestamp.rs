@@ -5,6 +5,7 @@ use failure::Error;
 use nom::{is_alphabetic, is_digit, IResult};
 use regex::Regex;
 use std::str;
+use itertools::Itertools;
 
 use Timestamp;
 
@@ -118,10 +119,9 @@ fn date_with_time_range(s: &str) -> IResult<&str, Timestamp, Error> {
     use macros::GenericError;
     // s = 2018-06-04 Mon 12:00-13:00
     println!("{:?}", s);
-    let parts: Vec<_> = s.rsplitn(2, ' ').collect();
-
-    let range = &parts[0];
-    let date = &parts[1];
+    let (range, date) = &s.rsplitn(2, ' ').collect_tuple().ok_or_else(|| ::nom::Err::Error(error_position!(
+        s, ::nom::ErrorKind::Custom(GenericError::from(3).into())
+    )))?;
 
     if !range.contains('-') {
         return Err(::nom::Err::Error(error_position!(

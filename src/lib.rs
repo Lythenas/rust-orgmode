@@ -7,6 +7,7 @@ extern crate nom;
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
+extern crate itertools;
 
 #[macro_use]
 pub mod macros;
