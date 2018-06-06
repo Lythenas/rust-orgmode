@@ -2,10 +2,10 @@ use chrono::prelude::*;
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use failure::Error;
-use nom::{is_alphabetic, is_digit, IResult};
+use itertools::Itertools;
+use nom::{is_alphabetic, IResult};
 use regex::Regex;
 use std::str;
-use itertools::Itertools;
 
 use Timestamp;
 
@@ -115,13 +115,42 @@ named!(inactive_date<&str, Timestamp, Error>,
     )
 );
 
+fn is_digit(c: char) -> bool {
+    c.is_digit(10)
+}
+
+fn naive_time((h, m): (&str, &str)) -> Result<NaiveTime, &'static str> {
+    let hours = h.parse();
+    let minutes = m.parse();
+    match (hours, minutes) {
+        (Ok(h), Ok(m)) => NaiveTime::from_hms_opt(h, m, 0).ok_or("invalid time"),
+        _ => Err("invalid time"),
+    }
+}
+
+named!(time<&str, NaiveTime, u32>,
+    map_res!(
+        do_parse!(
+            h: take_while_m_n!(2, 2, is_digit) >>
+            tag!(":") >>
+            m: take_while_m_n!(2, 2, is_digit) >>
+            ((h, m))
+        ),
+        naive_time
+    )
+);
+
+
 fn date_with_time_range(s: &str) -> IResult<&str, Timestamp, Error> {
     use macros::GenericError;
     // s = 2018-06-04 Mon 12:00-13:00
     println!("{:?}", s);
-    let (range, date) = &s.rsplitn(2, ' ').collect_tuple().ok_or_else(|| ::nom::Err::Error(error_position!(
-        s, ::nom::ErrorKind::Custom(GenericError::from(3).into())
-    )))?;
+    let (range, date) = &s.rsplitn(2, ' ').collect_tuple().ok_or_else(|| {
+        ::nom::Err::Error(error_position!(
+            s,
+            ::nom::ErrorKind::Custom(GenericError::from(3).into())
+        ))
+    })?;
 
     if !range.contains('-') {
         return Err(::nom::Err::Error(error_position!(
@@ -182,6 +211,18 @@ named!(timestamp<&str, Timestamp, Error>,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    mod time {
+        use super::*;
+
+        #[test]
+        fn test_time() {
+            assert_eq!(time("12:33"), Ok(("", NaiveTime::from_hms(12, 33, 0))));
+            assert!(time("adadasd").is_err());
+            assert!(time("33:99").is_err());
+            assert!(time(".1199").is_err());
+        }
+    }
 
     mod active_timerange {
         use super::*;
