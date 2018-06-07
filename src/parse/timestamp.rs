@@ -2,208 +2,151 @@ use chrono::prelude::*;
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use failure::Error;
-use itertools::Itertools;
-use nom::{is_alphabetic, IResult};
 use regex::Regex;
 use std::str;
 
 use Timestamp;
 
-/// Helper enum for easier matching in the parse functions
-enum SimpleTimestamp {
-    Date(NaiveDate),
-    DateTime(NaiveDateTime),
-}
-
 lazy_static! {
     static ref REGEX_TIMESTAMP_RANGE: Regex = Regex::new(r"<(.+)>--<(.+)>").unwrap();
-    static ref REGEX_TIMESTAMP_INACTIVE: Regex = Regex::new(r"\[(.+)\]").unwrap();
-    static ref REGEX_TIMESTAMP_ACTIVE: Regex = Regex::new(r"<(.+)>").unwrap();
-    static ref REGEX_DATE: Regex = Regex::new(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})( (?P<weekday>[A-Z][a-z]{2}))?( (?P<rest>.*))?").unwrap();
-    static ref REGEX_TIME: Regex = Regex::new(r"(?P<hours>\d{2}):(?P<minutes>\d{2})").unwrap();
-    static ref REGEX_TIME_RANGE: Regex = Regex::new(r"(?P<start_hours>\d{2}):(?P<start_minutes>\d{2})-(?P<end_hours>\d{2}):(?P<end_minutes>\d{2})").unwrap();
 }
 
-named!(
-    in_angle_brackets<&str, &str>,
-    delimited!(tag!("<"), take_until!(">"), tag!(">"))
-);
-
-named!(
-    in_square_brackets<&str, &str>,
-    delimited!(char!('['), is_not!("]"), char!(']'))
-);
-
-// TODO do date and time parsing manually. This makes e.g. ranges easier
-
-fn date_with_weekday(s: &str) -> IResult<&str, NaiveDate> {
-    match NaiveDate::parse_from_str(s, "%Y-%m-%d %a") {
-        Ok(d) => Ok(("", d)),
-        Err(e) => Err(::nom::Err::Error(error_position!(
-            s,
-            ::nom::ErrorKind::Custom(0)
-        ))),
-    }
-}
-
-fn date_without_weekday(s: &str) -> IResult<&str, NaiveDate> {
-    match NaiveDate::parse_from_str(s, "%Y-%m-%d") {
-        Ok(d) => Ok(("", d)),
-        Err(e) => Err(::nom::Err::Error(error_position!(
-            s,
-            ::nom::ErrorKind::Custom(0)
-        ))),
-    }
-}
-
-named!(date<&str, NaiveDate>,
-    alt!(call!(date_with_weekday) | call!(date_without_weekday))
-);
-
-fn datetime_with_weekday(s: &str) -> IResult<&str, NaiveDateTime, Error> {
-    match NaiveDateTime::parse_from_str(s, "%Y-%m-%d %a %H:%M") {
-        Ok(d) => Ok(("", d)),
-        Err(e) => Err(::nom::Err::Error(error_position!(
-            s,
-            ::nom::ErrorKind::Custom(e.into())
-        ))),
-    }
-}
-
-fn datetime_without_weekday(s: &str) -> IResult<&str, NaiveDateTime, Error> {
-    match NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M") {
-        Ok(d) => Ok(("", d)),
-        Err(e) => Err(::nom::Err::Error(error_position!(
-            s,
-            ::nom::ErrorKind::Custom(e.into())
-        ))),
-    }
-}
-
-named!(datetime<&str, NaiveDateTime, Error>,
-       alt!(call!(datetime_with_weekday) | call!(datetime_without_weekday)));
-
-named!(active_datetime<&str, Timestamp, Error>,
-    do_parse!(
-        s: u32_to_failure!(in_angle_brackets) >>
-        ts: u32_to_failure!(expr_res!(datetime(s))) >>
-        (Timestamp::ActiveDateTime(ts.1))
-    )
-);
-
-named!(inactive_datetime<&str, Timestamp, Error>,
-    do_parse!(
-        s: u32_to_failure!(call!(in_square_brackets)) >>
-        ts: u32_to_failure!(expr_res!(datetime(s))) >>
-        (Timestamp::InactiveDateTime(ts.1))
-    )
-);
-
-named!(active_date<&str, Timestamp, Error>,
-    do_parse!(
-        s: u32_to_failure!(in_angle_brackets) >>
-        ts: u32_to_failure!(expr_res!(date(s))) >>
-        (Timestamp::ActiveDate(ts.1))
-    )
-);
-
-named!(inactive_date<&str, Timestamp, Error>,
-    do_parse!(
-        s: u32_to_failure!(call!(in_square_brackets)) >>
-        ts: u32_to_failure!(expr_res!(date(s))) >>
-        (Timestamp::InactiveDate(ts.1))
-    )
-);
+// Helpers for date and time etc.
 
 fn is_digit(c: char) -> bool {
     c.is_digit(10)
 }
 
-fn naive_time((h, m): (&str, &str)) -> Result<NaiveTime, &'static str> {
-    let hours = h.parse();
-    let minutes = m.parse();
-    match (hours, minutes) {
+fn naive_time((hour, minute): (&str, &str)) -> Result<NaiveTime, &'static str> {
+    let hour = hour.parse();
+    let minute = minute.parse();
+    match (hour, minute) {
         (Ok(h), Ok(m)) => NaiveTime::from_hms_opt(h, m, 0).ok_or("invalid time"),
         _ => Err("invalid time"),
     }
 }
 
-named!(time<&str, NaiveTime, u32>,
-    map_res!(
-        do_parse!(
-            h: take_while_m_n!(2, 2, is_digit) >>
-            tag!(":") >>
-            m: take_while_m_n!(2, 2, is_digit) >>
-            ((h, m))
-        ),
-        naive_time
+named!(time<&str, NaiveTime, Error>,
+    u32_to_failure!(
+        map_res!(
+            do_parse!(
+                h: take_while_m_n!(2, 2, is_digit) >>
+                tag!(":") >>
+                m: take_while_m_n!(2, 2, is_digit) >>
+                ((h, m))
+            ),
+            naive_time
+        )
     )
 );
 
+fn naive_date((year, month, day, weekday): (&str, &str, &str, Option<&str>)) -> Result<NaiveDate, &'static str> {
+    use chrono::Weekday;
 
-fn date_with_time_range(s: &str) -> IResult<&str, Timestamp, Error> {
-    use macros::GenericError;
-    // s = 2018-06-04 Mon 12:00-13:00
-    println!("{:?}", s);
-    let (range, date) = &s.rsplitn(2, ' ').collect_tuple().ok_or_else(|| {
-        ::nom::Err::Error(error_position!(
-            s,
-            ::nom::ErrorKind::Custom(GenericError::from(3).into())
-        ))
-    })?;
-
-    if !range.contains('-') {
-        return Err(::nom::Err::Error(error_position!(
-            s,
-            ::nom::ErrorKind::Custom(GenericError::from(2).into())
-        )));
-    }
-
-    let times: Vec<_> = range
-        .split('-')
-        .map(|time| NaiveTime::parse_from_str(time, "%H:%M"))
-        .collect();
-    let start_time = times[0].map_err(|_| {
-        ::nom::Err::Error(error_position!(
-            s,
-            ::nom::ErrorKind::Custom(GenericError::from(1).into())
-        ))
-    })?;
-    let end_time = times[1].map_err(|_| {
-        ::nom::Err::Error(error_position!(
-            s,
-            ::nom::ErrorKind::Custom(GenericError::from(1).into())
-        ))
-    })?;
-    let date = match NaiveDate::parse_from_str(&date, "%Y-%m-%d")
-        .or_else(|_| NaiveDate::parse_from_str(&date, "%Y-%m-%d %a"))
-    {
-        Ok(d) => d,
-        Err(_) => {
-            return Err(::nom::Err::Error(error_position!(
-                s,
-                ::nom::ErrorKind::Custom(GenericError::from(2).into())
-            )))
-        }
+    let year = year.parse();
+    let month = month.parse();
+    let day = day.parse();
+    let weekday: Option<Weekday> = match weekday {
+        Some(wd) => Some(wd.parse().map_err(|_| "invalid weekday in date")?),
+        _ => None,
     };
 
-    Ok((
-        "",
-        Timestamp::TimeRange {
-            date,
-            start_time,
-            end_time,
-        },
-    ))
+    match (year, month, day) {
+        (Ok(y), Ok(m), Ok(d)) => NaiveDate::from_ymd_opt(y, m, d).ok_or("invalid date"),
+        _ => Err("invalid date"),
+    }.and_then(|date| match weekday {
+        None => Ok(date),
+        Some(wd) if wd == date.weekday() => Ok(date),
+        _ => Err("invalid weekday in date")
+    })
 }
+
+named!(date<&str, NaiveDate, Error>,
+    u32_to_failure!(
+        map_res!(
+            do_parse!(
+                y: take_while_m_n!(4, 4, is_digit) >>
+                tag!("-") >>
+                m: take_while_m_n!(2, 2, is_digit) >>
+                tag!("-") >>
+                d: take_while_m_n!(2, 2, is_digit) >>
+                wd: opt!(complete!(
+                    do_parse!(
+                        tag!(" ") >>
+                        wd: alt!(tag!("Mon") | tag!("Tue") | tag!("Wed") | tag!("Thu") | tag!("Fri") | tag!("Sat") | tag!("Sun")) >>
+                        (wd)
+                    )
+                )) >>
+                ((y, m, d, wd))
+            ),
+            naive_date
+        )
+    )
+);
+
+named!(datetime<&str, NaiveDateTime, Error>,
+    do_parse!(
+        date: date >>
+        u32_to_failure!(tag!(" ")) >>
+        time: time >>
+        (date.and_time(time))
+    )
+);
+
+// combinators to parse actual timestamps
+
+named!(active_date<&str, Timestamp, Error>,
+    do_parse!(
+        u32_to_failure!(tag!("<")) >>
+        date: date >>
+        u32_to_failure!(tag!(">")) >>
+        (Timestamp::ActiveDate(date))
+    )
+);
+
+named!(inactive_date<&str, Timestamp, Error>,
+    do_parse!(
+        u32_to_failure!(tag!("[")) >>
+        date: date >>
+        u32_to_failure!(tag!("]")) >>
+        (Timestamp::InactiveDate(date))
+    )
+);
+
+named!(active_datetime<&str, Timestamp, Error>,
+    do_parse!(
+        u32_to_failure!(tag!("<")) >>
+        datetime: datetime >>
+        u32_to_failure!(tag!(">")) >>
+        (Timestamp::ActiveDateTime(datetime))
+    )
+);
+
+named!(inactive_datetime<&str, Timestamp, Error>,
+    do_parse!(
+        u32_to_failure!(tag!("[")) >>
+        datetime: datetime >>
+        u32_to_failure!(tag!("]")) >>
+        (Timestamp::InactiveDateTime(datetime))
+    )
+);
 
 named!(active_time_range<&str, Timestamp, Error>,
     do_parse!(
-        s: u32_to_failure!(in_angle_brackets) >>
-        tr: u32_to_failure!(expr_res!(date_with_time_range(s))) >>
-        (tr.1)
+        u32_to_failure!(tag!("<")) >>
+        date: date >>
+        u32_to_failure!(tag!(" ")) >>
+        start_time: time >>
+        u32_to_failure!(tag!("-")) >>
+        end_time: time >>
+        u32_to_failure!(tag!(">")) >>
+        (Timestamp::TimeRange {
+            date, start_time, end_time
+        })
     )
 );
+
+// parser for general timestamps
 
 named!(timestamp<&str, Timestamp, Error>,
        alt!(call!(active_date) | call!(active_datetime) | call!(active_time_range) | call!(inactive_date) | call!(inactive_datetime)));
@@ -212,15 +155,41 @@ named!(timestamp<&str, Timestamp, Error>,
 mod tests {
     use super::*;
 
-    mod time {
+    mod helpers {
         use super::*;
 
         #[test]
         fn test_time() {
-            assert_eq!(time("12:33"), Ok(("", NaiveTime::from_hms(12, 33, 0))));
+            assert_eq!(time("12:33").ok(), Some(("", NaiveTime::from_hms(12, 33, 0))));
             assert!(time("adadasd").is_err());
             assert!(time("33:99").is_err());
             assert!(time(".1199").is_err());
+        }
+
+        #[test]
+        fn test_date() {
+            assert_eq!(
+                date("2018-05-13").ok(),
+                Some(("", NaiveDate::from_ymd(2018, 05, 13)))
+            );
+            assert_eq!(
+                date("2018-05-13 Sun").ok(),
+                Some(("", NaiveDate::from_ymd(2018, 05, 13)))
+            );
+            assert!(date("adadasd").is_err());
+        }
+
+        #[test]
+        fn test_datetime() {
+            assert_eq!(
+                datetime("2018-05-13 12:40").ok(),
+                Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
+            );
+            assert_eq!(
+                datetime("2018-05-13 Sun 12:40").ok(),
+                Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
+            );
+            assert!(datetime("aasdadas").is_err());
         }
     }
 
@@ -353,102 +322,7 @@ mod tests {
 
     }
 
-    #[test]
-    fn test_in_angle_brackets() {
-        assert_eq!(in_angle_brackets("<2018-05-13>"), Ok(("", "2018-05-13")));
-        assert_eq!(in_angle_brackets("<2018>-05-13>"), Ok(("-05-13>", "2018")));
-        assert!(in_angle_brackets("fdsajhaslkjdhf").is_err());
-    }
 
-    #[test]
-    fn test_in_square_brackets() {
-        assert_eq!(in_square_brackets("[2018-05-13]"), Ok(("", "2018-05-13")));
-        assert_eq!(in_square_brackets("[2018]-05-13]"), Ok(("-05-13]", "2018")));
-        assert!(in_square_brackets("fdsajhaslkjdhf").is_err());
-    }
-
-    #[test]
-    fn test_parse_date() {
-        assert_eq!(
-            date("2018-05-13").ok(),
-            Some(("", NaiveDate::from_ymd(2018, 05, 13)))
-        );
-        assert_eq!(
-            date("2018-05-13 Sun").ok(),
-            Some(("", NaiveDate::from_ymd(2018, 05, 13)))
-        );
-        assert!(date("adadasd").is_err());
-    }
-
-    #[test]
-    fn test_parse_datetime() {
-        assert_eq!(
-            datetime("2018-05-13 12:40").ok(),
-            Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
-        );
-        assert_eq!(
-            datetime("2018-05-13 Sun 12:40").ok(),
-            Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
-        );
-        assert!(datetime("aasdadas").is_err());
-    }
-
-    //    #[test]
-    //    fn test_parse_active_timestamp() {
-    //        assert_eq!(
-    //            "<2018-06-22 Fri>".parse(),
-    //            Ok(OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 6, 22)))
-    //        );
-    //        assert_eq!(
-    //            "<2018-06-22>".parse(),
-    //            Ok(OrgTimestamp::ActiveDate(NaiveDate::from_ymd(2018, 6, 22)))
-    //        );
-    //        assert_eq!(
-    //            "<2018-06-22 Fri 14:00>".parse(),
-    //            Ok(OrgTimestamp::ActiveDateTime(naive_date_time(
-    //                2018, 6, 22, 14, 0, 0
-    //            )))
-    //        );
-    //        assert_eq!(
-    //            "<2018-06-22 14:00>".parse(),
-    //            Ok(OrgTimestamp::ActiveDateTime(naive_date_time(
-    //                2018, 6, 22, 14, 0, 0
-    //            )))
-    //        );
-    //        assert_eq!(
-    //            "<2018-04-12 13:00-14:30>".parse(),
-    //            Ok(OrgTimestamp::TimeRange {
-    //                date: NaiveDate::from_ymd(2018, 4, 12),
-    //                start_time: NaiveTime::from_hms(13, 0, 0),
-    //                end_time: NaiveTime::from_hms(14, 30, 0)
-    //            })
-    //        );
-    //    }
-    //
-    //    #[test]
-    //    fn test_parse_inactive_timestamp() {
-    //        assert_eq!(
-    //            "[2018-06-22 Fri]".parse(),
-    //            Ok(OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 6, 22)))
-    //        );
-    //        assert_eq!(
-    //            "[2018-06-22]".parse(),
-    //            Ok(OrgTimestamp::InactiveDate(NaiveDate::from_ymd(2018, 6, 22)))
-    //        );
-    //        assert_eq!(
-    //            "[2018-06-22 Fri 14:00]".parse(),
-    //            Ok(OrgTimestamp::InactiveDateTime(naive_date_time(
-    //                2018, 6, 22, 14, 0, 0
-    //            )))
-    //        );
-    //        assert_eq!(
-    //            "[2018-06-22 14:00]".parse(),
-    //            Ok(OrgTimestamp::InactiveDateTime(naive_date_time(
-    //                2018, 6, 22, 14, 0, 0
-    //            )))
-    //        );
-    //    }
-    //
     //    #[test]
     //    fn test_parse_range_timestamp() {
     //        assert_eq!(
