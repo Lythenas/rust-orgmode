@@ -48,3 +48,40 @@ macro_rules! u32_to_failure (
         u32_to_failure!($i, call!($e))
     );
 );
+
+/// Copied from nom source code and removed `u32` error type. This will compile with custom error
+/// types.
+///
+/// ```
+/// # #[macro_use] extern crate nom;
+/// # #[macro_use] extern crate orgmode;
+/// # use nom::IResult;
+/// # use nom::Context;
+/// # fn main() {
+///     fn inner(i: &str) -> nom::IResult<&str, u32, bool> {
+///         Err(nom::Err::Error(error_position!(i, nom::ErrorKind::Custom(false))))
+///     }
+///     named!(parser<&str, u32, bool>, complete!(inner));
+/// # }
+/// ```
+#[macro_export]
+macro_rules! complete (
+    ($i:expr, $submac:ident!( $($args:tt)* )) => (
+        {
+            use nom::lib::std::result::Result::*;
+            use nom::{Err,ErrorKind};
+
+            let i_ = $i.clone();
+            match $submac!(i_, $($args)*) {
+                Err(Err::Incomplete(_)) =>  {
+                    Err(Err::Error(error_position!($i, ErrorKind::Complete)))
+                },
+                rest => rest
+            }
+        }
+    );
+    ($i:expr, $f:expr) => (
+        complete!($i, call!($f));
+    );
+);
+

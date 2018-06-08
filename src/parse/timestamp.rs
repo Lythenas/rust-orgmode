@@ -40,7 +40,9 @@ named!(time<&str, NaiveTime, Error>,
     )
 );
 
-fn naive_date((year, month, day, weekday): (&str, &str, &str, Option<&str>)) -> Result<NaiveDate, &'static str> {
+fn naive_date(
+    (year, month, day, weekday): (&str, &str, &str, Option<&str>),
+) -> Result<NaiveDate, &'static str> {
     use chrono::Weekday;
 
     let year = year.parse();
@@ -57,7 +59,7 @@ fn naive_date((year, month, day, weekday): (&str, &str, &str, Option<&str>)) -> 
     }.and_then(|date| match weekday {
         None => Ok(date),
         Some(wd) if wd == date.weekday() => Ok(date),
-        _ => Err("invalid weekday in date")
+        _ => Err("invalid weekday in date"),
     })
 }
 
@@ -146,10 +148,19 @@ named!(active_time_range<&str, Timestamp, Error>,
     )
 );
 
-// parser for general timestamps
+named!(active_datetime_range<&str, Timestamp, Error>,
+    do_parse!(
+        u32_to_failure!(tag!("<")) >>
+        start: datetime >>
+        u32_to_failure!(tag!(">--<")) >>
+        end: datetime >>
+        u32_to_failure!(tag!(">")) >>
+        (Timestamp::DateTimeRange(start, end))
+    )
+);
 
 named!(timestamp<&str, Timestamp, Error>,
-       alt!(call!(active_date) | call!(active_datetime) | call!(active_time_range) | call!(inactive_date) | call!(inactive_datetime)));
+       alt!(complete!(call!(active_datetime_range)) | call!(active_date) | call!(active_datetime) | call!(active_time_range) | call!(inactive_date) | call!(inactive_datetime)));
 
 #[cfg(test)]
 mod tests {
@@ -160,7 +171,10 @@ mod tests {
 
         #[test]
         fn test_time() {
-            assert_eq!(time("12:33").ok(), Some(("", NaiveTime::from_hms(12, 33, 0))));
+            assert_eq!(
+                time("12:33").ok(),
+                Some(("", NaiveTime::from_hms(12, 33, 0)))
+            );
             assert!(time("adadasd").is_err());
             assert!(time("33:99").is_err());
             assert!(time(".1199").is_err());
@@ -190,6 +204,38 @@ mod tests {
                 Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
             );
             assert!(datetime("aasdadas").is_err());
+        }
+    }
+
+    mod active_datetimerange {
+        use super::*;
+
+        #[test]
+        fn test_same_day() {
+            assert_eq!(
+                timestamp("<2018-06-04 12:00>--<2018-06-04 14:00>").ok(),
+                Some((
+                    "",
+                    Timestamp::DateTimeRange(
+                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
+                        NaiveDate::from_ymd(2018, 06, 04).and_hms(14, 0, 0)
+                    )
+                ))
+            );
+        }
+
+        #[test]
+        fn test_different_days() {
+            assert_eq!(
+                timestamp("<2018-06-04 12:00>--<2018-08-09 11:54>").ok(),
+                Some((
+                    "",
+                    Timestamp::DateTimeRange(
+                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
+                        NaiveDate::from_ymd(2018, 08, 09).and_hms(11, 54, 0)
+                    )
+                ))
+            );
         }
     }
 
@@ -321,7 +367,6 @@ mod tests {
         }
 
     }
-
 
     //    #[test]
     //    fn test_parse_range_timestamp() {
