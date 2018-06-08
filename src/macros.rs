@@ -1,15 +1,44 @@
-/// Used as intermediate error type to convert between noms u32 and failures Error.
-#[derive(Debug, PartialEq, Eq, Fail)]
-#[fail(display = "Generic parse error: {}", _0)]
-pub struct GenericError(u32);
+use failure::Fail;
+use std::fmt::{self, Debug, Display};
 
-impl From<u32> for GenericError {
-    fn from(e: u32) -> GenericError {
+/// Used as intermediate error type for the to_failure macro.
+#[derive(Debug, PartialEq, Eq)]
+pub struct GenericError<T>(T);
+
+impl<T> Display for GenericError<T>
+where
+    T: Display + Debug + Send + Sync,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(&self.0, f)
+    }
+}
+
+impl<T> Fail for GenericError<T>
+where
+    T: 'static + Display + Debug + Send + Sync,
+{
+}
+
+impl<T> From<T> for GenericError<T>
+where
+    T: 'static + Display + Debug + Send + Sync,
+{
+    fn from(e: T) -> Self {
         GenericError(e)
     }
 }
 
-/// Translate parser result from IResult<I,O,u32> to IResult<I,O,Error> with the [`Error`] type of the
+//impl <T> From<T> for GenericError<T>
+//where
+//    T: Display + Debug + Send + Sync,
+//{
+//    fn from(e: T) -> Self {
+//        GenericError(e)
+//    }
+//}
+
+/// Translate parser result from IResult<I,O,_> to IResult<I,O,Error> with the [`Error`] type of the
 /// failure crate.
 ///
 /// ```
@@ -27,7 +56,7 @@ impl From<u32> for GenericError {
 ///     named!(err_test, add_return_error!(ErrorKind::Custom(42u32), tag!("abcd")));
 ///
 ///     named!(parser<&[u8], &[u8], Error>,
-///         u32_to_failure!(err_test)
+///         to_failure!(err_test)
 ///       );
 ///
 ///     let a = &b"efghblah"[..];
@@ -36,16 +65,16 @@ impl From<u32> for GenericError {
 /// # }
 /// ```
 #[macro_export]
-macro_rules! u32_to_failure (
+macro_rules! to_failure (
     // The $i:expr is needed because nom injects the input if you use this macro inside e.g. named!
     ($i:expr, $submac:ident!( $($args:tt)* )) => (
         {
             use $crate::macros::GenericError;
-            fix_error!($i, Error, fix_error!(GenericError, $submac!( $($args)* )))
+            fix_error!($i, Error, fix_error!(GenericError<_>, $submac!( $($args)* )))
         }
     );
     ($i:expr, $e:expr) => (
-        u32_to_failure!($i, call!($e))
+        to_failure!($i, call!($e))
     );
 );
 
@@ -84,4 +113,3 @@ macro_rules! complete (
         complete!($i, call!($f));
     );
 );
-

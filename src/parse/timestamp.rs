@@ -27,7 +27,7 @@ fn naive_time((hour, minute): (&str, &str)) -> Result<NaiveTime, &'static str> {
 }
 
 named!(time<&str, NaiveTime, Error>,
-    u32_to_failure!(
+    to_failure!(
         map_res!(
             do_parse!(
                 h: take_while_m_n!(2, 2, is_digit) >>
@@ -64,7 +64,7 @@ fn naive_date(
 }
 
 named!(date<&str, NaiveDate, Error>,
-    u32_to_failure!(
+    to_failure!(
         map_res!(
             do_parse!(
                 y: take_while_m_n!(4, 4, is_digit) >>
@@ -89,7 +89,7 @@ named!(date<&str, NaiveDate, Error>,
 named!(datetime<&str, NaiveDateTime, Error>,
     do_parse!(
         date: date >>
-        u32_to_failure!(tag!(" ")) >>
+        to_failure!(tag!(" ")) >>
         time: time >>
         (date.and_time(time))
     )
@@ -99,49 +99,49 @@ named!(datetime<&str, NaiveDateTime, Error>,
 
 named!(active_date<&str, Timestamp, Error>,
     do_parse!(
-        u32_to_failure!(tag!("<")) >>
+        to_failure!(tag!("<")) >>
         date: date >>
-        u32_to_failure!(tag!(">")) >>
+        to_failure!(tag!(">")) >>
         (Timestamp::ActiveDate(date))
     )
 );
 
 named!(inactive_date<&str, Timestamp, Error>,
     do_parse!(
-        u32_to_failure!(tag!("[")) >>
+        to_failure!(tag!("[")) >>
         date: date >>
-        u32_to_failure!(tag!("]")) >>
+        to_failure!(tag!("]")) >>
         (Timestamp::InactiveDate(date))
     )
 );
 
 named!(active_datetime<&str, Timestamp, Error>,
     do_parse!(
-        u32_to_failure!(tag!("<")) >>
+        to_failure!(tag!("<")) >>
         datetime: datetime >>
-        u32_to_failure!(tag!(">")) >>
+        to_failure!(tag!(">")) >>
         (Timestamp::ActiveDateTime(datetime))
     )
 );
 
 named!(inactive_datetime<&str, Timestamp, Error>,
     do_parse!(
-        u32_to_failure!(tag!("[")) >>
+        to_failure!(tag!("[")) >>
         datetime: datetime >>
-        u32_to_failure!(tag!("]")) >>
+        to_failure!(tag!("]")) >>
         (Timestamp::InactiveDateTime(datetime))
     )
 );
 
 named!(active_time_range<&str, Timestamp, Error>,
     do_parse!(
-        u32_to_failure!(tag!("<")) >>
+        to_failure!(tag!("<")) >>
         date: date >>
-        u32_to_failure!(tag!(" ")) >>
+        to_failure!(tag!(" ")) >>
         start_time: time >>
-        u32_to_failure!(tag!("-")) >>
+        to_failure!(tag!("-")) >>
         end_time: time >>
-        u32_to_failure!(tag!(">")) >>
+        to_failure!(tag!(">")) >>
         (Timestamp::TimeRange {
             date, start_time, end_time
         })
@@ -150,11 +150,11 @@ named!(active_time_range<&str, Timestamp, Error>,
 
 named!(active_datetime_range<&str, Timestamp, Error>,
     do_parse!(
-        u32_to_failure!(tag!("<")) >>
+        to_failure!(tag!("<")) >>
         start: datetime >>
-        u32_to_failure!(tag!(">--<")) >>
+        to_failure!(tag!(">--<")) >>
         end: datetime >>
-        u32_to_failure!(tag!(">")) >>
+        to_failure!(tag!(">")) >>
         (Timestamp::DateTimeRange(start, end))
     )
 );
