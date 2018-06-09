@@ -15,13 +15,15 @@ fn is_digit(c: char) -> bool {
 
 /// Converts the given `hour` and `minute` into a `NaiveTime` if possible or gives an error
 /// otherwise.
-fn naive_time((hour, minute): (&str, &str)) -> Result<NaiveTime, &'static str> {
+fn naive_time((hour, minute): (&str, &str)) -> Result<NaiveTime, Error> {
     let hour = hour.parse();
     let minute = minute.parse();
-    // TODO check for correctness and give useful errors
+
     match (hour, minute) {
-        (Ok(h), Ok(m)) => NaiveTime::from_hms_opt(h, m, 0).ok_or("invalid time"),
-        _ => Err("invalid time"),
+        (Ok(h), Ok(m)) => {
+            NaiveTime::from_hms_opt(h, m, 0).ok_or_else(|| format_err!("invalid time"))
+        },
+        _ => Err(format_err!("invalid time")),
     }
 }
 
@@ -44,24 +46,24 @@ named!(time<&str, NaiveTime, Error>,
 /// or gives an error otherwise.
 fn naive_date(
     (year, month, day, weekday): (&str, &str, &str, Option<&str>),
-) -> Result<NaiveDate, &'static str> {
+) -> Result<NaiveDate, Error> {
     use chrono::Weekday;
 
     let year = year.parse();
     let month = month.parse();
     let day = day.parse();
     let weekday: Option<Weekday> = match weekday {
-        Some(wd) => Some(wd.parse().map_err(|_| "invalid weekday in date")?),
+        Some(wd) => Some(wd.parse().map_err(|_| format_err!("invalid weekday in date"))?),
         _ => None,
     };
 
     match (year, month, day) {
-        (Ok(y), Ok(m), Ok(d)) => NaiveDate::from_ymd_opt(y, m, d).ok_or("invalid date"),
-        _ => Err("invalid date"),
+        (Ok(y), Ok(m), Ok(d)) => NaiveDate::from_ymd_opt(y, m, d).ok_or_else(|| format_err!("invalid date")),
+        _ => Err(format_err!("invalid date")),
     }.and_then(|date| match weekday {
         None => Ok(date),
         Some(wd) if wd == date.weekday() => Ok(date),
-        _ => Err("invalid weekday in date"),
+        _ => Err(format_err!("invalid weekday in date")),
     })
 }
 
