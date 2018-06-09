@@ -2,30 +2,30 @@ use chrono::prelude::*;
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use failure::Error;
-use regex::Regex;
 use std::str;
 
 use Timestamp;
 
-lazy_static! {
-    static ref REGEX_TIMESTAMP_RANGE: Regex = Regex::new(r"<(.+)>--<(.+)>").unwrap();
-}
-
 // Helpers for date and time etc.
 
+/// Checks if the char is a digit in the decimal system (`0` to `9`).
 fn is_digit(c: char) -> bool {
     c.is_digit(10)
 }
 
+/// Converts the given `hour` and `minute` into a `NaiveTime` if possible or gives an error
+/// otherwise.
 fn naive_time((hour, minute): (&str, &str)) -> Result<NaiveTime, &'static str> {
     let hour = hour.parse();
     let minute = minute.parse();
+    // TODO check for correctness and give useful errors
     match (hour, minute) {
         (Ok(h), Ok(m)) => NaiveTime::from_hms_opt(h, m, 0).ok_or("invalid time"),
         _ => Err("invalid time"),
     }
 }
 
+/// Parses a time string in the following format: `12:30` and returns a `NativeTime`.
 named!(time<&str, NaiveTime, Error>,
     to_failure!(
         map_res!(
@@ -40,6 +40,8 @@ named!(time<&str, NaiveTime, Error>,
     )
 );
 
+/// Converts the given `year`, `month`, `day` and optional `weekday` into a `NaiveDate` if possible
+/// or gives an error otherwise.
 fn naive_date(
     (year, month, day, weekday): (&str, &str, &str, Option<&str>),
 ) -> Result<NaiveDate, &'static str> {
@@ -63,6 +65,8 @@ fn naive_date(
     })
 }
 
+/// Parses a date string in the following format: `2018-06-30` or `2018-06-30 Sat` and returns a
+/// `NaiveDate`.
 named!(date<&str, NaiveDate, Error>,
     to_failure!(
         map_res!(
@@ -75,7 +79,8 @@ named!(date<&str, NaiveDate, Error>,
                 wd: opt!(complete!(
                     do_parse!(
                         tag!(" ") >>
-                        wd: alt!(tag!("Mon") | tag!("Tue") | tag!("Wed") | tag!("Thu") | tag!("Fri") | tag!("Sat") | tag!("Sun")) >>
+                        wd: alt!(tag!("Mon") | tag!("Tue") | tag!("Wed") | tag!("Thu") | 
+                                tag!("Fri") | tag!("Sat") | tag!("Sun")) >>
                         (wd)
                     )
                 )) >>
@@ -86,6 +91,8 @@ named!(date<&str, NaiveDate, Error>,
     )
 );
 
+/// Parses a datetime string in the following format: `2018-06-30 Sat 12:30` (weekday optional) and
+/// returns a `NaiveDateTime`.
 named!(datetime<&str, NaiveDateTime, Error>,
     do_parse!(
         date: date >>
@@ -95,8 +102,10 @@ named!(datetime<&str, NaiveDateTime, Error>,
     )
 );
 
-// combinators to parse actual timestamps
+// Combinators to parse actual timestamps
 
+/// Parses a active date string in the following format: `<2018-06-30 Sat>` (weekday optional) and
+/// returns a `Timestamp::ActiveDate`.
 named!(active_date<&str, Timestamp, Error>,
     do_parse!(
         to_failure!(tag!("<")) >>
@@ -106,6 +115,8 @@ named!(active_date<&str, Timestamp, Error>,
     )
 );
 
+/// Parses a inactive date string in the following format: `[2018-06-30 Sat]` (weekday optional) and
+/// returns a `Timestamp::InactiveDate`.
 named!(inactive_date<&str, Timestamp, Error>,
     do_parse!(
         to_failure!(tag!("[")) >>
@@ -115,6 +126,8 @@ named!(inactive_date<&str, Timestamp, Error>,
     )
 );
 
+/// Parses a active datetime string in the following format: `<2018-06-30 Sat 12:30>` (weekday optional) and
+/// returns a `Timestamp::ActiveDateTime`.
 named!(active_datetime<&str, Timestamp, Error>,
     do_parse!(
         to_failure!(tag!("<")) >>
@@ -124,6 +137,8 @@ named!(active_datetime<&str, Timestamp, Error>,
     )
 );
 
+/// Parses a inactive datetime string in the following format: `[2018-06-30 Sat 12:30]` (weekday optional) and
+/// returns a `Timestamp::InactiveDateTime`.
 named!(inactive_datetime<&str, Timestamp, Error>,
     do_parse!(
         to_failure!(tag!("[")) >>
@@ -133,6 +148,8 @@ named!(inactive_datetime<&str, Timestamp, Error>,
     )
 );
 
+/// Parses a active date with time range string in the following format: `<2018-06-30 Sat 12:30-14:00>`
+/// (weekday optional) and returns a `Timestamp::TimeRange`.
 named!(active_time_range<&str, Timestamp, Error>,
     do_parse!(
         to_failure!(tag!("<")) >>
@@ -148,6 +165,8 @@ named!(active_time_range<&str, Timestamp, Error>,
     )
 );
 
+/// Parses a active datetime range string in the following format: `<2018-06-30 Sat 12:30>--<2018-07-01 Sun 12:00>`
+/// (weekday optional) and returns a `Timestamp::ActiveDateTime`.
 named!(active_datetime_range<&str, Timestamp, Error>,
     do_parse!(
         to_failure!(tag!("<")) >>
@@ -160,7 +179,8 @@ named!(active_datetime_range<&str, Timestamp, Error>,
 );
 
 named!(timestamp<&str, Timestamp, Error>,
-       alt!(complete!(call!(active_datetime_range)) | call!(active_date) | call!(active_datetime) | call!(active_time_range) | call!(inactive_date) | call!(inactive_datetime)));
+       alt!(complete!(call!(active_datetime_range)) | call!(active_date) | call!(active_datetime) |
+            call!(active_time_range) | call!(inactive_date) | call!(inactive_datetime)));
 
 #[cfg(test)]
 mod tests {
@@ -256,6 +276,7 @@ mod tests {
                 ))
             );
         }
+
     }
 
     mod active_datetime {
@@ -368,35 +389,4 @@ mod tests {
 
     }
 
-    //    #[test]
-    //    fn test_parse_range_timestamp() {
-    //        assert_eq!(
-    //            "<2018-06-22 Fri>--<2018-06-23 Sun>".parse(),
-    //            Ok(OrgTimestamp::DateRange(
-    //                NaiveDate::from_ymd(2018, 6, 22),
-    //                NaiveDate::from_ymd(2018, 6, 23)
-    //            ))
-    //        );
-    //        assert_eq!(
-    //            "<2018-06-22 Fri 20:00>--<2018-06-23 Sun>".parse(),
-    //            Ok(OrgTimestamp::DateTimeRange(
-    //                NaiveDate::from_ymd(2018, 6, 22).and_hms(20, 0, 0),
-    //                NaiveDate::from_ymd(2018, 6, 23).and_hms(23, 59, 59)
-    //            ))
-    //        );
-    //        assert_eq!(
-    //            "<2018-06-22 Fri>--<2018-06-23 Sun 12:30>".parse(),
-    //            Ok(OrgTimestamp::DateTimeRange(
-    //                NaiveDate::from_ymd(2018, 6, 22).and_hms(0, 0, 0),
-    //                NaiveDate::from_ymd(2018, 6, 23).and_hms(12, 30, 0)
-    //            ))
-    //        );
-    //        assert_eq!(
-    //            "<2018-06-22 Fri 13:00>--<2018-06-23 Sun 13:00>".parse(),
-    //            Ok(OrgTimestamp::DateTimeRange(
-    //                NaiveDate::from_ymd(2018, 6, 22).and_hms(13, 0, 0),
-    //                NaiveDate::from_ymd(2018, 6, 23).and_hms(13, 0, 0)
-    //            ))
-    //        );
-    //    }
 }
