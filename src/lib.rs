@@ -1,3 +1,5 @@
+#![feature(try_from)]
+
 #[macro_use]
 extern crate lazy_static;
 extern crate chrono;
@@ -66,18 +68,18 @@ pub struct OrgNode {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Timestamp {
     InactiveDate(NaiveDate),
-    InactiveDateTime(NaiveDateTime),
+    InactiveDatetime(NaiveDateTime),
     ActiveDate(NaiveDate),
-    ActiveDateTime(NaiveDateTime),
+    ActiveDatetime(NaiveDateTime),
     TimeRange {
         date: NaiveDate,
         start_time: NaiveTime,
         end_time: NaiveTime,
     },
     DateRange(NaiveDate, NaiveDate),
-    DateTimeRange(NaiveDateTime, NaiveDateTime),
+    DatetimeRange(NaiveDateTime, NaiveDateTime),
     RepeatingDate(NaiveDate, Duration),
-    RepeatingDateTime(NaiveDateTime, Duration),
+    RepeatingDatetime(NaiveDateTime, Duration),
 }
 
 impl Timestamp {
@@ -105,7 +107,7 @@ impl Timestamp {
     pub fn is_active(&self) -> bool {
         match self {
             Timestamp::InactiveDate(_) => false,
-            Timestamp::InactiveDateTime(_) => false,
+            Timestamp::InactiveDatetime(_) => false,
             _ => true,
         }
     }

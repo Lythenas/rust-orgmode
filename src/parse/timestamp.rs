@@ -3,8 +3,11 @@ use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use failure::Error;
 use std::str;
+use std::convert::TryFrom;
+use std::fmt;
 
 use Timestamp;
+
 
 // Helpers for date and time etc.
 
@@ -22,7 +25,7 @@ fn naive_time((hour, minute): (&str, &str)) -> Result<NaiveTime, Error> {
     match (hour, minute) {
         (Ok(h), Ok(m)) => {
             NaiveTime::from_hms_opt(h, m, 0).ok_or_else(|| format_err!("invalid time"))
-        },
+        }
         _ => Err(format_err!("invalid time")),
     }
 }
@@ -53,12 +56,17 @@ fn naive_date(
     let month = month.parse();
     let day = day.parse();
     let weekday: Option<Weekday> = match weekday {
-        Some(wd) => Some(wd.parse().map_err(|_| format_err!("invalid weekday in date"))?),
+        Some(wd) => Some(
+            wd.parse()
+                .map_err(|_| format_err!("invalid weekday in date"))?,
+        ),
         _ => None,
     };
 
     match (year, month, day) {
-        (Ok(y), Ok(m), Ok(d)) => NaiveDate::from_ymd_opt(y, m, d).ok_or_else(|| format_err!("invalid date")),
+        (Ok(y), Ok(m), Ok(d)) => {
+            NaiveDate::from_ymd_opt(y, m, d).ok_or_else(|| format_err!("invalid date"))
+        }
         _ => Err(format_err!("invalid date")),
     }.and_then(|date| match weekday {
         None => Ok(date),
@@ -104,85 +112,157 @@ named!(datetime<&str, NaiveDateTime, Error>,
     )
 );
 
-// Combinators to parse actual timestamps
+#[derive(Debug, PartialEq, Fail)]
+enum TimestampParseError {
+    InactiveDateWithTimeRange
+}
 
-/// Parses a active date string in the following format: `<2018-06-30 Sat>` (weekday optional) and
-/// returns a `Timestamp::ActiveDate`.
-named!(active_date<&str, Timestamp, Error>,
-    do_parse!(
-        to_failure!(tag!("<")) >>
+impl fmt::Display for TimestampParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::TimestampParseError::*;
+        match self {
+            InactiveDateWithTimeRange => write!(f, "Found inactive date with a time range. Not allowed.")
+        }
+    }
+}
+
+/// Helper struct for easier parsing.
+#[derive(Debug, PartialEq)]
+struct Ts {
+    active: bool,
+    variant: TsVariant,
+}
+
+impl <'a> TryFrom<(&'a str, TsVariant, &'a str, Option<TsVariant>)> for Ts {
+    type Error = ();
+
+    fn try_from((prefix, variant, suffix, other): (&str, TsVariant, &str, Option<TsVariant>)) -> Result<Self, Self::Error> {
+        match (prefix, suffix) {
+            ("<", ">") => Ok(true),
+            ("[", "]") => Ok(false),
+            _ => return Err(()),
+        }.and_then(|active| {
+            if !active {
+                match variant {
+                    TsVariant::DateWithTimeRange(_, _, _) => return Err(()),
+                    TsVariant::DatetimeRange(_, _) => return Err(()),
+                    _ => ()
+                };
+            }
+            Ok(Ts { active, variant })
+        }).and_then(|first| Ok(match (first, other) {
+            (Ts { active: true, variant: TsVariant::Datetime(start) }, Some(TsVariant::Datetime(end))) => Ts { active: true, variant: TsVariant::DatetimeRange(start, end) },
+            (first, None) => first,
+            _ => return Err(())
+        }))
+    }
+}
+
+impl TryFrom<Ts> for Timestamp {
+    type Error = Error;
+
+    fn try_from(ts: Ts) -> Result<Self, Self::Error> {
+        let Ts { active, variant, } = ts;
+
+        if active {
+            Ok(match variant {
+                TsVariant::Date(date) => Timestamp::ActiveDate(date),
+                TsVariant::Datetime(datetime) => Timestamp::ActiveDatetime(datetime),
+                TsVariant::DateWithTimeRange(date, start_time, end_time) => Timestamp::TimeRange {
+                    date,
+                    start_time,
+                    end_time,
+                },
+                TsVariant::DatetimeRange(start_datetime, end_datetime) => Timestamp::DatetimeRange(start_datetime, end_datetime),
+            })
+        } else {
+            Ok(match variant {
+                TsVariant::Date(date) => Timestamp::InactiveDate(date),
+                TsVariant::Datetime(datetime) => Timestamp::InactiveDatetime(datetime),
+                TsVariant::DateWithTimeRange(_, _, _) => return Err(TimestampParseError::InactiveDateWithTimeRange.into()),
+                TsVariant::DatetimeRange(start_datetime, end_datetime) => Timestamp::DatetimeRange(start_datetime, end_datetime),
+            })
+        }
+    }
+}
+
+//Timestamp::InactiveDate(NaiveDate),
+//Timestamp::InactiveDateTime(NaiveDateTime),
+//Timestamp::ActiveDate(NaiveDate),
+//Timestamp::ActiveDateTime(NaiveDateTime),
+//Timestamp::TimeRange {
+//    date: NaiveDate,
+//    start_time: NaiveTime,
+//    end_time: NaiveTime,
+//},
+//Timestamp::DateRange(NaiveDate, NaiveDate),
+//Timestamp::DatetimeRange(NaiveDateTime, NaiveDateTime),
+//Timestamp::RepeatingDate(NaiveDate, Duration),
+//Timestamp::RepeatingDatetime(NaiveDateTime, Duration),
+
+/// Helper enum for easier parsing.
+#[derive(Debug, PartialEq)]
+enum TsVariant {
+    Date(NaiveDate),
+    Datetime(NaiveDateTime),
+    DateWithTimeRange(NaiveDate, NaiveTime, NaiveTime),
+    DatetimeRange(NaiveDateTime, NaiveDateTime),
+}
+
+impl TsVariant {
+    fn from(date: NaiveDate, time_range: Option<(NaiveTime, Option<NaiveTime>)>) -> Self {
+        match time_range {
+            None => TsVariant::Date(date),
+            Some((time, None)) => TsVariant::Datetime(date.and_time(time)),
+            Some((start_time, Some(end_time))) => {
+                TsVariant::DateWithTimeRange(date, start_time, end_time)
+            }
+        }
+    }
+}
+
+named!(ts<&str, Ts, Error>,
+    map_res!(
+        do_parse!(
+            prefix: to_failure!(alt!(tag!("<") | tag!("["))) >>
+            tsv: tsvariant >>
+            suffix: to_failure!(alt!(tag!(">") | tag!("]"))) >>
+            // TODO repeat
+            other: to_failure!(opt!(complete!(do_parse!(
+                to_failure!(tag!("--<")) >>
+                tsv: tsvariant >>
+                to_failure!(tag!(">")) >>
+                (tsv)
+            )))) >>
+            ((prefix, tsv, suffix, other))
+        ),
+        Ts::try_from
+    )
+);
+
+named!(tsvariant<&str, TsVariant, Error>,
+    to_failure!(do_parse!(
         date: date >>
-        to_failure!(tag!(">")) >>
-        (Timestamp::ActiveDate(date))
-    )
-);
-
-/// Parses a inactive date string in the following format: `[2018-06-30 Sat]` (weekday optional) and
-/// returns a `Timestamp::InactiveDate`.
-named!(inactive_date<&str, Timestamp, Error>,
-    do_parse!(
-        to_failure!(tag!("[")) >>
-        date: date >>
-        to_failure!(tag!("]")) >>
-        (Timestamp::InactiveDate(date))
-    )
-);
-
-/// Parses a active datetime string in the following format: `<2018-06-30 Sat 12:30>` (weekday optional) and
-/// returns a `Timestamp::ActiveDateTime`.
-named!(active_datetime<&str, Timestamp, Error>,
-    do_parse!(
-        to_failure!(tag!("<")) >>
-        datetime: datetime >>
-        to_failure!(tag!(">")) >>
-        (Timestamp::ActiveDateTime(datetime))
-    )
-);
-
-/// Parses a inactive datetime string in the following format: `[2018-06-30 Sat 12:30]` (weekday optional) and
-/// returns a `Timestamp::InactiveDateTime`.
-named!(inactive_datetime<&str, Timestamp, Error>,
-    do_parse!(
-        to_failure!(tag!("[")) >>
-        datetime: datetime >>
-        to_failure!(tag!("]")) >>
-        (Timestamp::InactiveDateTime(datetime))
-    )
-);
-
-/// Parses a active date with time range string in the following format: `<2018-06-30 Sat 12:30-14:00>`
-/// (weekday optional) and returns a `Timestamp::TimeRange`.
-named!(active_time_range<&str, Timestamp, Error>,
-    do_parse!(
-        to_failure!(tag!("<")) >>
-        date: date >>
-        to_failure!(tag!(" ")) >>
-        start_time: time >>
-        to_failure!(tag!("-")) >>
-        end_time: time >>
-        to_failure!(tag!(">")) >>
-        (Timestamp::TimeRange {
-            date, start_time, end_time
-        })
-    )
-);
-
-/// Parses a active datetime range string in the following format: `<2018-06-30 Sat 12:30>--<2018-07-01 Sun 12:00>`
-/// (weekday optional) and returns a `Timestamp::ActiveDateTime`.
-named!(active_datetime_range<&str, Timestamp, Error>,
-    do_parse!(
-        to_failure!(tag!("<")) >>
-        start: datetime >>
-        to_failure!(tag!(">--<")) >>
-        end: datetime >>
-        to_failure!(tag!(">")) >>
-        (Timestamp::DateTimeRange(start, end))
-    )
+        time_range: to_failure!(opt!(do_parse!(
+            to_failure!(tag!(" ")) >>
+            start_time: time >>
+            end_time: to_failure!(opt!(do_parse!(
+                to_failure!(tag!("-")) >>
+                time: time >>
+                (time)
+            ))) >>
+            ((start_time, end_time))
+        ))) >>
+        (TsVariant::from(date, time_range))
+    ))
 );
 
 named!(timestamp<&str, Timestamp, Error>,
-       alt!(complete!(call!(active_datetime_range)) | call!(active_date) | call!(active_datetime) |
-            call!(active_time_range) | call!(inactive_date) | call!(inactive_datetime)));
+    map_res!(
+        ts,
+        TryFrom::try_from
+    )
+);
 
 #[cfg(test)]
 mod tests {
@@ -238,7 +318,7 @@ mod tests {
                 timestamp("<2018-06-04 12:00>--<2018-06-04 14:00>").ok(),
                 Some((
                     "",
-                    Timestamp::DateTimeRange(
+                    Timestamp::DatetimeRange(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(14, 0, 0)
                     )
@@ -252,7 +332,7 @@ mod tests {
                 timestamp("<2018-06-04 12:00>--<2018-08-09 11:54>").ok(),
                 Some((
                     "",
-                    Timestamp::DateTimeRange(
+                    Timestamp::DatetimeRange(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
                         NaiveDate::from_ymd(2018, 08, 09).and_hms(11, 54, 0)
                     )
@@ -290,7 +370,7 @@ mod tests {
                 timestamp("<2018-06-13 Wed 20:11>").ok(),
                 Some((
                     "",
-                    Timestamp::ActiveDateTime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0))
+                    Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0))
                 ))
             );
             assert!(timestamp("<2018-06-13 Mon 11:33>").is_err());
@@ -302,7 +382,7 @@ mod tests {
                 timestamp("<2018-06-14 11:45>").ok(),
                 Some((
                     "",
-                    Timestamp::ActiveDateTime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0))
+                    Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0))
                 ))
             );
         }
@@ -340,7 +420,7 @@ mod tests {
                 timestamp("[2018-06-13 Wed 11:13]").ok(),
                 Some((
                     "",
-                    Timestamp::InactiveDateTime(
+                    Timestamp::InactiveDatetime(
                         NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0)
                     )
                 ))
@@ -354,7 +434,7 @@ mod tests {
                 timestamp("[2018-06-13 11:39]").ok(),
                 Some((
                     "",
-                    Timestamp::InactiveDateTime(
+                    Timestamp::InactiveDatetime(
                         NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 39, 0)
                     )
                 ))
