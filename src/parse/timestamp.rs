@@ -7,6 +7,7 @@ use std::convert::TryFrom;
 use std::fmt;
 
 use Timestamp;
+use Repeater;
 
 
 // Helpers for date and time etc.
@@ -131,6 +132,7 @@ impl fmt::Display for TimestampParseError {
 struct Ts {
     active: bool,
     variant: TsVariant,
+    repeater: Option<Repeater>,
 }
 
 impl <'a> TryFrom<(&'a str, TsVariant, &'a str, Option<TsVariant>)> for Ts {
@@ -149,9 +151,9 @@ impl <'a> TryFrom<(&'a str, TsVariant, &'a str, Option<TsVariant>)> for Ts {
                     _ => ()
                 };
             }
-            Ok(Ts { active, variant })
+            Ok(Ts { active, variant, repeater: None })
         }).and_then(|first| Ok(match (first, other) {
-            (Ts { active: true, variant: TsVariant::Datetime(start) }, Some(TsVariant::Datetime(end))) => Ts { active: true, variant: TsVariant::DatetimeRange(start, end) },
+            (Ts { active: true, variant: TsVariant::Datetime(start), repeater }, Some(TsVariant::Datetime(end))) => Ts { active: true, variant: TsVariant::DatetimeRange(start, end), repeater },
             (first, None) => first,
             _ => return Err(())
         }))
@@ -162,7 +164,7 @@ impl TryFrom<Ts> for Timestamp {
     type Error = Error;
 
     fn try_from(ts: Ts) -> Result<Self, Self::Error> {
-        let Ts { active, variant, } = ts;
+        let Ts { active, variant, repeater } = ts;
 
         if active {
             Ok(match variant {

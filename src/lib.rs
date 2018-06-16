@@ -64,6 +64,29 @@ pub struct OrgNode {
     nodes: Vec<OrgNode>,
 }
 
+/// Represents the action that is taken when you mark a task with a repeater as `DONE`.
+///
+/// Contains the amount of time to use when repeating (`duration`) and the strategy 
+/// to use when applying the repeat (`strategy`).
+#[derive(Debug, PartialEq, Eq)]
+pub struct Repeater {
+    duration: Duration,
+    strategy: RepeatStrategy,
+}
+
+/// The different repeat strategies that can be used.
+///
+/// * `AddOnce` will add the repeat duration to the date once.
+/// * `AddUntilFuture` will add the repeat duration to the task date (at least once) until the
+///   date is in the future.
+/// * `AddToNow` will add the repeat duration to the current time.
+#[derive(Debug, PartialEq, Eq)]
+pub enum RepeatStrategy {
+    AddOnce,
+    AddUntilFuture,
+    AddToNow,
+}
+
 /// Represents a date in an org file. See [https://orgmode.org/manual/Timestamps.html].
 #[derive(Debug, PartialEq, Eq)]
 pub enum Timestamp {
@@ -78,8 +101,8 @@ pub enum Timestamp {
     },
     DateRange(NaiveDate, NaiveDate),
     DatetimeRange(NaiveDateTime, NaiveDateTime),
-    RepeatingDate(NaiveDate, Duration),
-    RepeatingDatetime(NaiveDateTime, Duration),
+    RepeatingDate(NaiveDate, Repeater),
+    RepeatingDatetime(NaiveDateTime, Repeater),
 }
 
 impl Timestamp {
