@@ -66,7 +66,7 @@ pub struct OrgNode {
 
 /// Represents the action that is taken when you mark a task with a repeater as `DONE`.
 ///
-/// Contains the amount of time to use when repeating (`duration`) and the strategy 
+/// Contains the amount of time to use when repeating (`duration`) and the strategy
 /// to use when applying the repeat (`strategy`).
 #[derive(Debug, PartialEq, Eq)]
 pub struct Repeater {

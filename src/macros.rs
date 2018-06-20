@@ -14,11 +14,7 @@ where
     }
 }
 
-impl<T> Fail for GenericError<T>
-where
-    T: 'static + Display + Debug + Send + Sync,
-{
-}
+impl<T> Fail for GenericError<T> where T: 'static + Display + Debug + Send + Sync {}
 
 impl<T> From<T> for GenericError<T>
 where

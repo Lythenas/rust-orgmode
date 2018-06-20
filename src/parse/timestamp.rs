@@ -1,14 +1,13 @@
 use chrono::prelude::*;
-use chrono::NaiveDate;
-use chrono::NaiveDateTime;
+use chrono::{Duration, NaiveDate, NaiveDateTime};
 use failure::Error;
-use std::str;
 use std::convert::TryFrom;
 use std::fmt;
+use std::str;
 
-use Timestamp;
+use RepeatStrategy;
 use Repeater;
-
+use Timestamp;
 
 // Helpers for date and time etc.
 
@@ -115,14 +114,26 @@ named!(datetime<&str, NaiveDateTime, Error>,
 
 #[derive(Debug, PartialEq, Fail)]
 enum TimestampParseError {
-    InactiveDateWithTimeRange
+    InactiveDateWithTimeRange,
+    InactiveDateWithRepeater,
+    RangedDateWithRepeater,
+    InvalidRepeater,
 }
 
 impl fmt::Display for TimestampParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::TimestampParseError::*;
         match self {
-            InactiveDateWithTimeRange => write!(f, "Found inactive date with a time range. Not allowed.")
+            InactiveDateWithTimeRange => {
+                write!(f, "Found inactive date with a time range. Not allowed.")
+            }
+            InactiveDateWithRepeater => {
+                write!(f, "Found inactive date with a repeater. Not allowed.")
+            }
+            RangedDateWithRepeater => {
+                write!(f, "Found time/datetime range with repeater. Not allowed.")
+            }
+            InvalidRepeater => write!(f, "Found invalid repeater."),
         }
     }
 }
@@ -135,10 +146,26 @@ struct Ts {
     repeater: Option<Repeater>,
 }
 
-impl <'a> TryFrom<(&'a str, TsVariant, &'a str, Option<TsVariant>)> for Ts {
+impl<'a>
+    TryFrom<(
+        &'a str,
+        TsVariant,
+        Option<Repeater>,
+        &'a str,
+        Option<TsVariant>,
+    )> for Ts
+{
     type Error = ();
 
-    fn try_from((prefix, variant, suffix, other): (&str, TsVariant, &str, Option<TsVariant>)) -> Result<Self, Self::Error> {
+    fn try_from(
+        (prefix, variant, repeater, suffix, other): (
+            &str,
+            TsVariant,
+            Option<Repeater>,
+            &str,
+            Option<TsVariant>,
+        ),
+    ) -> Result<Self, Self::Error> {
         match (prefix, suffix) {
             ("<", ">") => Ok(true),
             ("[", "]") => Ok(false),
@@ -148,15 +175,33 @@ impl <'a> TryFrom<(&'a str, TsVariant, &'a str, Option<TsVariant>)> for Ts {
                 match variant {
                     TsVariant::DateWithTimeRange(_, _, _) => return Err(()),
                     TsVariant::DatetimeRange(_, _) => return Err(()),
-                    _ => ()
+                    _ => (),
                 };
             }
-            Ok(Ts { active, variant, repeater: None })
-        }).and_then(|first| Ok(match (first, other) {
-            (Ts { active: true, variant: TsVariant::Datetime(start), repeater }, Some(TsVariant::Datetime(end))) => Ts { active: true, variant: TsVariant::DatetimeRange(start, end), repeater },
-            (first, None) => first,
-            _ => return Err(())
-        }))
+            Ok(Ts {
+                active,
+                variant,
+                repeater,
+            })
+        })
+            .and_then(|first| {
+                Ok(match (first, other) {
+                    (
+                        Ts {
+                            active: true,
+                            variant: TsVariant::Datetime(start),
+                            repeater,
+                        },
+                        Some(TsVariant::Datetime(end)),
+                    ) => Ts {
+                        active: true,
+                        variant: TsVariant::DatetimeRange(start, end),
+                        repeater,
+                    },
+                    (first, None) => first,
+                    _ => return Err(()),
+                })
+            })
     }
 }
 
@@ -164,7 +209,25 @@ impl TryFrom<Ts> for Timestamp {
     type Error = Error;
 
     fn try_from(ts: Ts) -> Result<Self, Self::Error> {
-        let Ts { active, variant, repeater } = ts;
+        let Ts {
+            active,
+            variant,
+            repeater,
+        } = ts;
+
+        if let Some(repeater) = repeater {
+            if !active {
+                return Err(TimestampParseError::InactiveDateWithRepeater.into());
+            }
+
+            return match variant {
+                TsVariant::Date(date) => Ok(Timestamp::RepeatingDate(date, repeater)),
+                TsVariant::Datetime(datetime) => {
+                    Ok(Timestamp::RepeatingDatetime(datetime, repeater))
+                }
+                _ => Err(TimestampParseError::RangedDateWithRepeater.into()),
+            };
+        }
 
         if active {
             Ok(match variant {
@@ -175,32 +238,27 @@ impl TryFrom<Ts> for Timestamp {
                     start_time,
                     end_time,
                 },
-                TsVariant::DatetimeRange(start_datetime, end_datetime) => Timestamp::DatetimeRange(start_datetime, end_datetime),
+                TsVariant::DatetimeRange(start_datetime, end_datetime) => {
+                    Timestamp::DatetimeRange(start_datetime, end_datetime)
+                }
             })
         } else {
             Ok(match variant {
                 TsVariant::Date(date) => Timestamp::InactiveDate(date),
                 TsVariant::Datetime(datetime) => Timestamp::InactiveDatetime(datetime),
-                TsVariant::DateWithTimeRange(_, _, _) => return Err(TimestampParseError::InactiveDateWithTimeRange.into()),
-                TsVariant::DatetimeRange(start_datetime, end_datetime) => Timestamp::DatetimeRange(start_datetime, end_datetime),
+                TsVariant::DateWithTimeRange(_, _, _) => {
+                    return Err(TimestampParseError::InactiveDateWithTimeRange.into())
+                }
+                TsVariant::DatetimeRange(start_datetime, end_datetime) => {
+                    Timestamp::DatetimeRange(start_datetime, end_datetime)
+                }
             })
         }
     }
 }
 
-//Timestamp::InactiveDate(NaiveDate),
-//Timestamp::InactiveDateTime(NaiveDateTime),
-//Timestamp::ActiveDate(NaiveDate),
-//Timestamp::ActiveDateTime(NaiveDateTime),
-//Timestamp::TimeRange {
-//    date: NaiveDate,
-//    start_time: NaiveTime,
-//    end_time: NaiveTime,
-//},
-//Timestamp::DateRange(NaiveDate, NaiveDate),
-//Timestamp::DatetimeRange(NaiveDateTime, NaiveDateTime),
-//Timestamp::RepeatingDate(NaiveDate, Duration),
-//Timestamp::RepeatingDatetime(NaiveDateTime, Duration),
+//Timestamp::RepeatingDate(NaiveDate, Repeater),
+//Timestamp::RepeatingDatetime(NaiveDateTime, Repeater),
 
 /// Helper enum for easier parsing.
 #[derive(Debug, PartialEq)]
@@ -228,19 +286,63 @@ named!(ts<&str, Ts, Error>,
         do_parse!(
             prefix: to_failure!(alt!(tag!("<") | tag!("["))) >>
             tsv: tsvariant >>
+            repeater: opt!(repeater) >>
             suffix: to_failure!(alt!(tag!(">") | tag!("]"))) >>
-            // TODO repeat
             other: to_failure!(opt!(complete!(do_parse!(
                 to_failure!(tag!("--<")) >>
                 tsv: tsvariant >>
                 to_failure!(tag!(">")) >>
                 (tsv)
             )))) >>
-            ((prefix, tsv, suffix, other))
+            ((prefix, tsv, repeater, suffix, other))
         ),
         Ts::try_from
     )
 );
+
+impl<'a> TryFrom<(RepeatStrategy, &'a str, &'a str)> for Repeater {
+    type Error = Error;
+
+    fn try_from(
+        (strategy, amount, unit): (RepeatStrategy, &'a str, &'a str),
+    ) -> Result<Self, Self::Error> {
+        let amount = amount.parse()?;
+        let duration = match unit {
+            "y" => unimplemented!("Can't create duration from years"),
+            "m" => unimplemented!("Can't create duration from months"),
+            "w" => Duration::weeks(amount),
+            "d" => Duration::days(amount),
+            "h" => Duration::hours(amount),
+            _ => return Err(TimestampParseError::InvalidRepeater.into()),
+        };
+        Ok(Repeater { duration, strategy })
+    }
+}
+
+named!(repeater<&str, Repeater, Error>,
+    to_failure!(map_res!(do_parse!(
+        to_failure!(tag!(" ")) >>
+        strategy: repeat_strategy >>
+        amount: to_failure!(take_while!(is_digit)) >>
+        unit: to_failure!(take!(1)) >>
+        ((strategy, amount, unit))
+    ), Repeater::try_from))
+);
+
+named!(repeat_strategy<&str, RepeatStrategy, Error>,
+    to_failure!(
+        map_res!(alt!(tag!("++") | tag!("+") | tag!(".+")), to_strategy)
+    )
+);
+
+fn to_strategy(s: &str) -> Result<RepeatStrategy, Error> {
+    match s {
+        "+" => Ok(RepeatStrategy::AddOnce),
+        "++" => Ok(RepeatStrategy::AddUntilFuture),
+        ".+" => Ok(RepeatStrategy::AddToNow),
+        _ => Err(TimestampParseError::InvalidRepeater.into()),
+    }
+}
 
 named!(tsvariant<&str, TsVariant, Error>,
     to_failure!(do_parse!(
@@ -308,6 +410,27 @@ mod tests {
                 Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
             );
             assert!(datetime("aasdadas").is_err());
+        }
+    }
+
+    mod repeating_date {
+        use super::*;
+
+        #[test]
+        fn test_add_once_with_date() {
+            assert_eq!(
+                timestamp("<2018-06-04 +1w>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            duration: Duration::weeks(1),
+                            strategy: RepeatStrategy::AddOnce
+                        }
+                    )
+                ))
+            );
         }
     }
 
