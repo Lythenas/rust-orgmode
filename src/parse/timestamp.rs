@@ -89,8 +89,9 @@ named!(date<&str, NaiveDate, Error>,
                 wd: opt!(complete!(
                     do_parse!(
                         tag!(" ") >>
-                        wd: alt!(tag!("Mon") | tag!("Tue") | tag!("Wed") | tag!("Thu") | 
-                                tag!("Fri") | tag!("Sat") | tag!("Sun")) >>
+                        wd: alt!(tag!("Mon") | tag!("Tue") | tag!("Wed")
+                                 | tag!("Thu") | tag!("Fri")
+                                 | tag!("Sat") | tag!("Sun")) >>
                         (wd)
                     )
                 )) >>
@@ -417,7 +418,20 @@ mod tests {
         use super::*;
 
         #[test]
-        fn test_add_once_with_date() {
+        fn test_add_once() {
+            assert_eq!(
+                timestamp("<2018-06-04 12:55 +1w>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDatetime(
+                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
+                        Repeater {
+                            duration: Duration::weeks(1),
+                            strategy: RepeatStrategy::AddOnce
+                        }
+                    )
+                ))
+            );
             assert_eq!(
                 timestamp("<2018-06-04 +1w>").ok(),
                 Some((
@@ -431,6 +445,147 @@ mod tests {
                     )
                 ))
             );
+            assert_eq!(
+                timestamp("<2018-06-04 +20d>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            duration: Duration::days(20),
+                            strategy: RepeatStrategy::AddOnce
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 +5h>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            duration: Duration::hours(5),
+                            strategy: RepeatStrategy::AddOnce
+                        }
+                    )
+                ))
+            );
+            // TODO month and year
+        }
+
+        #[test]
+        fn test_add_until_future() {
+            assert_eq!(
+                timestamp("<2018-06-04 12:55 ++1w>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDatetime(
+                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
+                        Repeater {
+                            duration: Duration::weeks(1),
+                            strategy: RepeatStrategy::AddUntilFuture
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 ++1w>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            duration: Duration::weeks(1),
+                            strategy: RepeatStrategy::AddUntilFuture
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 ++20d>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            duration: Duration::days(20),
+                            strategy: RepeatStrategy::AddUntilFuture
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 ++5h>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            duration: Duration::hours(5),
+                            strategy: RepeatStrategy::AddUntilFuture
+                        }
+                    )
+                ))
+            );
+            // TODO year and month
+        }
+
+        #[test]
+        fn test_add_to_now() {
+            assert_eq!(
+                timestamp("<2018-06-04 12:55 .+1w>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDatetime(
+                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
+                        Repeater {
+                            duration: Duration::weeks(1),
+                            strategy: RepeatStrategy::AddToNow
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 .+1w>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            duration: Duration::weeks(1),
+                            strategy: RepeatStrategy::AddToNow
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 .+20d>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            duration: Duration::days(20),
+                            strategy: RepeatStrategy::AddToNow
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 .+5h>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            duration: Duration::hours(5),
+                            strategy: RepeatStrategy::AddToNow
+                        }
+                    )
+                ))
+            );
+            // TODO year and month
         }
     }
 
