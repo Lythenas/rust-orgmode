@@ -70,8 +70,19 @@ pub struct OrgNode {
 /// to use when applying the repeat (`strategy`).
 #[derive(Debug, PartialEq, Eq)]
 pub struct Repeater {
-    duration: Duration,
+    amount: u32,
+    unit: TimeUnit,
     strategy: RepeatStrategy,
+}
+
+/// Represents the unit of time used for `Repeater` and `WarningPeriod`.
+#[derive(Debug, PartialEq, Eq)]
+pub enum TimeUnit {
+    Year,
+    Month,
+    Week,
+    Day,
+    Hour,
 }
 
 /// The different repeat strategies that can be used.

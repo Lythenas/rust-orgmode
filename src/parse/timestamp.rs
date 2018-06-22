@@ -6,6 +6,7 @@ use std::fmt;
 use std::str;
 
 use RepeatStrategy;
+use TimeUnit;
 use Repeater;
 use Timestamp;
 
@@ -258,9 +259,6 @@ impl TryFrom<Ts> for Timestamp {
     }
 }
 
-//Timestamp::RepeatingDate(NaiveDate, Repeater),
-//Timestamp::RepeatingDatetime(NaiveDateTime, Repeater),
-
 /// Helper enum for easier parsing.
 #[derive(Debug, PartialEq)]
 enum TsVariant {
@@ -308,15 +306,15 @@ impl<'a> TryFrom<(RepeatStrategy, &'a str, &'a str)> for Repeater {
         (strategy, amount, unit): (RepeatStrategy, &'a str, &'a str),
     ) -> Result<Self, Self::Error> {
         let amount = amount.parse()?;
-        let duration = match unit {
-            "y" => unimplemented!("Can't create duration from years"),
-            "m" => unimplemented!("Can't create duration from months"),
-            "w" => Duration::weeks(amount),
-            "d" => Duration::days(amount),
-            "h" => Duration::hours(amount),
+        let unit = match unit {
+            "y" => TimeUnit::Year,
+            "m" => TimeUnit::Month,
+            "w" => TimeUnit::Week,
+            "d" => TimeUnit::Day,
+            "h" => TimeUnit::Hour,
             _ => return Err(TimestampParseError::InvalidRepeater.into()),
         };
-        Ok(Repeater { duration, strategy })
+        Ok(Repeater { amount, unit, strategy })
     }
 }
 
@@ -336,6 +334,7 @@ named!(repeat_strategy<&str, RepeatStrategy, Error>,
     )
 );
 
+/// Converts the given str to a `RepeatStrategy` if possible.
 fn to_strategy(s: &str) -> Result<RepeatStrategy, Error> {
     match s {
         "+" => Ok(RepeatStrategy::AddOnce),
@@ -426,7 +425,8 @@ mod tests {
                     Timestamp::RepeatingDatetime(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
                         Repeater {
-                            duration: Duration::weeks(1),
+                            amount: 1,
+                            unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddOnce
                         }
                     )
@@ -439,7 +439,8 @@ mod tests {
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
-                            duration: Duration::weeks(1),
+                            amount: 1,
+                            unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddOnce
                         }
                     )
@@ -452,7 +453,8 @@ mod tests {
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
-                            duration: Duration::days(20),
+                            amount: 20,
+                            unit: TimeUnit::Day,
                             strategy: RepeatStrategy::AddOnce
                         }
                     )
@@ -465,13 +467,41 @@ mod tests {
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
-                            duration: Duration::hours(5),
+                            amount: 5,
+                            unit: TimeUnit::Hour,
                             strategy: RepeatStrategy::AddOnce
                         }
                     )
                 ))
             );
-            // TODO month and year
+            assert_eq!(
+                timestamp("<2018-06-04 +7m>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            amount: 7,
+                            unit: TimeUnit::Month,
+                            strategy: RepeatStrategy::AddOnce
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 +1y>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            amount: 1,
+                            unit: TimeUnit::Year,
+                            strategy: RepeatStrategy::AddOnce
+                        }
+                    )
+                ))
+            );
         }
 
         #[test]
@@ -483,7 +513,8 @@ mod tests {
                     Timestamp::RepeatingDatetime(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
                         Repeater {
-                            duration: Duration::weeks(1),
+                            amount: 1,
+                            unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddUntilFuture
                         }
                     )
@@ -496,7 +527,8 @@ mod tests {
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
-                            duration: Duration::weeks(1),
+                            amount: 1,
+                            unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddUntilFuture
                         }
                     )
@@ -509,7 +541,8 @@ mod tests {
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
-                            duration: Duration::days(20),
+                            amount: 20,
+                            unit: TimeUnit::Day,
                             strategy: RepeatStrategy::AddUntilFuture
                         }
                     )
@@ -522,7 +555,36 @@ mod tests {
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
-                            duration: Duration::hours(5),
+                            amount: 5,
+                            unit: TimeUnit::Hour,
+                            strategy: RepeatStrategy::AddUntilFuture
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 ++20m>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            amount: 20,
+                            unit: TimeUnit::Month,
+                            strategy: RepeatStrategy::AddUntilFuture
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 ++5y>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            amount: 5,
+                            unit: TimeUnit::Year,
                             strategy: RepeatStrategy::AddUntilFuture
                         }
                     )
@@ -540,7 +602,8 @@ mod tests {
                     Timestamp::RepeatingDatetime(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
                         Repeater {
-                            duration: Duration::weeks(1),
+                            amount: 1,
+                            unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddToNow
                         }
                     )
@@ -553,7 +616,8 @@ mod tests {
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
-                            duration: Duration::weeks(1),
+                            amount: 1,
+                            unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddToNow
                         }
                     )
@@ -566,7 +630,8 @@ mod tests {
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
-                            duration: Duration::days(20),
+                            amount: 20,
+                            unit: TimeUnit::Day,
                             strategy: RepeatStrategy::AddToNow
                         }
                     )
@@ -579,13 +644,41 @@ mod tests {
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
-                            duration: Duration::hours(5),
+                            amount: 5,
+                            unit: TimeUnit::Hour,
                             strategy: RepeatStrategy::AddToNow
                         }
                     )
                 ))
             );
-            // TODO year and month
+            assert_eq!(
+                timestamp("<2018-06-04 .+2m>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            amount: 2,
+                            unit: TimeUnit::Month,
+                            strategy: RepeatStrategy::AddToNow
+                        }
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp("<2018-06-04 .+12y>").ok(),
+                Some((
+                    "",
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            amount: 12,
+                            unit: TimeUnit::Year,
+                            strategy: RepeatStrategy::AddToNow
+                        }
+                    )
+                ))
+            );
         }
     }
 
