@@ -75,6 +75,13 @@ pub struct Repeater {
     strategy: RepeatStrategy,
 }
 
+/// Represents the amount of time to warn the user before a task is due.
+#[derive(Debug, PartialEq, Eq)]
+pub struct WarningPeriod {
+    amount: u32,
+    unit: TimeUnit,
+}
+
 /// Represents the unit of time used for `Repeater` and `WarningPeriod`.
 #[derive(Debug, PartialEq, Eq)]
 pub enum TimeUnit {
@@ -99,6 +106,7 @@ pub enum RepeatStrategy {
 }
 
 /// Represents a date in an org file. See [https://orgmode.org/manual/Timestamps.html].
+/// TODO convert to struct and add warning period
 #[derive(Debug, PartialEq, Eq)]
 pub enum Timestamp {
     InactiveDate(NaiveDate),

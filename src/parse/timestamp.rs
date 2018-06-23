@@ -3,11 +3,12 @@ use chrono::{Duration, NaiveDate, NaiveDateTime};
 use failure::Error;
 use std::convert::TryFrom;
 use std::fmt;
-use std::str;
+use std::str::{self, FromStr};
 
 use RepeatStrategy;
 use TimeUnit;
 use Repeater;
+use WarningPeriod;
 use Timestamp;
 
 // Helpers for date and time etc.
@@ -146,6 +147,7 @@ struct Ts {
     active: bool,
     variant: TsVariant,
     repeater: Option<Repeater>,
+    warning: Option<WarningPeriod>,
 }
 
 impl<'a>
@@ -153,6 +155,7 @@ impl<'a>
         &'a str,
         TsVariant,
         Option<Repeater>,
+        Option<WarningPeriod>,
         &'a str,
         Option<TsVariant>,
     )> for Ts
@@ -160,10 +163,11 @@ impl<'a>
     type Error = ();
 
     fn try_from(
-        (prefix, variant, repeater, suffix, other): (
+        (prefix, variant, repeater, warning, suffix, other): (
             &str,
             TsVariant,
             Option<Repeater>,
+            Option<WarningPeriod>,
             &str,
             Option<TsVariant>,
         ),
@@ -184,6 +188,7 @@ impl<'a>
                 active,
                 variant,
                 repeater,
+                warning,
             })
         })
             .and_then(|first| {
@@ -193,12 +198,14 @@ impl<'a>
                             active: true,
                             variant: TsVariant::Datetime(start),
                             repeater,
+                            warning,
                         },
                         Some(TsVariant::Datetime(end)),
                     ) => Ts {
                         active: true,
                         variant: TsVariant::DatetimeRange(start, end),
                         repeater,
+                        warning,
                     },
                     (first, None) => first,
                     _ => return Err(()),
@@ -215,6 +222,7 @@ impl TryFrom<Ts> for Timestamp {
             active,
             variant,
             repeater,
+            warning,
         } = ts;
 
         if let Some(repeater) = repeater {
@@ -286,6 +294,7 @@ named!(ts<&str, Ts, Error>,
             prefix: to_failure!(alt!(tag!("<") | tag!("["))) >>
             tsv: tsvariant >>
             repeater: opt!(repeater) >>
+            warning: opt!(warning_period) >>
             suffix: to_failure!(alt!(tag!(">") | tag!("]"))) >>
             other: to_failure!(opt!(complete!(do_parse!(
                 to_failure!(tag!("--<")) >>
@@ -293,27 +302,34 @@ named!(ts<&str, Ts, Error>,
                 to_failure!(tag!(">")) >>
                 (tsv)
             )))) >>
-            ((prefix, tsv, repeater, suffix, other))
+            ((prefix, tsv, repeater, warning, suffix, other))
         ),
         Ts::try_from
     )
 );
 
-impl<'a> TryFrom<(RepeatStrategy, &'a str, &'a str)> for Repeater {
-    type Error = Error;
+impl FromStr for TimeUnit {
+    type Err = Error;
 
-    fn try_from(
-        (strategy, amount, unit): (RepeatStrategy, &'a str, &'a str),
-    ) -> Result<Self, Self::Error> {
-        let amount = amount.parse()?;
-        let unit = match unit {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
             "y" => TimeUnit::Year,
             "m" => TimeUnit::Month,
             "w" => TimeUnit::Week,
             "d" => TimeUnit::Day,
             "h" => TimeUnit::Hour,
             _ => return Err(TimestampParseError::InvalidRepeater.into()),
-        };
+        })
+    }
+}
+
+impl<'a> TryFrom<(RepeatStrategy, &'a str, TimeUnit)> for Repeater {
+    type Error = Error;
+
+    fn try_from(
+        (strategy, amount, unit): (RepeatStrategy, &'a str, TimeUnit),
+    ) -> Result<Self, Self::Error> {
+        let amount = amount.parse()?;
         Ok(Repeater { amount, unit, strategy })
     }
 }
@@ -323,7 +339,7 @@ named!(repeater<&str, Repeater, Error>,
         to_failure!(tag!(" ")) >>
         strategy: repeat_strategy >>
         amount: to_failure!(take_while!(is_digit)) >>
-        unit: to_failure!(take!(1)) >>
+        unit: time_unit >>
         ((strategy, amount, unit))
     ), Repeater::try_from))
 );
@@ -343,6 +359,33 @@ fn to_strategy(s: &str) -> Result<RepeatStrategy, Error> {
         _ => Err(TimestampParseError::InvalidRepeater.into()),
     }
 }
+
+impl<'a> TryFrom<(&'a str, TimeUnit)> for WarningPeriod {
+    type Error = Error;
+
+    fn try_from((amount, unit): (&'a str, TimeUnit)) -> Result<Self, Self::Error> {
+        Ok(WarningPeriod {
+            amount: amount.parse()?,
+            unit,
+        })
+    }
+}
+
+named!(time_unit<&str, TimeUnit, Error>,
+    to_failure!(map_res!(
+        alt!(tag!("y") | tag!("m") | tag!("w") | tag!("d") | tag!("h")),
+        TimeUnit::from_str
+    ))
+);
+
+named!(warning_period<&str, WarningPeriod, Error>,
+    to_failure!(map_res!(do_parse!(
+        to_failure!(tag!(" -")) >>
+        amount: to_failure!(take_while!(is_digit)) >>
+        unit: time_unit >>
+        ((amount, unit))
+    ), WarningPeriod::try_from))
+);
 
 named!(tsvariant<&str, TsVariant, Error>,
     to_failure!(do_parse!(
@@ -413,7 +456,13 @@ mod tests {
         }
     }
 
-    mod repeating_date {
+    mod repeater_with_warning {
+        use super::*;
+
+        // TODO
+    }
+
+    mod repeater {
         use super::*;
 
         #[test]
@@ -590,7 +639,6 @@ mod tests {
                     )
                 ))
             );
-            // TODO year and month
         }
 
         #[test]
