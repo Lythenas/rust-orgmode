@@ -6,10 +6,10 @@ use std::fmt;
 use std::str::{self, FromStr};
 
 use RepeatStrategy;
-use TimeUnit;
 use Repeater;
-use WarningPeriod;
+use TimeUnit;
 use Timestamp;
+use WarningPeriod;
 
 // Helpers for date and time etc.
 
@@ -18,18 +18,31 @@ fn is_digit(c: char) -> bool {
     c.is_digit(10)
 }
 
+named!(parse_u32<&str, u32, Error>,
+    to_failure!(map_res!(take_while1!(is_digit), u32::from_str))
+);
+
+#[test]
+fn test_parse_u32() {
+    assert_eq!(parse_u32("55>").ok(), Some((">", 55)))
+}
+
+fn from_dec(s: &str) -> Result<i32, Error> {
+    i32::from_str_radix(s, 10).map_err(|_| format_err!("invalid i32"))
+}
+
+named!(parse_i32<&str, i32, Error>,
+    to_failure!(map_res!(recognize!(do_parse!(
+        opt!(alt!(tag!("-") | tag!("+"))) >>
+        take_while1!(is_digit) >>
+        ()
+    )), from_dec))
+);
+
 /// Converts the given `hour` and `minute` into a `NaiveTime` if possible or gives an error
 /// otherwise.
-fn naive_time((hour, minute): (&str, &str)) -> Result<NaiveTime, Error> {
-    let hour = hour.parse();
-    let minute = minute.parse();
-
-    match (hour, minute) {
-        (Ok(h), Ok(m)) => {
-            NaiveTime::from_hms_opt(h, m, 0).ok_or_else(|| format_err!("invalid time"))
-        }
-        _ => Err(format_err!("invalid time")),
-    }
+fn naive_time((hour, minute): (u32, u32)) -> Result<NaiveTime, Error> {
+    NaiveTime::from_hms_opt(hour, minute, 0).ok_or_else(|| format_err!("invalid time"))
 }
 
 /// Parses a time string in the following format: `12:30` and returns a `NativeTime`.
@@ -37,9 +50,9 @@ named!(time<&str, NaiveTime, Error>,
     to_failure!(
         map_res!(
             do_parse!(
-                h: take_while_m_n!(2, 2, is_digit) >>
-                tag!(":") >>
-                m: take_while_m_n!(2, 2, is_digit) >>
+                h: parse_u32 >>
+                to_failure!(tag!(":")) >>
+                m: parse_u32 >>
                 ((h, m))
             ),
             naive_time
@@ -50,13 +63,10 @@ named!(time<&str, NaiveTime, Error>,
 /// Converts the given `year`, `month`, `day` and optional `weekday` into a `NaiveDate` if possible
 /// or gives an error otherwise.
 fn naive_date(
-    (year, month, day, weekday): (&str, &str, &str, Option<&str>),
+    (year, month, day, weekday): (u32, u32, u32, Option<&str>),
 ) -> Result<NaiveDate, Error> {
     use chrono::Weekday;
 
-    let year = year.parse();
-    let month = month.parse();
-    let day = day.parse();
     let weekday: Option<Weekday> = match weekday {
         Some(wd) => Some(
             wd.parse()
@@ -65,16 +75,15 @@ fn naive_date(
         _ => None,
     };
 
-    match (year, month, day) {
-        (Ok(y), Ok(m), Ok(d)) => {
-            NaiveDate::from_ymd_opt(y, m, d).ok_or_else(|| format_err!("invalid date"))
-        }
-        _ => Err(format_err!("invalid date")),
-    }.and_then(|date| match weekday {
-        None => Ok(date),
-        Some(wd) if wd == date.weekday() => Ok(date),
-        _ => Err(format_err!("invalid weekday in date")),
-    })
+    let year = i32::try_from(year).unwrap();
+
+    NaiveDate::from_ymd_opt(year, month, day)
+        .ok_or_else(|| format_err!("invalid date"))
+        .and_then(|date| match weekday {
+            None => Ok(date),
+            Some(wd) if wd == date.weekday() => Ok(date),
+            _ => Err(format_err!("invalid weekday in date")),
+        })
 }
 
 /// Parses a date string in the following format: `2018-06-30` or `2018-06-30 Sat` and returns a
@@ -83,12 +92,12 @@ named!(date<&str, NaiveDate, Error>,
     to_failure!(
         map_res!(
             do_parse!(
-                y: take_while_m_n!(4, 4, is_digit) >>
-                tag!("-") >>
-                m: take_while_m_n!(2, 2, is_digit) >>
-                tag!("-") >>
-                d: take_while_m_n!(2, 2, is_digit) >>
-                wd: opt!(complete!(
+                y: parse_u32 >>
+                to_failure!(tag!("-")) >>
+                m: parse_u32 >>
+                to_failure!(tag!("-")) >>
+                d: parse_u32 >>
+                wd: to_failure!(opt!(complete!(
                     do_parse!(
                         tag!(" ") >>
                         wd: alt!(tag!("Mon") | tag!("Tue") | tag!("Wed")
@@ -96,7 +105,7 @@ named!(date<&str, NaiveDate, Error>,
                                  | tag!("Sat") | tag!("Sun")) >>
                         (wd)
                     )
-                )) >>
+                ))) >>
                 ((y, m, d, wd))
             ),
             naive_date
@@ -323,14 +332,13 @@ impl FromStr for TimeUnit {
     }
 }
 
-impl<'a> TryFrom<(RepeatStrategy, &'a str, TimeUnit)> for Repeater {
-    type Error = Error;
-
-    fn try_from(
-        (strategy, amount, unit): (RepeatStrategy, &'a str, TimeUnit),
-    ) -> Result<Self, Self::Error> {
-        let amount = amount.parse()?;
-        Ok(Repeater { amount, unit, strategy })
+impl From<(RepeatStrategy, u32, TimeUnit)> for Repeater {
+    fn from((strategy, amount, unit): (RepeatStrategy, u32, TimeUnit)) -> Self {
+        Repeater {
+            amount,
+            unit,
+            strategy,
+        }
     }
 }
 
@@ -338,7 +346,7 @@ named!(repeater<&str, Repeater, Error>,
     to_failure!(map_res!(do_parse!(
         to_failure!(tag!(" ")) >>
         strategy: repeat_strategy >>
-        amount: to_failure!(take_while!(is_digit)) >>
+        amount: parse_u32 >>
         unit: time_unit >>
         ((strategy, amount, unit))
     ), Repeater::try_from))
@@ -360,14 +368,12 @@ fn to_strategy(s: &str) -> Result<RepeatStrategy, Error> {
     }
 }
 
-impl<'a> TryFrom<(&'a str, TimeUnit)> for WarningPeriod {
-    type Error = Error;
-
-    fn try_from((amount, unit): (&'a str, TimeUnit)) -> Result<Self, Self::Error> {
-        Ok(WarningPeriod {
-            amount: amount.parse()?,
+impl From<(u32, TimeUnit)> for WarningPeriod {
+    fn from((amount, unit): (u32, TimeUnit)) -> Self {
+        WarningPeriod {
+            amount: amount,
             unit,
-        })
+        }
     }
 }
 
@@ -379,12 +385,12 @@ named!(time_unit<&str, TimeUnit, Error>,
 );
 
 named!(warning_period<&str, WarningPeriod, Error>,
-    to_failure!(map_res!(do_parse!(
+    to_failure!(do_parse!(
         to_failure!(tag!(" -")) >>
-        amount: to_failure!(take_while!(is_digit)) >>
+        amount: to_failure!(parse_u32) >>
         unit: time_unit >>
-        ((amount, unit))
-    ), WarningPeriod::try_from))
+        (WarningPeriod { amount, unit, })
+    ))
 );
 
 named!(tsvariant<&str, TsVariant, Error>,
@@ -421,8 +427,8 @@ mod tests {
         #[test]
         fn test_time() {
             assert_eq!(
-                time("12:33").ok(),
-                Some(("", NaiveTime::from_hms(12, 33, 0)))
+                time("12:33>").ok(),
+                Some((">", NaiveTime::from_hms(12, 33, 0)))
             );
             assert!(time("adadasd").is_err());
             assert!(time("33:99").is_err());
@@ -432,8 +438,8 @@ mod tests {
         #[test]
         fn test_date() {
             assert_eq!(
-                date("2018-05-13").ok(),
-                Some(("", NaiveDate::from_ymd(2018, 05, 13)))
+                date("2018-05-13>").ok(),
+                Some((">", NaiveDate::from_ymd(2018, 05, 13)))
             );
             assert_eq!(
                 date("2018-05-13 Sun").ok(),
@@ -445,12 +451,12 @@ mod tests {
         #[test]
         fn test_datetime() {
             assert_eq!(
-                datetime("2018-05-13 12:40").ok(),
-                Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
+                datetime("2018-05-13 12:40>").ok(),
+                Some((">", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
             );
             assert_eq!(
-                datetime("2018-05-13 Sun 12:40").ok(),
-                Some(("", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
+                datetime("2018-05-13 Sun 12:40>").ok(),
+                Some((">", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
             );
             assert!(datetime("aasdadas").is_err());
         }
