@@ -11,6 +11,8 @@ use TimeUnit;
 use Timestamp;
 use WarningPeriod;
 
+use nom::types::CompleteStr;
+
 // Helpers for date and time etc.
 
 /// Checks if the char is a digit in the decimal system (`0` to `9`).
@@ -18,25 +20,20 @@ fn is_digit(c: char) -> bool {
     c.is_digit(10)
 }
 
-named!(parse_u32<&str, u32, Error>,
-    to_failure!(map_res!(take_while1!(is_digit), u32::from_str))
+named!(parse_u32<CompleteStr, u32, Error>,
+    to_failure!(map_res!(take_while1!(is_digit), |s: CompleteStr| u32::from_str(*s)))
 );
 
-#[test]
-fn test_parse_u32() {
-    assert_eq!(parse_u32("55>").ok(), Some((">", 55)))
-}
-
-fn from_dec(s: &str) -> Result<i32, Error> {
-    i32::from_str_radix(s, 10).map_err(|_| format_err!("invalid i32"))
-}
-
-named!(parse_i32<&str, i32, Error>,
-    to_failure!(map_res!(recognize!(do_parse!(
-        opt!(alt!(tag!("-") | tag!("+"))) >>
-        take_while1!(is_digit) >>
-        ()
-    )), from_dec))
+named!(parse_i32<CompleteStr, i32, Error>,
+    to_failure!(map_res!(
+        recognize!(do_parse!(
+            opt!(alt!(tag!("-") | tag!("+"))) >>
+            take_while1!(is_digit) >>
+            ()
+        )),
+        |s: CompleteStr| i32::from_str_radix(*s, 10)
+            .map_err(|_| format_err!("invalid i32"))
+    ))
 );
 
 /// Converts the given `hour` and `minute` into a `NaiveTime` if possible or gives an error
@@ -46,7 +43,7 @@ fn naive_time((hour, minute): (u32, u32)) -> Result<NaiveTime, Error> {
 }
 
 /// Parses a time string in the following format: `12:30` and returns a `NativeTime`.
-named!(time<&str, NaiveTime, Error>,
+named!(time<CompleteStr, NaiveTime, Error>,
     to_failure!(
         map_res!(
             do_parse!(
@@ -63,7 +60,7 @@ named!(time<&str, NaiveTime, Error>,
 /// Converts the given `year`, `month`, `day` and optional `weekday` into a `NaiveDate` if possible
 /// or gives an error otherwise.
 fn naive_date(
-    (year, month, day, weekday): (u32, u32, u32, Option<&str>),
+    (year, month, day, weekday): (i32, u32, u32, Option<&str>),
 ) -> Result<NaiveDate, Error> {
     use chrono::Weekday;
 
@@ -74,8 +71,6 @@ fn naive_date(
         ),
         _ => None,
     };
-
-    let year = i32::try_from(year).unwrap();
 
     NaiveDate::from_ymd_opt(year, month, day)
         .ok_or_else(|| format_err!("invalid date"))
@@ -88,11 +83,11 @@ fn naive_date(
 
 /// Parses a date string in the following format: `2018-06-30` or `2018-06-30 Sat` and returns a
 /// `NaiveDate`.
-named!(date<&str, NaiveDate, Error>,
+named!(date<CompleteStr, NaiveDate, Error>,
     to_failure!(
         map_res!(
             do_parse!(
-                y: parse_u32 >>
+                y: parse_i32 >>
                 to_failure!(tag!("-")) >>
                 m: parse_u32 >>
                 to_failure!(tag!("-")) >>
@@ -106,7 +101,7 @@ named!(date<&str, NaiveDate, Error>,
                         (wd)
                     )
                 ))) >>
-                ((y, m, d, wd))
+                ((y, m, d, wd.map(|s| *s)))
             ),
             naive_date
         )
@@ -115,7 +110,7 @@ named!(date<&str, NaiveDate, Error>,
 
 /// Parses a datetime string in the following format: `2018-06-30 Sat 12:30` (weekday optional) and
 /// returns a `NaiveDateTime`.
-named!(datetime<&str, NaiveDateTime, Error>,
+named!(datetime<CompleteStr, NaiveDateTime, Error>,
     do_parse!(
         date: date >>
         to_failure!(tag!(" ")) >>
@@ -159,67 +154,48 @@ struct Ts {
     warning: Option<WarningPeriod>,
 }
 
-impl<'a>
+impl
     TryFrom<(
-        &'a str,
+        bool,
         TsVariant,
         Option<Repeater>,
         Option<WarningPeriod>,
-        &'a str,
         Option<TsVariant>,
     )> for Ts
 {
     type Error = ();
 
     fn try_from(
-        (prefix, variant, repeater, warning, suffix, other): (
-            &str,
+        (active, variant, repeater, warning, other): (
+            bool,
             TsVariant,
             Option<Repeater>,
             Option<WarningPeriod>,
-            &str,
             Option<TsVariant>,
         ),
     ) -> Result<Self, Self::Error> {
-        match (prefix, suffix) {
-            ("<", ">") => Ok(true),
-            ("[", "]") => Ok(false),
-            _ => return Err(()),
-        }.and_then(|active| {
-            if !active {
-                match variant {
-                    TsVariant::DateWithTimeRange(_, _, _) => return Err(()),
-                    TsVariant::DatetimeRange(_, _) => return Err(()),
-                    _ => (),
-                };
+        if !active {
+            match variant {
+                TsVariant::DateWithTimeRange(_, _, _) => return Err(()),
+                TsVariant::DatetimeRange(_, _) => return Err(()),
+                _ => (),
+            };
+        }
+
+        let variant = match (variant, other) {
+            (TsVariant::Datetime(start), Some(TsVariant::Datetime(end))) => {
+                TsVariant::DatetimeRange(start, end)
             }
-            Ok(Ts {
-                active,
-                variant,
-                repeater,
-                warning,
-            })
+            (variant, None) => variant,
+            _ => return Err(()),
+        };
+
+        Ok(Ts {
+            active,
+            variant,
+            repeater,
+            warning,
         })
-            .and_then(|first| {
-                Ok(match (first, other) {
-                    (
-                        Ts {
-                            active: true,
-                            variant: TsVariant::Datetime(start),
-                            repeater,
-                            warning,
-                        },
-                        Some(TsVariant::Datetime(end)),
-                    ) => Ts {
-                        active: true,
-                        variant: TsVariant::DatetimeRange(start, end),
-                        repeater,
-                        warning,
-                    },
-                    (first, None) => first,
-                    _ => return Err(()),
-                })
-            })
     }
 }
 
@@ -297,25 +273,34 @@ impl TsVariant {
     }
 }
 
-named!(ts<&str, Ts, Error>,
+named!(ts<CompleteStr, Ts, Error>,
     map_res!(
         do_parse!(
             prefix: to_failure!(alt!(tag!("<") | tag!("["))) >>
             tsv: tsvariant >>
             repeater: opt!(repeater) >>
             warning: opt!(warning_period) >>
-            suffix: to_failure!(alt!(tag!(">") | tag!("]"))) >>
+            active: to_failure!(map_res!(alt!(tag!(">") | tag!("]")), 
+                        |suffix: CompleteStr| check_active(*prefix, *suffix))) >>
             other: to_failure!(opt!(complete!(do_parse!(
                 to_failure!(tag!("--<")) >>
                 tsv: tsvariant >>
                 to_failure!(tag!(">")) >>
                 (tsv)
             )))) >>
-            ((prefix, tsv, repeater, warning, suffix, other))
+            ((active, tsv, repeater, warning, other))
         ),
         Ts::try_from
     )
 );
+
+fn check_active(prefix: &str, suffix: &str) -> Result<bool, ()> {
+    match (prefix, suffix) {
+        ("<", ">") => Ok(true),
+        ("[", "]") => Ok(false),
+        _ => Err(()),
+    }
+}
 
 impl FromStr for TimeUnit {
     type Err = Error;
@@ -342,7 +327,7 @@ impl From<(RepeatStrategy, u32, TimeUnit)> for Repeater {
     }
 }
 
-named!(repeater<&str, Repeater, Error>,
+named!(repeater<CompleteStr, Repeater, Error>,
     to_failure!(map_res!(do_parse!(
         to_failure!(tag!(" ")) >>
         strategy: repeat_strategy >>
@@ -352,9 +337,9 @@ named!(repeater<&str, Repeater, Error>,
     ), Repeater::try_from))
 );
 
-named!(repeat_strategy<&str, RepeatStrategy, Error>,
+named!(repeat_strategy<CompleteStr, RepeatStrategy, Error>,
     to_failure!(
-        map_res!(alt!(tag!("++") | tag!("+") | tag!(".+")), to_strategy)
+        map_res!(alt!(tag!("++") | tag!("+") | tag!(".+")), cstr(self::to_strategy))
     )
 );
 
@@ -377,14 +362,18 @@ impl From<(u32, TimeUnit)> for WarningPeriod {
     }
 }
 
-named!(time_unit<&str, TimeUnit, Error>,
+fn cstr<T>(f: impl Fn(&str) -> T) -> impl Fn(CompleteStr) -> T {
+    move |s| f(*s)
+}
+
+named!(time_unit<CompleteStr, TimeUnit, Error>,
     to_failure!(map_res!(
         alt!(tag!("y") | tag!("m") | tag!("w") | tag!("d") | tag!("h")),
-        TimeUnit::from_str
+        cstr(TimeUnit::from_str)
     ))
 );
 
-named!(warning_period<&str, WarningPeriod, Error>,
+named!(warning_period<CompleteStr, WarningPeriod, Error>,
     to_failure!(do_parse!(
         to_failure!(tag!(" -")) >>
         amount: to_failure!(parse_u32) >>
@@ -393,7 +382,7 @@ named!(warning_period<&str, WarningPeriod, Error>,
     ))
 );
 
-named!(tsvariant<&str, TsVariant, Error>,
+named!(tsvariant<CompleteStr, TsVariant, Error>,
     to_failure!(do_parse!(
         date: date >>
         time_range: to_failure!(opt!(do_parse!(
@@ -410,7 +399,7 @@ named!(tsvariant<&str, TsVariant, Error>,
     ))
 );
 
-named!(timestamp<&str, Timestamp, Error>,
+named!(timestamp<CompleteStr, Timestamp, Error>,
     map_res!(
         ts,
         TryFrom::try_from
@@ -425,40 +414,80 @@ mod tests {
         use super::*;
 
         #[test]
+        fn test_parse_u32() {
+            assert_eq!(
+                parse_u32(CompleteStr("55")).ok(),
+                Some((CompleteStr(""), 55))
+            );
+            assert_eq!(
+                parse_u32(CompleteStr("199a")).ok(),
+                Some((CompleteStr("a"), 199))
+            );
+            assert!(parse_u32(CompleteStr("err")).is_err());
+        }
+
+        #[test]
+        fn test_parse_i32() {
+            assert_eq!(parse_i32(CompleteStr("55")).ok(),
+            Some((CompleteStr(""), 55)));
+            assert_eq!(
+                parse_i32(CompleteStr("199a")).ok(),
+                Some((CompleteStr("a"), 199))
+            );
+            assert_eq!(
+                parse_i32(CompleteStr("-2501")).ok(),
+                Some((CompleteStr(""), -2501))
+            );
+            assert_eq!(
+                parse_i32(CompleteStr("+2015x")).ok(),
+                Some((CompleteStr("x"), 2015))
+            );
+            assert!(parse_i32(CompleteStr("err")).is_err());
+            assert!(parse_i32(CompleteStr("+err")).is_err());
+            assert!(parse_i32(CompleteStr("-err")).is_err());
+        }
+
+        #[test]
         fn test_time() {
             assert_eq!(
-                time("12:33>").ok(),
-                Some((">", NaiveTime::from_hms(12, 33, 0)))
+                time(CompleteStr("12:33>")).ok(),
+                Some((CompleteStr(">"), NaiveTime::from_hms(12, 33, 0)))
             );
-            assert!(time("adadasd").is_err());
-            assert!(time("33:99").is_err());
-            assert!(time(".1199").is_err());
+            assert!(time(CompleteStr("adadasd")).is_err());
+            assert!(time(CompleteStr("33:99")).is_err());
+            assert!(time(CompleteStr(".1199")).is_err());
         }
 
         #[test]
         fn test_date() {
             assert_eq!(
-                date("2018-05-13>").ok(),
-                Some((">", NaiveDate::from_ymd(2018, 05, 13)))
+                date(CompleteStr("2018-05-13>")).ok(),
+                Some((CompleteStr(">"), NaiveDate::from_ymd(2018, 05, 13)))
             );
             assert_eq!(
-                date("2018-05-13 Sun").ok(),
-                Some(("", NaiveDate::from_ymd(2018, 05, 13)))
+                date(CompleteStr("2018-05-13 Sun")).ok(),
+                Some((CompleteStr(""), NaiveDate::from_ymd(2018, 05, 13)))
             );
-            assert!(date("adadasd").is_err());
+            assert!(date(CompleteStr("adadasd")).is_err());
         }
 
         #[test]
         fn test_datetime() {
             assert_eq!(
-                datetime("2018-05-13 12:40>").ok(),
-                Some((">", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
+                datetime(CompleteStr("2018-05-13 12:40>")).ok(),
+                Some((
+                    CompleteStr(">"),
+                    NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)
+                ))
             );
             assert_eq!(
-                datetime("2018-05-13 Sun 12:40>").ok(),
-                Some((">", NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)))
+                datetime(CompleteStr("2018-05-13 Sun 12:40>")).ok(),
+                Some((
+                    CompleteStr(">"),
+                    NaiveDate::from_ymd(2018, 05, 13).and_hms(12, 40, 0)
+                ))
             );
-            assert!(datetime("aasdadas").is_err());
+            assert!(datetime(CompleteStr("aasdadas")).is_err());
         }
     }
 
@@ -474,9 +503,9 @@ mod tests {
         #[test]
         fn test_add_once() {
             assert_eq!(
-                timestamp("<2018-06-04 12:55 +1w>").ok(),
+                timestamp(CompleteStr("<2018-06-04 12:55 +1w>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDatetime(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
                         Repeater {
@@ -488,9 +517,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 +1w>").ok(),
+                timestamp(CompleteStr("<2018-06-04 +1w>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -502,9 +531,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 +20d>").ok(),
+                timestamp(CompleteStr("<2018-06-04 +20d>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -516,9 +545,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 +5h>").ok(),
+                timestamp(CompleteStr("<2018-06-04 +5h>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -530,9 +559,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 +7m>").ok(),
+                timestamp(CompleteStr("<2018-06-04 +7m>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -544,9 +573,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 +1y>").ok(),
+                timestamp(CompleteStr("<2018-06-04 +1y>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -562,9 +591,9 @@ mod tests {
         #[test]
         fn test_add_until_future() {
             assert_eq!(
-                timestamp("<2018-06-04 12:55 ++1w>").ok(),
+                timestamp(CompleteStr("<2018-06-04 12:55 ++1w>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDatetime(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
                         Repeater {
@@ -576,9 +605,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 ++1w>").ok(),
+                timestamp(CompleteStr("<2018-06-04 ++1w>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -590,9 +619,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 ++20d>").ok(),
+                timestamp(CompleteStr("<2018-06-04 ++20d>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -604,9 +633,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 ++5h>").ok(),
+                timestamp(CompleteStr("<2018-06-04 ++5h>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -618,9 +647,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 ++20m>").ok(),
+                timestamp(CompleteStr("<2018-06-04 ++20m>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -632,9 +661,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 ++5y>").ok(),
+                timestamp(CompleteStr("<2018-06-04 ++5y>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -650,9 +679,9 @@ mod tests {
         #[test]
         fn test_add_to_now() {
             assert_eq!(
-                timestamp("<2018-06-04 12:55 .+1w>").ok(),
+                timestamp(CompleteStr("<2018-06-04 12:55 .+1w>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDatetime(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
                         Repeater {
@@ -664,9 +693,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 .+1w>").ok(),
+                timestamp(CompleteStr("<2018-06-04 .+1w>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -678,9 +707,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 .+20d>").ok(),
+                timestamp(CompleteStr("<2018-06-04 .+20d>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -692,9 +721,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 .+5h>").ok(),
+                timestamp(CompleteStr("<2018-06-04 .+5h>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -706,9 +735,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 .+2m>").ok(),
+                timestamp(CompleteStr("<2018-06-04 .+2m>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -720,9 +749,9 @@ mod tests {
                 ))
             );
             assert_eq!(
-                timestamp("<2018-06-04 .+12y>").ok(),
+                timestamp(CompleteStr("<2018-06-04 .+12y>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::RepeatingDate(
                         NaiveDate::from_ymd(2018, 06, 04),
                         Repeater {
@@ -742,9 +771,9 @@ mod tests {
         #[test]
         fn test_same_day() {
             assert_eq!(
-                timestamp("<2018-06-04 12:00>--<2018-06-04 14:00>").ok(),
+                timestamp(CompleteStr("<2018-06-04 12:00>--<2018-06-04 14:00>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::DatetimeRange(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(14, 0, 0)
@@ -756,9 +785,9 @@ mod tests {
         #[test]
         fn test_different_days() {
             assert_eq!(
-                timestamp("<2018-06-04 12:00>--<2018-08-09 11:54>").ok(),
+                timestamp(CompleteStr("<2018-06-04 12:00>--<2018-08-09 11:54>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::DatetimeRange(
                         NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
                         NaiveDate::from_ymd(2018, 08, 09).and_hms(11, 54, 0)
@@ -774,9 +803,9 @@ mod tests {
         #[test]
         fn with_weekday() {
             assert_eq!(
-                timestamp("<2018-06-04 Mon 13:00-14:30>").ok(),
+                timestamp(CompleteStr("<2018-06-04 Mon 13:00-14:30>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::TimeRange {
                         date: NaiveDate::from_ymd(2018, 06, 04),
                         start_time: NaiveTime::from_hms(13, 0, 0),
@@ -794,21 +823,21 @@ mod tests {
         #[test]
         fn with_weekday() {
             assert_eq!(
-                timestamp("<2018-06-13 Wed 20:11>").ok(),
+                timestamp(CompleteStr("<2018-06-13 Wed 20:11>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0))
                 ))
             );
-            assert!(timestamp("<2018-06-13 Mon 11:33>").is_err());
+            assert!(timestamp(CompleteStr("<2018-06-13 Mon 11:33>")).is_err());
         }
 
         #[test]
         fn without_weekday() {
             assert_eq!(
-                timestamp("<2018-06-14 11:45>").ok(),
+                timestamp(CompleteStr("<2018-06-14 11:45>")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0))
                 ))
             );
@@ -822,17 +851,23 @@ mod tests {
         #[test]
         fn with_weekday() {
             assert_eq!(
-                timestamp("<2018-06-13 Wed>").ok(),
-                Some(("", Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 13))))
+                timestamp(CompleteStr("<2018-06-13 Wed>")).ok(),
+                Some((
+                    CompleteStr(""),
+                    Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 13))
+                ))
             );
-            assert!(timestamp("<2018-06-13 Mon>").is_err());
+            assert!(timestamp(CompleteStr("<2018-06-13 Mon>")).is_err());
         }
 
         #[test]
         fn without_weekday() {
             assert_eq!(
-                timestamp("<2018-06-22>").ok(),
-                Some(("", Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 22))))
+                timestamp(CompleteStr("<2018-06-22>")).ok(),
+                Some((
+                    CompleteStr(""),
+                    Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 22))
+                ))
             );
         }
 
@@ -844,23 +879,23 @@ mod tests {
         #[test]
         fn with_weekday() {
             assert_eq!(
-                timestamp("[2018-06-13 Wed 11:13]").ok(),
+                timestamp(CompleteStr("[2018-06-13 Wed 11:13]")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::InactiveDatetime(
                         NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0)
                     )
                 ))
             );
-            assert!(timestamp("[2018-06-13 Mon 11:13]").is_err());
+            assert!(timestamp(CompleteStr("[2018-06-13 Mon 11:13]")).is_err());
         }
 
         #[test]
         fn without_weekday() {
             assert_eq!(
-                timestamp("[2018-06-13 11:39]").ok(),
+                timestamp(CompleteStr("[2018-06-13 11:39]")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::InactiveDatetime(
                         NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 39, 0)
                     )
@@ -876,21 +911,21 @@ mod tests {
         #[test]
         fn with_weekday() {
             assert_eq!(
-                timestamp("[2018-06-13 Wed]").ok(),
+                timestamp(CompleteStr("[2018-06-13 Wed]")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
                 ))
             );
-            assert!(timestamp("[2018-06-13 Mon]").is_err());
+            assert!(timestamp(CompleteStr("[2018-06-13 Mon]")).is_err());
         }
 
         #[test]
         fn without_weekday() {
             assert_eq!(
-                timestamp("[2018-06-13]").ok(),
+                timestamp(CompleteStr("[2018-06-13]")).ok(),
                 Some((
-                    "",
+                    CompleteStr(""),
                     Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
                 ))
             );
