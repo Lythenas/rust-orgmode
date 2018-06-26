@@ -216,9 +216,9 @@ impl TryFrom<Ts> for Timestamp {
             }
 
             return match variant {
-                TsVariant::Date(date) => Ok(Timestamp::RepeatingDate(date, repeater)),
+                TsVariant::Date(date) => Ok(Timestamp::RepeatingDate(date, repeater, warning)),
                 TsVariant::Datetime(datetime) => {
-                    Ok(Timestamp::RepeatingDatetime(datetime, repeater))
+                    Ok(Timestamp::RepeatingDatetime(datetime, repeater, warning))
                 }
                 _ => Err(TimestampParseError::RangedDateWithRepeater.into()),
             };
@@ -233,6 +233,7 @@ impl TryFrom<Ts> for Timestamp {
                     start_time,
                     end_time,
                 },
+                TsVariant::DateRange(start, end) => unimplemented!(),
                 TsVariant::DatetimeRange(start_datetime, end_datetime) => {
                     Timestamp::DatetimeRange(start_datetime, end_datetime)
                 }
@@ -244,6 +245,7 @@ impl TryFrom<Ts> for Timestamp {
                 TsVariant::DateWithTimeRange(_, _, _) => {
                     return Err(TimestampParseError::InactiveDateWithTimeRange.into())
                 }
+                TsVariant::DateRange(start, end) => unimplemented!(),
                 TsVariant::DatetimeRange(start_datetime, end_datetime) => {
                     Timestamp::DatetimeRange(start_datetime, end_datetime)
                 }
@@ -258,6 +260,7 @@ enum TsVariant {
     Date(NaiveDate),
     Datetime(NaiveDateTime),
     DateWithTimeRange(NaiveDate, NaiveTime, NaiveTime),
+    DateRange(NaiveDate, NaiveDate),
     DatetimeRange(NaiveDateTime, NaiveDateTime),
 }
 
@@ -428,8 +431,10 @@ mod tests {
 
         #[test]
         fn test_parse_i32() {
-            assert_eq!(parse_i32(CompleteStr("55")).ok(),
-            Some((CompleteStr(""), 55)));
+            assert_eq!(
+                parse_i32(CompleteStr("55")).ok(),
+                Some((CompleteStr(""), 55))
+            );
             assert_eq!(
                 parse_i32(CompleteStr("199a")).ok(),
                 Some((CompleteStr("a"), 199))
@@ -494,7 +499,45 @@ mod tests {
     mod repeater_with_warning {
         use super::*;
 
-        // TODO
+        #[test]
+        fn test_add_once_with_warning() {
+            assert_eq!(
+                timestamp(CompleteStr("<2018-06-04 12:55 +1d -1h>")).ok(),
+                Some((
+                    CompleteStr(""),
+                    Timestamp::RepeatingDatetime(
+                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
+                        Repeater {
+                            amount: 1,
+                            unit: TimeUnit::Day,
+                            strategy: RepeatStrategy::AddOnce,
+                        },
+                        Some(WarningPeriod {
+                            amount: 1,
+                            unit: TimeUnit::Hour,
+                        })
+                    )
+                ))
+            );
+            assert_eq!(
+                timestamp(CompleteStr("<2018-06-04 +1w -1d>")).ok(),
+                Some((
+                    CompleteStr(""),
+                    Timestamp::RepeatingDate(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        Repeater {
+                            amount: 1,
+                            unit: TimeUnit::Week,
+                            strategy: RepeatStrategy::AddOnce,
+                        },
+                        Some(WarningPeriod {
+                            amount: 1,
+                            unit: TimeUnit::Day,
+                        })
+                    )
+                ))
+            );
+        }
     }
 
     mod repeater {
@@ -512,7 +555,8 @@ mod tests {
                             amount: 1,
                             unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddOnce
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -526,7 +570,8 @@ mod tests {
                             amount: 1,
                             unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddOnce
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -540,7 +585,8 @@ mod tests {
                             amount: 20,
                             unit: TimeUnit::Day,
                             strategy: RepeatStrategy::AddOnce
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -554,7 +600,8 @@ mod tests {
                             amount: 5,
                             unit: TimeUnit::Hour,
                             strategy: RepeatStrategy::AddOnce
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -568,7 +615,8 @@ mod tests {
                             amount: 7,
                             unit: TimeUnit::Month,
                             strategy: RepeatStrategy::AddOnce
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -582,7 +630,8 @@ mod tests {
                             amount: 1,
                             unit: TimeUnit::Year,
                             strategy: RepeatStrategy::AddOnce
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -600,7 +649,8 @@ mod tests {
                             amount: 1,
                             unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddUntilFuture
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -614,7 +664,8 @@ mod tests {
                             amount: 1,
                             unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddUntilFuture
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -628,7 +679,8 @@ mod tests {
                             amount: 20,
                             unit: TimeUnit::Day,
                             strategy: RepeatStrategy::AddUntilFuture
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -642,7 +694,8 @@ mod tests {
                             amount: 5,
                             unit: TimeUnit::Hour,
                             strategy: RepeatStrategy::AddUntilFuture
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -656,7 +709,8 @@ mod tests {
                             amount: 20,
                             unit: TimeUnit::Month,
                             strategy: RepeatStrategy::AddUntilFuture
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -670,7 +724,8 @@ mod tests {
                             amount: 5,
                             unit: TimeUnit::Year,
                             strategy: RepeatStrategy::AddUntilFuture
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -688,7 +743,8 @@ mod tests {
                             amount: 1,
                             unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddToNow
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -702,7 +758,8 @@ mod tests {
                             amount: 1,
                             unit: TimeUnit::Week,
                             strategy: RepeatStrategy::AddToNow
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -716,7 +773,8 @@ mod tests {
                             amount: 20,
                             unit: TimeUnit::Day,
                             strategy: RepeatStrategy::AddToNow
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -730,7 +788,8 @@ mod tests {
                             amount: 5,
                             unit: TimeUnit::Hour,
                             strategy: RepeatStrategy::AddToNow
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -744,7 +803,8 @@ mod tests {
                             amount: 2,
                             unit: TimeUnit::Month,
                             strategy: RepeatStrategy::AddToNow
-                        }
+                        },
+                        None
                     )
                 ))
             );
@@ -758,7 +818,8 @@ mod tests {
                             amount: 12,
                             unit: TimeUnit::Year,
                             strategy: RepeatStrategy::AddToNow
-                        }
+                        },
+                        None
                     )
                 ))
             );

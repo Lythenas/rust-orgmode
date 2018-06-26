@@ -106,7 +106,7 @@ pub enum RepeatStrategy {
 }
 
 /// Represents a date in an org file. See [https://orgmode.org/manual/Timestamps.html].
-/// TODO convert to struct and add warning period
+/// TODO convert to struct and add warning period to all variants
 #[derive(Debug, PartialEq, Eq)]
 pub enum Timestamp {
     InactiveDate(NaiveDate),
@@ -120,8 +120,8 @@ pub enum Timestamp {
     },
     DateRange(NaiveDate, NaiveDate),
     DatetimeRange(NaiveDateTime, NaiveDateTime),
-    RepeatingDate(NaiveDate, Repeater),
-    RepeatingDatetime(NaiveDateTime, Repeater),
+    RepeatingDate(NaiveDate, Repeater, Option<WarningPeriod>),
+    RepeatingDatetime(NaiveDateTime, Repeater, Option<WarningPeriod>),
 }
 
 impl Timestamp {
