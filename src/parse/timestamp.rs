@@ -365,10 +365,12 @@ impl From<(u32, TimeUnit)> for WarningPeriod {
     }
 }
 
+/// Helper function to convert a `Fn(&str) -> T` to `Fn(CompleteStr) -> T`.
 fn cstr<T>(f: impl Fn(&str) -> T) -> impl Fn(CompleteStr) -> T {
     move |s| f(*s)
 }
 
+/// Parses a `TimeUnit` using its `from_str`-method if there is a valid character.
 named!(time_unit<CompleteStr, TimeUnit, Error>,
     to_failure!(map_res!(
         alt!(tag!("y") | tag!("m") | tag!("w") | tag!("d") | tag!("h")),
@@ -412,6 +414,49 @@ named!(timestamp<CompleteStr, Timestamp, Error>,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Helper macro for testing.
+    ///
+    /// # Usage
+    ///
+    /// Testing something should fail to parse:
+    ///
+    /// ```
+    /// assert_ts!("garbage" => #);
+    /// ```
+    ///
+    /// Testing something should completely parse:
+    ///
+    /// ```ignore
+    /// assert_ts!("str to parse" => Timestamp::Date...);
+    /// ```
+    ///
+    /// Testing somthing should parse with rest:
+    ///
+    /// ```ignore
+    /// assert_ts!("str to parse with rest" => "with rest", Timestamp::Date...);
+    /// ```
+    macro_rules! assert_ts {
+        ($str:expr => #) => ({
+            assert!(timestamp(CompleteStr($str)).is_err())
+        });
+        ($str:expr => $res:expr) => ({
+            assert_ts!($str => "", $res)
+        });
+        ($str:expr => $rem:expr, $res:expr) => ({
+            // Can't compare the entire Result with Ok(...)
+            // because the Error type does not implement PartialEq
+            assert_eq!(
+                timestamp(CompleteStr($str)).ok(),
+                Some((
+                    CompleteStr($rem),
+                    $res
+                )),
+                "Parsing of {:?} failed.",
+                $str
+            )
+        });
+    }
 
     mod helpers {
         use super::*;
@@ -501,41 +546,50 @@ mod tests {
 
         #[test]
         fn test_add_once_with_warning() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 12:55 +1d -1h>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDatetime(
-                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                        Repeater {
-                            amount: 1,
-                            unit: TimeUnit::Day,
-                            strategy: RepeatStrategy::AddOnce,
-                        },
-                        Some(WarningPeriod {
-                            amount: 1,
-                            unit: TimeUnit::Hour,
-                        })
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 12:55 +1d -1h>" =>
+                Timestamp::RepeatingDatetime(
+                    NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Day,
+                        strategy: RepeatStrategy::AddOnce,
+                    },
+                    Some(WarningPeriod {
+                        amount: 1,
+                        unit: TimeUnit::Hour,
+                    })
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 +1w -1d>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 1,
-                            unit: TimeUnit::Week,
-                            strategy: RepeatStrategy::AddOnce,
-                        },
-                        Some(WarningPeriod {
-                            amount: 1,
-                            unit: TimeUnit::Day,
-                        })
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 12:55 +1d -1h>" =>
+                Timestamp::RepeatingDatetime(
+                    NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Day,
+                        strategy: RepeatStrategy::AddOnce,
+                    },
+                    Some(WarningPeriod {
+                        amount: 1,
+                        unit: TimeUnit::Hour,
+                    })
+                )
+            );
+            assert_ts!(
+                "<2018-06-04 +1w -1d>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Week,
+                        strategy: RepeatStrategy::AddOnce,
+                    },
+                    Some(WarningPeriod {
+                        amount: 1,
+                        unit: TimeUnit::Day,
+                    })
+                )
             );
         }
     }
@@ -545,283 +599,229 @@ mod tests {
 
         #[test]
         fn test_add_once() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 12:55 +1w>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDatetime(
-                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                        Repeater {
-                            amount: 1,
-                            unit: TimeUnit::Week,
-                            strategy: RepeatStrategy::AddOnce
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 12:55 +1w>" =>
+                Timestamp::RepeatingDatetime(
+                    NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Week,
+                        strategy: RepeatStrategy::AddOnce
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 +1w>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 1,
-                            unit: TimeUnit::Week,
-                            strategy: RepeatStrategy::AddOnce
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 +1w>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Week,
+                        strategy: RepeatStrategy::AddOnce
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 +20d>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 20,
-                            unit: TimeUnit::Day,
-                            strategy: RepeatStrategy::AddOnce
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 +20d>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 20,
+                        unit: TimeUnit::Day,
+                        strategy: RepeatStrategy::AddOnce
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 +5h>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 5,
-                            unit: TimeUnit::Hour,
-                            strategy: RepeatStrategy::AddOnce
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 +5h>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 5,
+                        unit: TimeUnit::Hour,
+                        strategy: RepeatStrategy::AddOnce
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 +7m>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 7,
-                            unit: TimeUnit::Month,
-                            strategy: RepeatStrategy::AddOnce
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 +7m>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 7,
+                        unit: TimeUnit::Month,
+                        strategy: RepeatStrategy::AddOnce
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 +1y>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 1,
-                            unit: TimeUnit::Year,
-                            strategy: RepeatStrategy::AddOnce
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 +1y>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Year,
+                        strategy: RepeatStrategy::AddOnce
+                    },
+                    None
+                )
             );
         }
 
         #[test]
         fn test_add_until_future() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 12:55 ++1w>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDatetime(
-                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                        Repeater {
-                            amount: 1,
-                            unit: TimeUnit::Week,
-                            strategy: RepeatStrategy::AddUntilFuture
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 12:55 ++1w>" =>
+                Timestamp::RepeatingDatetime(
+                    NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Week,
+                        strategy: RepeatStrategy::AddUntilFuture
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 ++1w>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 1,
-                            unit: TimeUnit::Week,
-                            strategy: RepeatStrategy::AddUntilFuture
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 ++1w>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Week,
+                        strategy: RepeatStrategy::AddUntilFuture
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 ++20d>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 20,
-                            unit: TimeUnit::Day,
-                            strategy: RepeatStrategy::AddUntilFuture
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 ++20d>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 20,
+                        unit: TimeUnit::Day,
+                        strategy: RepeatStrategy::AddUntilFuture
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 ++5h>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 5,
-                            unit: TimeUnit::Hour,
-                            strategy: RepeatStrategy::AddUntilFuture
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 ++5h>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 5,
+                        unit: TimeUnit::Hour,
+                        strategy: RepeatStrategy::AddUntilFuture
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 ++20m>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 20,
-                            unit: TimeUnit::Month,
-                            strategy: RepeatStrategy::AddUntilFuture
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 ++20m>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 20,
+                        unit: TimeUnit::Month,
+                        strategy: RepeatStrategy::AddUntilFuture
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 ++5y>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 5,
-                            unit: TimeUnit::Year,
-                            strategy: RepeatStrategy::AddUntilFuture
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 ++5y>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 5,
+                        unit: TimeUnit::Year,
+                        strategy: RepeatStrategy::AddUntilFuture
+                    },
+                    None
+                )
             );
         }
 
         #[test]
         fn test_add_to_now() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 12:55 .+1w>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDatetime(
-                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                        Repeater {
-                            amount: 1,
-                            unit: TimeUnit::Week,
-                            strategy: RepeatStrategy::AddToNow
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 12:55 .+1w>" =>
+                Timestamp::RepeatingDatetime(
+                    NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Week,
+                        strategy: RepeatStrategy::AddToNow
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 .+1w>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 1,
-                            unit: TimeUnit::Week,
-                            strategy: RepeatStrategy::AddToNow
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 .+1w>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 1,
+                        unit: TimeUnit::Week,
+                        strategy: RepeatStrategy::AddToNow
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 .+20d>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 20,
-                            unit: TimeUnit::Day,
-                            strategy: RepeatStrategy::AddToNow
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 .+20d>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 20,
+                        unit: TimeUnit::Day,
+                        strategy: RepeatStrategy::AddToNow
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 .+5h>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 5,
-                            unit: TimeUnit::Hour,
-                            strategy: RepeatStrategy::AddToNow
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 .+5h>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 5,
+                        unit: TimeUnit::Hour,
+                        strategy: RepeatStrategy::AddToNow
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 .+2m>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 2,
-                            unit: TimeUnit::Month,
-                            strategy: RepeatStrategy::AddToNow
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 .+2m>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 2,
+                        unit: TimeUnit::Month,
+                        strategy: RepeatStrategy::AddToNow
+                    },
+                    None
+                )
             );
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 .+12y>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::RepeatingDate(
-                        NaiveDate::from_ymd(2018, 06, 04),
-                        Repeater {
-                            amount: 12,
-                            unit: TimeUnit::Year,
-                            strategy: RepeatStrategy::AddToNow
-                        },
-                        None
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 .+12y>" =>
+                Timestamp::RepeatingDate(
+                    NaiveDate::from_ymd(2018, 06, 04),
+                    Repeater {
+                        amount: 12,
+                        unit: TimeUnit::Year,
+                        strategy: RepeatStrategy::AddToNow
+                    },
+                    None
+                )
             );
         }
     }
@@ -831,29 +831,23 @@ mod tests {
 
         #[test]
         fn test_same_day() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 12:00>--<2018-06-04 14:00>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::DatetimeRange(
-                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
-                        NaiveDate::from_ymd(2018, 06, 04).and_hms(14, 0, 0)
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 12:00>--<2018-06-04 14:00>" =>
+                Timestamp::DatetimeRange(
+                    NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
+                    NaiveDate::from_ymd(2018, 06, 04).and_hms(14, 0, 0)
+                )
             );
         }
 
         #[test]
         fn test_different_days() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 12:00>--<2018-08-09 11:54>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::DatetimeRange(
-                        NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
-                        NaiveDate::from_ymd(2018, 08, 09).and_hms(11, 54, 0)
-                    )
-                ))
+            assert_ts!(
+                "<2018-06-04 12:00>--<2018-08-09 11:54>" =>
+                Timestamp::DatetimeRange(
+                    NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
+                    NaiveDate::from_ymd(2018, 08, 09).and_hms(11, 54, 0)
+                )
             );
         }
     }
@@ -863,16 +857,13 @@ mod tests {
 
         #[test]
         fn with_weekday() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-04 Mon 13:00-14:30>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::TimeRange {
-                        date: NaiveDate::from_ymd(2018, 06, 04),
-                        start_time: NaiveTime::from_hms(13, 0, 0),
-                        end_time: NaiveTime::from_hms(14, 30, 0)
-                    }
-                ))
+            assert_ts!(
+                "<2018-06-04 Mon 13:00-14:30>" =>
+                Timestamp::TimeRange {
+                    date: NaiveDate::from_ymd(2018, 06, 04),
+                    start_time: NaiveTime::from_hms(13, 0, 0),
+                    end_time: NaiveTime::from_hms(14, 30, 0)
+                }
             );
         }
 
@@ -883,24 +874,18 @@ mod tests {
 
         #[test]
         fn with_weekday() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-13 Wed 20:11>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0))
-                ))
+            assert_ts!(
+                "<2018-06-13 Wed 20:11>" =>
+                Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0))
             );
-            assert!(timestamp(CompleteStr("<2018-06-13 Mon 11:33>")).is_err());
+            assert_ts!("<2018-06-13 Mon 11:33>" => #);
         }
 
         #[test]
         fn without_weekday() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-14 11:45>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0))
-                ))
+            assert_ts!(
+                "<2018-06-14 11:45>" =>
+                Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0))
             );
         }
 
@@ -911,24 +896,18 @@ mod tests {
 
         #[test]
         fn with_weekday() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-13 Wed>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 13))
-                ))
+            assert_ts!(
+                "<2018-06-13 Wed>" =>
+                Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 13))
             );
-            assert!(timestamp(CompleteStr("<2018-06-13 Mon>")).is_err());
+            assert_ts!("<2018-06-13 Mon>" => #);
         }
 
         #[test]
         fn without_weekday() {
-            assert_eq!(
-                timestamp(CompleteStr("<2018-06-22>")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 22))
-                ))
+            assert_ts!(
+                "<2018-06-22>" =>
+                Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 22))
             );
         }
 
@@ -939,28 +918,22 @@ mod tests {
 
         #[test]
         fn with_weekday() {
-            assert_eq!(
-                timestamp(CompleteStr("[2018-06-13 Wed 11:13]")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::InactiveDatetime(
-                        NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0)
-                    )
-                ))
+            assert_ts!(
+                "[2018-06-13 Wed 11:13]" =>
+                Timestamp::InactiveDatetime(
+                    NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0)
+                )
             );
-            assert!(timestamp(CompleteStr("[2018-06-13 Mon 11:13]")).is_err());
+            assert_ts!("[2018-06-13 Mon 11:13]" => #);
         }
 
         #[test]
         fn without_weekday() {
-            assert_eq!(
-                timestamp(CompleteStr("[2018-06-13 11:39]")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::InactiveDatetime(
-                        NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 39, 0)
-                    )
-                ))
+            assert_ts!(
+                "[2018-06-13 11:39]" =>
+                Timestamp::InactiveDatetime(
+                    NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 39, 0)
+                )
             );
         }
 
@@ -971,24 +944,18 @@ mod tests {
 
         #[test]
         fn with_weekday() {
-            assert_eq!(
-                timestamp(CompleteStr("[2018-06-13 Wed]")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
-                ))
+            assert_ts!(
+                "[2018-06-13 Wed]" =>
+                Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
             );
-            assert!(timestamp(CompleteStr("[2018-06-13 Mon]")).is_err());
+            assert_ts!("[2018-06-13 Mon]" => #);
         }
 
         #[test]
         fn without_weekday() {
-            assert_eq!(
-                timestamp(CompleteStr("[2018-06-13]")).ok(),
-                Some((
-                    CompleteStr(""),
-                    Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
-                ))
+            assert_ts!(
+                "[2018-06-13]" =>
+                Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
             );
         }
 
