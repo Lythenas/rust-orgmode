@@ -66,8 +66,8 @@ pub struct OrgNode {
 
 /// Represents the action that is taken when you mark a task with a repeater as `DONE`.
 ///
-/// Contains the amount of time to use when repeating (`duration`) and the strategy
-/// to use when applying the repeat (`strategy`).
+/// Contains the amount of time to use when repeating and the strategy
+/// to use when applying the repeater (see [`RepeatStrategy`]).
 #[derive(Debug, PartialEq, Eq)]
 pub struct Repeater {
     amount: u32,
@@ -75,21 +75,25 @@ pub struct Repeater {
     strategy: RepeatStrategy,
 }
 
-/// Represents the amount of time to warn the user before a task is due.
-#[derive(Debug, PartialEq, Eq)]
-pub struct WarningPeriod {
-    amount: u32,
-    unit: TimeUnit,
-}
+impl Repeater {
+    /// Constructs a new `Repeater` with the specified unit and amount and the
+    /// `RepeatStrategy::AddOnce`.
+    pub fn new(amount: u32, unit: TimeUnit) -> Self {
+        Repeater {
+            amount,
+            unit,
+            strategy: RepeatStrategy::AddOnce,
+        }
+    }
 
-/// Represents the unit of time used for `Repeater` and `WarningPeriod`.
-#[derive(Debug, PartialEq, Eq)]
-pub enum TimeUnit {
-    Year,
-    Month,
-    Week,
-    Day,
-    Hour,
+    /// Constructs a new `Repeater` with the specified unit, amount and strategy.
+    pub fn with_strategy(amount: u32, unit: TimeUnit, strategy: RepeatStrategy) -> Self {
+        Repeater {
+            amount,
+            unit,
+            strategy,
+        }
+    }
 }
 
 /// The different repeat strategies that can be used.
@@ -103,6 +107,62 @@ pub enum RepeatStrategy {
     AddOnce,
     AddUntilFuture,
     AddToNow,
+}
+
+/// Represents the amount of time to warn the user before a task is due.
+#[derive(Debug, PartialEq, Eq)]
+pub struct WarningPeriod {
+    amount: u32,
+    unit: TimeUnit,
+}
+
+impl WarningPeriod {
+    /// Constructs a new `WarningPeriod` with the specified unit and amount.
+    pub fn new(amount: u32, unit: TimeUnit) -> Self {
+        WarningPeriod { amount, unit }
+    }
+}
+
+/// Helper trait implemented on `u32` to easily convert to a `WarningPeriod`.
+trait AsWarningPeriod {
+    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Year`.
+    fn year(self) -> WarningPeriod;
+    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Month`.
+    fn month(self) -> WarningPeriod;
+    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Week`.
+    fn week(self) -> WarningPeriod;
+    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Day`.
+    fn day(self) -> WarningPeriod;
+    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Hour`.
+    fn hour(self) -> WarningPeriod;
+}
+
+impl AsWarningPeriod for u32 {
+    fn year(self) -> WarningPeriod {
+        WarningPeriod::new(self, TimeUnit::Year)
+    }
+    fn month(self) -> WarningPeriod {
+        WarningPeriod::new(self, TimeUnit::Month)
+    }
+    fn week(self) -> WarningPeriod {
+        WarningPeriod::new(self, TimeUnit::Week)
+    }
+    fn day(self) -> WarningPeriod {
+        WarningPeriod::new(self, TimeUnit::Day)
+    }
+    fn hour(self) -> WarningPeriod {
+        WarningPeriod::new(self, TimeUnit::Hour)
+    }
+}
+
+/// Represents the unit of time used for `Repeater` and `WarningPeriod`.
+#[derive(Debug, PartialEq, Eq)]
+pub enum TimeUnit {
+    Year,
+    Month,
+    Week,
+    Day,
+    Hour,
 }
 
 /// Represents a date in an org file. See [https://orgmode.org/manual/Timestamps.html].
@@ -248,4 +308,15 @@ mod tests {
             assert!(prio.is_ok());
         }
     }
+
+    #[test]
+    fn test_as_warning_period() {
+        use TimeUnit::*;
+        assert_eq!(2018.year(), WarningPeriod::new(2018, Year));
+        assert_eq!(2.month(), WarningPeriod::new(2, Month));
+        assert_eq!(6.week(), WarningPeriod::new(6, Week));
+        assert_eq!(8.day(), WarningPeriod::new(8, Day));
+        assert_eq!(3.hour(), WarningPeriod::new(3, Hour));
+    }
+
 }

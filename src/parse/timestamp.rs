@@ -437,25 +437,22 @@ mod tests {
     /// assert_ts!("str to parse with rest" => "with rest", Timestamp::Date...);
     /// ```
     macro_rules! assert_ts {
-        ($str:expr => #) => ({
+        ($str:expr => #) => {{
             assert!(timestamp(CompleteStr($str)).is_err())
-        });
-        ($str:expr => $res:expr) => ({
+        }};
+        ($str:expr => $res:expr) => {{
             assert_ts!($str => "", $res)
-        });
-        ($str:expr => $rem:expr, $res:expr) => ({
+        }};
+        ($str:expr => $rem:expr, $res:expr) => {{
             // Can't compare the entire Result with Ok(...)
             // because the Error type does not implement PartialEq
             assert_eq!(
                 timestamp(CompleteStr($str)).ok(),
-                Some((
-                    CompleteStr($rem),
-                    $res
-                )),
+                Some((CompleteStr($rem), $res)),
                 "Parsing of {:?} failed.",
                 $str
             )
-        });
+        }};
     }
 
     mod helpers {
