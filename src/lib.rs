@@ -123,7 +123,7 @@ impl WarningPeriod {
     }
 }
 
-/// Helper trait implemented on `u32` to easily convert to a `WarningPeriod`.
+/// Convenience trait implemented on `u32` to easily convert to a `WarningPeriod`.
 trait AsWarningPeriod {
     /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Year`.
     fn year(self) -> WarningPeriod;
@@ -213,60 +213,7 @@ impl Timestamp {
             _ => true,
         }
     }
-
-    /// Returns `true` if the org timestamp is inactive.
-    ///
-    /// This is the case if it is eighter [`InactiveDate`] or [`InactiveDateTime`].
-    ///
-    /// ```
-    /// # extern crate chrono;
-    /// # extern crate orgmode;
-    /// # use chrono::NaiveDate;
-    /// # use orgmode::Timestamp;
-    ///
-    /// let x = Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 04, 28));
-    /// assert_eq!(x.is_active(), true);
-    ///
-    /// let x = Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 04, 28));
-    /// assert_eq!(x.is_active(), false);
-    /// ```
-    ///
-    /// [`InactiveDate`]: #variant.InactiveDate
-    /// [`InactiveDateTime`]: #variant.InactiveDateTime
-    pub fn is_inactive(&self) -> bool {
-        !self.is_active()
-    }
 }
-
-/// Parses the second line of a org node. This line can contain any of closed, scheduled and deadline
-/// date or none of them.
-///
-/// The dates are preceded by their respective keyword (`CLOSED`, `DEADLINE`, `SCHEDULED`) followed
-/// by a `:`, a space and the actual date. The date of closed is inactive and therefore surrounded by square brackets (`[`, `]`). The date of scheduled and deadline are plain timestamps or timestamps with a repeat interval and therefore surrounded by angle brackets (`<`, `>`).
-//fn parse_special_node_timestamps(line: &str) -> SpecialNodeTimestamps {
-//    lazy_static! {
-//        static ref RE_OUTER: Regex =
-//            Regex::new(r"^\s*((?:DEADLINE|SCHEDULED|CLOSED):\s+(?:\[.+\]|<.+>)\s*)+").unwrap();
-//        static ref RE_ITEM: Regex =
-//            Regex::new(r"(?P<kind>DEADLINE|SCHEDULED|CLOSED):\s+(?P<ts>\[.+\]|<.+>)").unwrap();
-//    }
-//
-//    RE_OUTER
-//        .find(line)
-//        .map(|truncated| {
-//            RE_ITEM
-//                .captures_iter(truncated.as_str())
-//                .map(|cap| {
-//                    (
-//                        cap.name("kind").map(|m| m.as_str()),
-//                        cap.name("ts").map(|m| m.as_str()),
-//                    )
-//                })
-//                .map(|x| x.into())
-//                .fold(SpecialNodeTimestamps::default(), |acc, x| acc.and(x))
-//        })
-//        .unwrap_or_default()
-//}
 
 /// The state of a [`OrgNode`]. Can be eighter `Todo` or `Done`. The enum variants accept an
 /// additional string because the actual keyword signaling the state of the `OrgNode` can be
@@ -317,6 +264,31 @@ mod tests {
         assert_eq!(6.week(), WarningPeriod::new(6, Week));
         assert_eq!(8.day(), WarningPeriod::new(8, Day));
         assert_eq!(3.hour(), WarningPeriod::new(3, Hour));
+    }
+
+    mod warning_period {
+        use super::*;
+
+        #[test]
+        fn test_warning_year() {
+            assert_eq!(44.year(), WarningPeriod::new(44, TimeUnit::Year));
+        }
+
+        #[test]
+        fn test_warning_month() {
+            assert_eq!(44.month(), WarningPeriod::new(44, TimeUnit::Month));
+        }
+
+        #[test]
+        fn test_warning_day() {
+            assert_eq!(44.day(), WarningPeriod::new(44, TimeUnit::Day));
+        }
+
+        #[test]
+        fn test_warning_hour() {
+            assert_eq!(44.hour(), WarningPeriod::new(44, TimeUnit::Hour));
+        }
+
     }
 
 }
