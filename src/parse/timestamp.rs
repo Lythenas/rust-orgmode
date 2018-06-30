@@ -9,7 +9,8 @@ use RepeatStrategy;
 use Repeater;
 use TimeUnit;
 use Timestamp;
-use WarningPeriod;
+use TimePeriod;
+use AsTimePeriod;
 
 use nom::types::CompleteStr;
 
@@ -151,7 +152,7 @@ struct Ts {
     active: bool,
     variant: TsVariant,
     repeater: Option<Repeater>,
-    warning: Option<WarningPeriod>,
+    warning: Option<TimePeriod>,
 }
 
 impl
@@ -159,7 +160,7 @@ impl
         bool,
         TsVariant,
         Option<Repeater>,
-        Option<WarningPeriod>,
+        Option<TimePeriod>,
         Option<TsVariant>,
     )> for Ts
 {
@@ -170,7 +171,7 @@ impl
             bool,
             TsVariant,
             Option<Repeater>,
-            Option<WarningPeriod>,
+            Option<TimePeriod>,
             Option<TsVariant>,
         ),
     ) -> Result<Self, Self::Error> {
@@ -323,8 +324,7 @@ impl FromStr for TimeUnit {
 impl From<(RepeatStrategy, u32, TimeUnit)> for Repeater {
     fn from((strategy, amount, unit): (RepeatStrategy, u32, TimeUnit)) -> Self {
         Repeater {
-            amount,
-            unit,
+            period: TimePeriod::new(amount, unit),
             strategy,
         }
     }
@@ -356,9 +356,9 @@ fn to_strategy(s: &str) -> Result<RepeatStrategy, Error> {
     }
 }
 
-impl From<(u32, TimeUnit)> for WarningPeriod {
+impl From<(u32, TimeUnit)> for TimePeriod {
     fn from((amount, unit): (u32, TimeUnit)) -> Self {
-        WarningPeriod {
+        TimePeriod {
             amount: amount,
             unit,
         }
@@ -378,12 +378,12 @@ named!(time_unit<CompleteStr, TimeUnit, Error>,
     ))
 );
 
-named!(warning_period<CompleteStr, WarningPeriod, Error>,
+named!(warning_period<CompleteStr, TimePeriod, Error>,
     to_failure!(do_parse!(
         to_failure!(tag!(" -")) >>
         amount: to_failure!(parse_u32) >>
         unit: time_unit >>
-        (WarningPeriod { amount, unit, })
+        (TimePeriod { amount, unit, })
     ))
 );
 
@@ -540,6 +540,7 @@ mod tests {
 
     mod repeater_with_warning {
         use super::*;
+        use RepeatStrategy::*;
 
         #[test]
         fn test_add_once_with_warning() {
@@ -547,45 +548,24 @@ mod tests {
                 "<2018-06-04 12:55 +1d -1h>" =>
                 Timestamp::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Day,
-                        strategy: RepeatStrategy::AddOnce,
-                    },
-                    Some(WarningPeriod {
-                        amount: 1,
-                        unit: TimeUnit::Hour,
-                    })
+                    Repeater::new(1.day(), AddOnce),
+                    Some(1.hour())
                 )
             );
             assert_ts!(
                 "<2018-06-04 12:55 +1d -1h>" =>
                 Timestamp::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Day,
-                        strategy: RepeatStrategy::AddOnce,
-                    },
-                    Some(WarningPeriod {
-                        amount: 1,
-                        unit: TimeUnit::Hour,
-                    })
+                    Repeater::new(1.day(), AddOnce),
+                    Some(1.hour())
                 )
             );
             assert_ts!(
                 "<2018-06-04 +1w -1d>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Week,
-                        strategy: RepeatStrategy::AddOnce,
-                    },
-                    Some(WarningPeriod {
-                        amount: 1,
-                        unit: TimeUnit::Day,
-                    })
+                    Repeater::new(1.week(), AddOnce),
+                    Some(1.day())
                 )
             );
         }
@@ -593,6 +573,7 @@ mod tests {
 
     mod repeater {
         use super::*;
+        use RepeatStrategy::*;
 
         #[test]
         fn test_add_once() {
@@ -600,11 +581,7 @@ mod tests {
                 "<2018-06-04 12:55 +1w>" =>
                 Timestamp::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Week,
-                        strategy: RepeatStrategy::AddOnce
-                    },
+                    Repeater::new(1.week(), AddOnce),
                     None
                 )
             );
@@ -612,11 +589,7 @@ mod tests {
                 "<2018-06-04 +1w>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Week,
-                        strategy: RepeatStrategy::AddOnce
-                    },
+                    Repeater::new(1.week(), AddOnce),
                     None
                 )
             );
@@ -624,11 +597,7 @@ mod tests {
                 "<2018-06-04 +20d>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 20,
-                        unit: TimeUnit::Day,
-                        strategy: RepeatStrategy::AddOnce
-                    },
+                    Repeater::new(20.day(), AddOnce),
                     None
                 )
             );
@@ -636,11 +605,7 @@ mod tests {
                 "<2018-06-04 +5h>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 5,
-                        unit: TimeUnit::Hour,
-                        strategy: RepeatStrategy::AddOnce
-                    },
+                    Repeater::new(5.hour(), AddOnce),
                     None
                 )
             );
@@ -648,11 +613,7 @@ mod tests {
                 "<2018-06-04 +7m>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 7,
-                        unit: TimeUnit::Month,
-                        strategy: RepeatStrategy::AddOnce
-                    },
+                    Repeater::new(7.month(), AddOnce),
                     None
                 )
             );
@@ -660,11 +621,7 @@ mod tests {
                 "<2018-06-04 +1y>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Year,
-                        strategy: RepeatStrategy::AddOnce
-                    },
+                    Repeater::new(1.year(), AddOnce),
                     None
                 )
             );
@@ -676,11 +633,7 @@ mod tests {
                 "<2018-06-04 12:55 ++1w>" =>
                 Timestamp::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Week,
-                        strategy: RepeatStrategy::AddUntilFuture
-                    },
+                    Repeater::new(1.week(), AddUntilFuture),
                     None
                 )
             );
@@ -688,11 +641,7 @@ mod tests {
                 "<2018-06-04 ++1w>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Week,
-                        strategy: RepeatStrategy::AddUntilFuture
-                    },
+                    Repeater::new(1.week(), AddUntilFuture),
                     None
                 )
             );
@@ -700,11 +649,7 @@ mod tests {
                 "<2018-06-04 ++20d>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 20,
-                        unit: TimeUnit::Day,
-                        strategy: RepeatStrategy::AddUntilFuture
-                    },
+                    Repeater::new(20.day(), AddUntilFuture),
                     None
                 )
             );
@@ -712,11 +657,7 @@ mod tests {
                 "<2018-06-04 ++5h>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 5,
-                        unit: TimeUnit::Hour,
-                        strategy: RepeatStrategy::AddUntilFuture
-                    },
+                    Repeater::new(5.hour(), AddUntilFuture),
                     None
                 )
             );
@@ -724,11 +665,7 @@ mod tests {
                 "<2018-06-04 ++20m>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 20,
-                        unit: TimeUnit::Month,
-                        strategy: RepeatStrategy::AddUntilFuture
-                    },
+                    Repeater::new(20.month(), AddUntilFuture),
                     None
                 )
             );
@@ -736,11 +673,7 @@ mod tests {
                 "<2018-06-04 ++5y>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 5,
-                        unit: TimeUnit::Year,
-                        strategy: RepeatStrategy::AddUntilFuture
-                    },
+                    Repeater::new(5.year(), AddUntilFuture),
                     None
                 )
             );
@@ -752,11 +685,7 @@ mod tests {
                 "<2018-06-04 12:55 .+1w>" =>
                 Timestamp::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Week,
-                        strategy: RepeatStrategy::AddToNow
-                    },
+                    Repeater::new(1.week(), AddToNow),
                     None
                 )
             );
@@ -764,11 +693,7 @@ mod tests {
                 "<2018-06-04 .+1w>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 1,
-                        unit: TimeUnit::Week,
-                        strategy: RepeatStrategy::AddToNow
-                    },
+                    Repeater::new(1.week(), AddToNow),
                     None
                 )
             );
@@ -776,11 +701,7 @@ mod tests {
                 "<2018-06-04 .+20d>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 20,
-                        unit: TimeUnit::Day,
-                        strategy: RepeatStrategy::AddToNow
-                    },
+                    Repeater::new(20.day(), AddToNow),
                     None
                 )
             );
@@ -788,11 +709,7 @@ mod tests {
                 "<2018-06-04 .+5h>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 5,
-                        unit: TimeUnit::Hour,
-                        strategy: RepeatStrategy::AddToNow
-                    },
+                    Repeater::new(5.hour(), AddToNow),
                     None
                 )
             );
@@ -800,11 +717,7 @@ mod tests {
                 "<2018-06-04 .+2m>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 2,
-                        unit: TimeUnit::Month,
-                        strategy: RepeatStrategy::AddToNow
-                    },
+                    Repeater::new(2.month(), AddToNow),
                     None
                 )
             );
@@ -812,11 +725,7 @@ mod tests {
                 "<2018-06-04 .+12y>" =>
                 Timestamp::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater {
-                        amount: 12,
-                        unit: TimeUnit::Year,
-                        strategy: RepeatStrategy::AddToNow
-                    },
+                    Repeater::new(12.year(), AddToNow),
                     None
                 )
             );

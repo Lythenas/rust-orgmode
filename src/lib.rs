@@ -70,29 +70,14 @@ pub struct OrgNode {
 /// to use when applying the repeater (see [`RepeatStrategy`]).
 #[derive(Debug, PartialEq, Eq)]
 pub struct Repeater {
-    amount: u32,
-    unit: TimeUnit,
+    period: TimePeriod,
     strategy: RepeatStrategy,
 }
 
 impl Repeater {
-    /// Constructs a new `Repeater` with the specified unit and amount and the
-    /// `RepeatStrategy::AddOnce`.
-    pub fn new(amount: u32, unit: TimeUnit) -> Self {
-        Repeater {
-            amount,
-            unit,
-            strategy: RepeatStrategy::AddOnce,
-        }
-    }
-
-    /// Constructs a new `Repeater` with the specified unit, amount and strategy.
-    pub fn with_strategy(amount: u32, unit: TimeUnit, strategy: RepeatStrategy) -> Self {
-        Repeater {
-            amount,
-            unit,
-            strategy,
-        }
+    /// Constructs a new `Repeater` with the specified time period and repeat strategy.
+    pub fn new(period: TimePeriod, strategy: RepeatStrategy) -> Self {
+        Repeater { period, strategy, }
     }
 }
 
@@ -109,53 +94,55 @@ pub enum RepeatStrategy {
     AddToNow,
 }
 
-/// Represents the amount of time to warn the user before a task is due.
+/// Represents a amount of time.
+///
+/// Used e.g. as the warning period and in repeater.
 #[derive(Debug, PartialEq, Eq)]
-pub struct WarningPeriod {
+pub struct TimePeriod {
     amount: u32,
     unit: TimeUnit,
 }
 
-impl WarningPeriod {
-    /// Constructs a new `WarningPeriod` with the specified unit and amount.
+impl TimePeriod {
+    /// Constructs a new `TimePeriod` with the specified unit and amount.
     pub fn new(amount: u32, unit: TimeUnit) -> Self {
-        WarningPeriod { amount, unit }
+        Self { amount, unit }
     }
 }
 
-/// Convenience trait implemented on `u32` to easily convert to a `WarningPeriod`.
-trait AsWarningPeriod {
-    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Year`.
-    fn year(self) -> WarningPeriod;
-    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Month`.
-    fn month(self) -> WarningPeriod;
-    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Week`.
-    fn week(self) -> WarningPeriod;
-    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Day`.
-    fn day(self) -> WarningPeriod;
-    /// Convert self to a `WarningPeriod` wit unit `TimeUnit::Hour`.
-    fn hour(self) -> WarningPeriod;
+/// Convenience trait implemented on `u32` to easily convert to a `TimePeriod`.
+trait AsTimePeriod {
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Year`.
+    fn year(self) -> TimePeriod;
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Month`.
+    fn month(self) -> TimePeriod;
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Week`.
+    fn week(self) -> TimePeriod;
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Day`.
+    fn day(self) -> TimePeriod;
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Hour`.
+    fn hour(self) -> TimePeriod;
 }
 
-impl AsWarningPeriod for u32 {
-    fn year(self) -> WarningPeriod {
-        WarningPeriod::new(self, TimeUnit::Year)
+impl AsTimePeriod for u32 {
+    fn year(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Year)
     }
-    fn month(self) -> WarningPeriod {
-        WarningPeriod::new(self, TimeUnit::Month)
+    fn month(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Month)
     }
-    fn week(self) -> WarningPeriod {
-        WarningPeriod::new(self, TimeUnit::Week)
+    fn week(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Week)
     }
-    fn day(self) -> WarningPeriod {
-        WarningPeriod::new(self, TimeUnit::Day)
+    fn day(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Day)
     }
-    fn hour(self) -> WarningPeriod {
-        WarningPeriod::new(self, TimeUnit::Hour)
+    fn hour(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Hour)
     }
 }
 
-/// Represents the unit of time used for `Repeater` and `WarningPeriod`.
+/// Represents the unit of time used for `Repeater` and `TimePeriod`.
 #[derive(Debug, PartialEq, Eq)]
 pub enum TimeUnit {
     Year,
@@ -180,8 +167,8 @@ pub enum Timestamp {
     },
     DateRange(NaiveDate, NaiveDate),
     DatetimeRange(NaiveDateTime, NaiveDateTime),
-    RepeatingDate(NaiveDate, Repeater, Option<WarningPeriod>),
-    RepeatingDatetime(NaiveDateTime, Repeater, Option<WarningPeriod>),
+    RepeatingDate(NaiveDate, Repeater, Option<TimePeriod>),
+    RepeatingDatetime(NaiveDateTime, Repeater, Option<TimePeriod>),
 }
 
 impl Timestamp {
@@ -256,37 +243,27 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_as_warning_period() {
-        use TimeUnit::*;
-        assert_eq!(2018.year(), WarningPeriod::new(2018, Year));
-        assert_eq!(2.month(), WarningPeriod::new(2, Month));
-        assert_eq!(6.week(), WarningPeriod::new(6, Week));
-        assert_eq!(8.day(), WarningPeriod::new(8, Day));
-        assert_eq!(3.hour(), WarningPeriod::new(3, Hour));
-    }
-
     mod warning_period {
         use super::*;
 
         #[test]
         fn test_warning_year() {
-            assert_eq!(44.year(), WarningPeriod::new(44, TimeUnit::Year));
+            assert_eq!(44.year(), TimePeriod::new(44, TimeUnit::Year));
         }
 
         #[test]
         fn test_warning_month() {
-            assert_eq!(44.month(), WarningPeriod::new(44, TimeUnit::Month));
+            assert_eq!(44.month(), TimePeriod::new(44, TimeUnit::Month));
         }
 
         #[test]
         fn test_warning_day() {
-            assert_eq!(44.day(), WarningPeriod::new(44, TimeUnit::Day));
+            assert_eq!(44.day(), TimePeriod::new(44, TimeUnit::Day));
         }
 
         #[test]
         fn test_warning_hour() {
-            assert_eq!(44.hour(), WarningPeriod::new(44, TimeUnit::Hour));
+            assert_eq!(44.hour(), TimePeriod::new(44, TimeUnit::Hour));
         }
 
     }
