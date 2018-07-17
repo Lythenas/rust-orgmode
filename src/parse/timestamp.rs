@@ -5,12 +5,12 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::str::{self, FromStr};
 
+use AsTimePeriod;
 use RepeatStrategy;
 use Repeater;
+use TimePeriod;
 use TimeUnit;
 use Timestamp;
-use TimePeriod;
-use AsTimePeriod;
 
 use nom::types::CompleteStr;
 
@@ -187,6 +187,9 @@ impl
             (TsVariant::Datetime(start), Some(TsVariant::Datetime(end))) => {
                 TsVariant::DatetimeRange(start, end)
             }
+            (TsVariant::Date(start), Some(TsVariant::Date(end))) => {
+                TsVariant::DateRange(start, end)
+            }
             (variant, None) => variant,
             _ => return Err(()),
         };
@@ -234,7 +237,7 @@ impl TryFrom<Ts> for Timestamp {
                     start_time,
                     end_time,
                 },
-                TsVariant::DateRange(start, end) => unimplemented!(),
+                TsVariant::DateRange(start, end) => Timestamp::DateRange(start, end),
                 TsVariant::DatetimeRange(start_datetime, end_datetime) => {
                     Timestamp::DatetimeRange(start_datetime, end_datetime)
                 }
@@ -817,6 +820,34 @@ mod tests {
             );
         }
 
+    }
+
+    mod active_daterange {
+        use super::*;
+
+        #[test]
+        fn with_weekday() {
+            assert_ts!(
+                "<2018-06-13 Wed>--<2018-06-16 Sat>" =>
+                Timestamp::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16))
+            );
+        }
+
+        #[test]
+        fn without_weekday() {
+            assert_ts!(
+                "<2018-06-13>--<2018-06-16>" =>
+                Timestamp::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16))
+            );
+            assert_ts!(
+                "<2018-06-13 Wed>--<2018-06-16>" =>
+                Timestamp::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16))
+            );
+            assert_ts!(
+                "<2018-06-13>--<2018-06-16 Sat>" =>
+                Timestamp::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16))
+            );
+        }
     }
 
     mod inactive_datetime {

@@ -27,7 +27,7 @@ use chrono::Duration;
 
 pub use parse::*;
 
-/// Represents a org file.
+/// Represents an org file.
 #[derive(Debug, PartialEq, Eq)]
 pub struct OrgFile {
     preface: String,
@@ -57,7 +57,7 @@ pub struct OrgNode {
     scheduled: Option<Timestamp>,
     deadline: Option<Timestamp>,
     closed: Option<Timestamp>,
-    //timestamps: Vec<OrgTimestamp>,
+    timestamps: Vec<Timestamp>,
     //properties: OrgProperties,
     content: OrgContent,
     //commented: bool,
@@ -77,7 +77,7 @@ pub struct Repeater {
 impl Repeater {
     /// Constructs a new `Repeater` with the specified time period and repeat strategy.
     pub fn new(period: TimePeriod, strategy: RepeatStrategy) -> Self {
-        Repeater { period, strategy, }
+        Repeater { period, strategy }
     }
 }
 
