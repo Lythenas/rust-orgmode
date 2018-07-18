@@ -202,6 +202,33 @@ impl Timestamp {
     }
 }
 
+impl FromStr for Timestamp {
+    type Err = TimestampParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use nom::types::CompleteStr;
+        parse::timestamp(CompleteStr(s)).or_else(|err| {
+            match err.into_error_kind() {
+                // TODO convert to useful error
+                nom::ErrorKind::Custom(e) => Err(TimestampParseError::Custom(e)),
+                _ => unimplemented!()
+            }
+        }).and_then(|(s, ts)| {
+            if s == CompleteStr("") {
+                Ok(ts)
+            } else {
+                Err(TimestampParseError::TooMuchInput(s.to_string()))
+            }
+        })
+    }
+}
+
+#[derive(Debug)]
+pub enum TimestampParseError {
+    TooMuchInput(String),
+    Custom(failure::Error),
+}
+
 /// The state of a [`OrgNode`]. Can be eighter `Todo` or `Done`. The enum variants accept an
 /// additional string because the actual keyword signaling the state of the `OrgNode` can be
 /// anything.
@@ -265,7 +292,15 @@ mod tests {
         fn test_warning_hour() {
             assert_eq!(44.hour(), TimePeriod::new(44, TimeUnit::Hour));
         }
+    }
 
+    mod timestamp {
+        use super::*;
+
+        #[test]
+        fn test_from_str() {
+            assert_eq!("<2018-06-13 21:22>".parse().ok(), Some(Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 13).and_hms(21, 22, 0))));
+        }
     }
 
 }
