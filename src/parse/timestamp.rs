@@ -249,6 +249,7 @@ impl TryFrom<Ts> for Timestamp {
                 TsVariant::DateWithTimeRange(_, _, _) => {
                     return Err(TimestampParseError::InactiveDateWithTimeRange.into())
                 }
+                // TODO find out if this is valid
                 TsVariant::DateRange(start, end) => unimplemented!(),
                 TsVariant::DatetimeRange(start_datetime, end_datetime) => {
                     Timestamp::DatetimeRange(start_datetime, end_datetime)
@@ -407,7 +408,7 @@ named!(tsvariant<CompleteStr, TsVariant, Error>,
     ))
 );
 
-named!(timestamp<CompleteStr, Timestamp, Error>,
+named!(pub timestamp<CompleteStr, Timestamp, Error>,
     map_res!(
         ts,
         TryFrom::try_from
@@ -747,6 +748,13 @@ mod tests {
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(14, 0, 0)
                 )
             );
+            assert_ts!(
+                "<2018-07-18 Wed 12:00>--<2018-07-18 Wed 14:00>" =>
+                Timestamp::DatetimeRange(
+                    NaiveDate::from_ymd(2018, 07, 18).and_hms(12, 0, 0),
+                    NaiveDate::from_ymd(2018, 07, 18).and_hms(14, 0, 0)
+                )
+            );
         }
 
         #[test]
@@ -756,6 +764,13 @@ mod tests {
                 Timestamp::DatetimeRange(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
                     NaiveDate::from_ymd(2018, 08, 09).and_hms(11, 54, 0)
+                )
+            );
+            assert_ts!(
+                "<2018-07-18 Wed 12:00>--<2018-07-20 Fri 11:54>" =>
+                Timestamp::DatetimeRange(
+                    NaiveDate::from_ymd(2018, 07, 18).and_hms(12, 0, 0),
+                    NaiveDate::from_ymd(2018, 07, 20).and_hms(11, 54, 0)
                 )
             );
         }
@@ -776,6 +791,17 @@ mod tests {
             );
         }
 
+        #[test]
+        fn without_weekday() {
+            assert_ts!(
+                "<2018-06-04 13:00-14:30>" =>
+                Timestamp::TimeRange {
+                    date: NaiveDate::from_ymd(2018, 06, 04),
+                    start_time: NaiveTime::from_hms(13, 0, 0),
+                    end_time: NaiveTime::from_hms(14, 30, 0)
+                }
+            );
+        }
     }
 
     mod active_datetime {
