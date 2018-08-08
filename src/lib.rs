@@ -23,7 +23,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use chrono::prelude::*;
-use chrono::Duration;
 
 pub use parse::*;
 
@@ -111,7 +110,7 @@ impl TimePeriod {
 }
 
 /// Convenience trait implemented on `u32` to easily convert to a `TimePeriod`.
-trait AsTimePeriod {
+pub trait AsTimePeriod {
     /// Convert self to a `TimePeriod` wit unit `TimeUnit::Year`.
     fn year(self) -> TimePeriod;
     /// Convert self to a `TimePeriod` wit unit `TimeUnit::Month`.
@@ -153,9 +152,15 @@ pub enum TimeUnit {
 }
 
 /// Represents a date in an org file. See [https://orgmode.org/manual/Timestamps.html].
-/// TODO convert to struct and add warning period to all variants
 #[derive(Debug, PartialEq, Eq)]
-pub enum Timestamp {
+pub struct Timestamp {
+    kind: TimestampKind,
+    warning_period: Option<TimePeriod>,
+}
+
+/// Part of a [`Timestamp`].
+#[derive(Debug, PartialEq, Eq)]
+pub enum TimestampKind {
     InactiveDate(NaiveDate),
     InactiveDatetime(NaiveDateTime),
     ActiveDate(NaiveDate),
@@ -167,14 +172,25 @@ pub enum Timestamp {
     },
     DateRange(NaiveDate, NaiveDate),
     DatetimeRange(NaiveDateTime, NaiveDateTime),
-    RepeatingDate(NaiveDate, Repeater, Option<TimePeriod>),
-    RepeatingDatetime(NaiveDateTime, Repeater, Option<TimePeriod>),
+    RepeatingDate(NaiveDate, Repeater),
+    RepeatingDatetime(NaiveDateTime, Repeater),
+}
+
+impl TimestampKind {
+    /// Returns true if the timestamp kind is active.
+    ///
+    /// This is the case if it is not [`InactiveDate`] or [`InactiveDateTime`].
+    pub fn is_active(&self) -> bool {
+        match self {
+            TimestampKind::InactiveDate(_) => false,
+            TimestampKind::InactiveDatetime(_) => false,
+            _ => true,
+        }
+    }
 }
 
 impl Timestamp {
-    /// Returns `true` if the org timestamp is active.
-    ///
-    /// This is the case if it is not one of [`InactiveDate`] or [`InactiveDateTime`].
+    /// Creates a new Timestamp from the given [`TimestampKind`] with no warning period.
     ///
     /// # Examples
     ///
@@ -183,22 +199,154 @@ impl Timestamp {
     /// # extern crate orgmode;
     /// # use chrono::NaiveDate;
     /// # use orgmode::Timestamp;
+    /// # use orgmode::TimestampKind;
+    /// # use orgmode::AsTimePeriod;
+    /// #
+    /// let ts = Timestamp::new(
+    ///     TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22))
+    /// );
+    /// assert_eq!(ts.get_kind(), &TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)));
+    /// assert_eq!(ts.get_warning_period(), &None);
+    /// ```
     ///
-    /// let x = Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// See: [`TimestampKind`]
+    pub fn new(kind: TimestampKind) -> Self {
+        Timestamp {
+            kind,
+            warning_period: None,
+        }
+    }
+
+    /// Creates a new Timestamp with the given [`TimestampKind`] and warning period.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::Timestamp;
+    /// # use orgmode::TimestampKind;
+    /// # use orgmode::AsTimePeriod;
+    /// #
+    /// let ts = Timestamp::with_warning_period(
+    ///     TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)), 1.day()
+    /// );
+    /// assert_eq!(ts.get_kind(), &TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)));
+    /// assert_eq!(ts.get_warning_period(), &Some(1.day()));
+    /// ```
+    pub fn with_warning_period(kind: TimestampKind, warning_period: TimePeriod) -> Self {
+        Self::with_warning_period_opt(kind, Some(warning_period))
+    }
+
+    /// Creates a new Timestamp with the given [`TimestampKind`] and optional warning period.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::Timestamp;
+    /// # use orgmode::TimestampKind;
+    /// # use orgmode::AsTimePeriod;
+    /// #
+    /// let ts = Timestamp::with_warning_period_opt(
+    ///     TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)),
+    ///     None
+    /// );
+    /// assert_eq!(ts.get_kind(), &TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)));
+    /// assert_eq!(ts.get_warning_period(), &None);
+    ///
+    /// let ts = Timestamp::with_warning_period_opt(
+    ///     TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)),
+    ///     Some(1.day())
+    /// );
+    /// assert_eq!(ts.get_kind(), &TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)));
+    /// assert_eq!(ts.get_warning_period(), &Some(1.day()));
+    /// ```
+    pub fn with_warning_period_opt(
+        kind: TimestampKind,
+        warning_period: Option<TimePeriod>,
+    ) -> Self {
+        Timestamp {
+            kind,
+            warning_period,
+        }
+    }
+
+    /// Returns an immutable reference to the kind of this timestamp.
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::Timestamp;
+    /// # use orgmode::TimestampKind;
+    /// # use orgmode::AsTimePeriod;
+    /// #
+    /// let ts = Timestamp::new(TimestampKind::InactiveDate(NaiveDate::from_ymd(2018, 06, 22)));
+    /// assert_eq!(ts.get_kind(), &TimestampKind::InactiveDate(NaiveDate::from_ymd(2018, 06, 22)));
+    ///
+    /// let ts = Timestamp::with_warning_period(
+    ///     TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)),
+    ///     1.day()
+    /// );
+    /// assert_eq!(ts.get_kind(), &TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)));
+    /// ```
+    pub fn get_kind(&self) -> &TimestampKind {
+        &self.kind
+    }
+
+    /// Returns an immutable reference to the warning period option of this timestamp.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::Timestamp;
+    /// # use orgmode::TimestampKind;
+    /// # use orgmode::AsTimePeriod;
+    /// #
+    /// let ts = Timestamp::new(TimestampKind::InactiveDate(NaiveDate::from_ymd(2018, 06, 22)));
+    /// assert_eq!(ts.get_warning_period(), &None);
+    ///
+    /// let ts = Timestamp::with_warning_period(
+    ///     TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)),
+    ///     1.day()
+    /// );
+    /// assert_eq!(ts.get_warning_period(), &Some(1.day()));
+    /// ```
+    pub fn get_warning_period(&self) -> &Option<TimePeriod> {
+        &self.warning_period
+    }
+
+    /// Returns `true` if the org timestamp is active.
+    ///
+    /// This is the case if its `kind` is not [`InactiveDate`] or [`InactiveDateTime`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::Timestamp;
+    /// # use orgmode::TimestampKind;
+    /// #
+    /// let x = Timestamp::new(TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 04, 28)));
     /// assert_eq!(x.is_active(), true);
     ///
-    /// let x = Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 04, 28));
+    /// let x = Timestamp::new(TimestampKind::InactiveDate(NaiveDate::from_ymd(2018, 04, 28)));
     /// assert_eq!(x.is_active(), false);
     /// ```
     ///
     /// [`InactiveDate`]: #variant.InactiveDate
     /// [`InactiveDateTime`]: #variant.InactiveDateTime
     pub fn is_active(&self) -> bool {
-        match self {
-            Timestamp::InactiveDate(_) => false,
-            Timestamp::InactiveDatetime(_) => false,
-            _ => true,
-        }
+        self.kind.is_active()
     }
 }
 
@@ -207,19 +355,20 @@ impl FromStr for Timestamp {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use nom::types::CompleteStr;
-        parse::timestamp(CompleteStr(s)).or_else(|err| {
-            match err.into_error_kind() {
-                // TODO convert to useful error
-                nom::ErrorKind::Custom(e) => Err(TimestampParseError::Custom(e)),
-                _ => unimplemented!()
-            }
-        }).and_then(|(s, ts)| {
-            if s == CompleteStr("") {
-                Ok(ts)
-            } else {
-                Err(TimestampParseError::TooMuchInput(s.to_string()))
-            }
-        })
+        parse::timestamp(CompleteStr(s))
+            .or_else(|err| {
+                match err.into_error_kind() {
+                    // TODO convert to useful error
+                    nom::ErrorKind::Custom(e) => Err(TimestampParseError::Custom(e)),
+                    _ => unimplemented!(),
+                }
+            }).and_then(|(s, ts)| {
+                if s == CompleteStr("") {
+                    Ok(ts)
+                } else {
+                    Err(TimestampParseError::TooMuchInput(s.to_string()))
+                }
+            })
     }
 }
 
@@ -299,7 +448,12 @@ mod tests {
 
         #[test]
         fn test_from_str() {
-            assert_eq!("<2018-06-13 21:22>".parse().ok(), Some(Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 13).and_hms(21, 22, 0))));
+            assert_eq!(
+                "<2018-06-13 21:22>".parse().ok(),
+                Some(Timestamp::new(TimestampKind::ActiveDatetime(
+                    NaiveDate::from_ymd(2018, 06, 13).and_hms(21, 22, 0)
+                )))
+            );
         }
     }
 

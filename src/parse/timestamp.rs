@@ -11,6 +11,7 @@ use Repeater;
 use TimePeriod;
 use TimeUnit;
 use Timestamp;
+use TimestampKind;
 
 use nom::types::CompleteStr;
 
@@ -220,39 +221,51 @@ impl TryFrom<Ts> for Timestamp {
             }
 
             return match variant {
-                TsVariant::Date(date) => Ok(Timestamp::RepeatingDate(date, repeater, warning)),
-                TsVariant::Datetime(datetime) => {
-                    Ok(Timestamp::RepeatingDatetime(datetime, repeater, warning))
-                }
+                TsVariant::Date(date) => Ok(Timestamp::with_warning_period_opt(
+                    TimestampKind::RepeatingDate(date, repeater),
+                    warning,
+                )),
+                TsVariant::Datetime(datetime) => Ok(Timestamp::with_warning_period_opt(
+                    TimestampKind::RepeatingDatetime(datetime, repeater),
+                    warning,
+                )),
                 _ => Err(TimestampParseError::RangedDateWithRepeater.into()),
             };
         }
 
         if active {
             Ok(match variant {
-                TsVariant::Date(date) => Timestamp::ActiveDate(date),
-                TsVariant::Datetime(datetime) => Timestamp::ActiveDatetime(datetime),
-                TsVariant::DateWithTimeRange(date, start_time, end_time) => Timestamp::TimeRange {
-                    date,
-                    start_time,
-                    end_time,
-                },
-                TsVariant::DateRange(start, end) => Timestamp::DateRange(start, end),
+                TsVariant::Date(date) => Timestamp::new(TimestampKind::ActiveDate(date)),
+                TsVariant::Datetime(datetime) => {
+                    Timestamp::new(TimestampKind::ActiveDatetime(datetime))
+                }
+                TsVariant::DateWithTimeRange(date, start_time, end_time) => {
+                    Timestamp::new(TimestampKind::TimeRange {
+                        date,
+                        start_time,
+                        end_time,
+                    })
+                }
+                TsVariant::DateRange(start, end) => {
+                    Timestamp::new(TimestampKind::DateRange(start, end))
+                }
                 TsVariant::DatetimeRange(start_datetime, end_datetime) => {
-                    Timestamp::DatetimeRange(start_datetime, end_datetime)
+                    Timestamp::new(TimestampKind::DatetimeRange(start_datetime, end_datetime))
                 }
             })
         } else {
             Ok(match variant {
-                TsVariant::Date(date) => Timestamp::InactiveDate(date),
-                TsVariant::Datetime(datetime) => Timestamp::InactiveDatetime(datetime),
+                TsVariant::Date(date) => Timestamp::new(TimestampKind::InactiveDate(date)),
+                TsVariant::Datetime(datetime) => {
+                    Timestamp::new(TimestampKind::InactiveDatetime(datetime))
+                }
                 TsVariant::DateWithTimeRange(_, _, _) => {
                     return Err(TimestampParseError::InactiveDateWithTimeRange.into())
                 }
                 // TODO find out if this is valid
                 TsVariant::DateRange(start, end) => unimplemented!(),
                 TsVariant::DatetimeRange(start_datetime, end_datetime) => {
-                    Timestamp::DatetimeRange(start_datetime, end_datetime)
+                    Timestamp::new(TimestampKind::DatetimeRange(start_datetime, end_datetime))
                 }
             })
         }
@@ -432,13 +445,13 @@ mod tests {
     /// Testing something should completely parse:
     ///
     /// ```ignore
-    /// assert_ts!("str to parse" => Timestamp::Date...);
+    /// assert_ts!("str to parse" => Timestamp::new(TimestampKind::Date...));
     /// ```
     ///
     /// Testing somthing should parse with rest:
     ///
     /// ```ignore
-    /// assert_ts!("str to parse with rest" => "with rest", Timestamp::Date...);
+    /// assert_ts!("str to parse with rest" => "with rest", Timestamp::new(TimestampKind::Date...));
     /// ```
     macro_rules! assert_ts {
         ($str:expr => #) => {{
@@ -550,27 +563,24 @@ mod tests {
         fn test_add_once_with_warning() {
             assert_ts!(
                 "<2018-06-04 12:55 +1d -1h>" =>
-                Timestamp::RepeatingDatetime(
+                Timestamp::with_warning_period(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.day(), AddOnce),
-                    Some(1.hour())
-                )
+                    Repeater::new(1.day(), AddOnce)
+                ), 1.hour())
             );
             assert_ts!(
                 "<2018-06-04 12:55 +1d -1h>" =>
-                Timestamp::RepeatingDatetime(
+                Timestamp::with_warning_period(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.day(), AddOnce),
-                    Some(1.hour())
-                )
+                    Repeater::new(1.day(), AddOnce)
+                ), 1.hour())
             );
             assert_ts!(
                 "<2018-06-04 +1w -1d>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::with_warning_period(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.week(), AddOnce),
-                    Some(1.day())
-                )
+                    Repeater::new(1.week(), AddOnce)
+                ), 1.day())
             );
         }
     }
@@ -583,51 +593,45 @@ mod tests {
         fn test_add_once() {
             assert_ts!(
                 "<2018-06-04 12:55 +1w>" =>
-                Timestamp::RepeatingDatetime(
+                Timestamp::new(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.week(), AddOnce),
-                    None
-                )
+                    Repeater::new(1.week(), AddOnce)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 +1w>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.week(), AddOnce),
-                    None
-                )
+                    Repeater::new(1.week(), AddOnce)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 +20d>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(20.day(), AddOnce),
-                    None
-                )
+                    Repeater::new(20.day(), AddOnce)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 +5h>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(5.hour(), AddOnce),
-                    None
-                )
+                    Repeater::new(5.hour(), AddOnce)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 +7m>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(7.month(), AddOnce),
-                    None
-                )
+                    Repeater::new(7.month(), AddOnce)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 +1y>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.year(), AddOnce),
-                    None
-                )
+                    Repeater::new(1.year(), AddOnce)
+                ))
             );
         }
 
@@ -635,51 +639,45 @@ mod tests {
         fn test_add_until_future() {
             assert_ts!(
                 "<2018-06-04 12:55 ++1w>" =>
-                Timestamp::RepeatingDatetime(
+                Timestamp::new(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.week(), AddUntilFuture),
-                    None
-                )
+                    Repeater::new(1.week(), AddUntilFuture)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 ++1w>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.week(), AddUntilFuture),
-                    None
-                )
+                    Repeater::new(1.week(), AddUntilFuture)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 ++20d>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(20.day(), AddUntilFuture),
-                    None
-                )
+                    Repeater::new(20.day(), AddUntilFuture)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 ++5h>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(5.hour(), AddUntilFuture),
-                    None
-                )
+                    Repeater::new(5.hour(), AddUntilFuture)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 ++20m>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(20.month(), AddUntilFuture),
-                    None
-                )
+                    Repeater::new(20.month(), AddUntilFuture)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 ++5y>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(5.year(), AddUntilFuture),
-                    None
-                )
+                    Repeater::new(5.year(), AddUntilFuture)
+                ))
             );
         }
 
@@ -687,51 +685,45 @@ mod tests {
         fn test_add_to_now() {
             assert_ts!(
                 "<2018-06-04 12:55 .+1w>" =>
-                Timestamp::RepeatingDatetime(
+                Timestamp::new(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.week(), AddToNow),
-                    None
-                )
+                    Repeater::new(1.week(), AddToNow)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 .+1w>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.week(), AddToNow),
-                    None
-                )
+                    Repeater::new(1.week(), AddToNow)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 .+20d>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(20.day(), AddToNow),
-                    None
-                )
+                    Repeater::new(20.day(), AddToNow)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 .+5h>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(5.hour(), AddToNow),
-                    None
-                )
+                    Repeater::new(5.hour(), AddToNow)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 .+2m>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(2.month(), AddToNow),
-                    None
-                )
+                    Repeater::new(2.month(), AddToNow)
+                ))
             );
             assert_ts!(
                 "<2018-06-04 .+12y>" =>
-                Timestamp::RepeatingDate(
+                Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(12.year(), AddToNow),
-                    None
-                )
+                    Repeater::new(12.year(), AddToNow)
+                ))
             );
         }
     }
@@ -743,17 +735,17 @@ mod tests {
         fn test_same_day() {
             assert_ts!(
                 "<2018-06-04 12:00>--<2018-06-04 14:00>" =>
-                Timestamp::DatetimeRange(
+                Timestamp::new(TimestampKind::DatetimeRange(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(14, 0, 0)
-                )
+                ))
             );
             assert_ts!(
                 "<2018-07-18 Wed 12:00>--<2018-07-18 Wed 14:00>" =>
-                Timestamp::DatetimeRange(
+                Timestamp::new(TimestampKind::DatetimeRange(
                     NaiveDate::from_ymd(2018, 07, 18).and_hms(12, 0, 0),
                     NaiveDate::from_ymd(2018, 07, 18).and_hms(14, 0, 0)
-                )
+                ))
             );
         }
 
@@ -761,17 +753,17 @@ mod tests {
         fn test_different_days() {
             assert_ts!(
                 "<2018-06-04 12:00>--<2018-08-09 11:54>" =>
-                Timestamp::DatetimeRange(
+                Timestamp::new(TimestampKind::DatetimeRange(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 0, 0),
                     NaiveDate::from_ymd(2018, 08, 09).and_hms(11, 54, 0)
-                )
+                ))
             );
             assert_ts!(
                 "<2018-07-18 Wed 12:00>--<2018-07-20 Fri 11:54>" =>
-                Timestamp::DatetimeRange(
+                Timestamp::new(TimestampKind::DatetimeRange(
                     NaiveDate::from_ymd(2018, 07, 18).and_hms(12, 0, 0),
                     NaiveDate::from_ymd(2018, 07, 20).and_hms(11, 54, 0)
-                )
+                ))
             );
         }
     }
@@ -783,11 +775,11 @@ mod tests {
         fn with_weekday() {
             assert_ts!(
                 "<2018-06-04 Mon 13:00-14:30>" =>
-                Timestamp::TimeRange {
+                Timestamp::new(TimestampKind::TimeRange {
                     date: NaiveDate::from_ymd(2018, 06, 04),
                     start_time: NaiveTime::from_hms(13, 0, 0),
                     end_time: NaiveTime::from_hms(14, 30, 0)
-                }
+                })
             );
         }
 
@@ -795,11 +787,11 @@ mod tests {
         fn without_weekday() {
             assert_ts!(
                 "<2018-06-04 13:00-14:30>" =>
-                Timestamp::TimeRange {
+                Timestamp::new(TimestampKind::TimeRange {
                     date: NaiveDate::from_ymd(2018, 06, 04),
                     start_time: NaiveTime::from_hms(13, 0, 0),
                     end_time: NaiveTime::from_hms(14, 30, 0)
-                }
+                })
             );
         }
     }
@@ -811,7 +803,7 @@ mod tests {
         fn with_weekday() {
             assert_ts!(
                 "<2018-06-13 Wed 20:11>" =>
-                Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0))
+                Timestamp::new(TimestampKind::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 13).and_hms(20, 11, 0)))
             );
             assert_ts!("<2018-06-13 Mon 11:33>" => #);
         }
@@ -820,7 +812,7 @@ mod tests {
         fn without_weekday() {
             assert_ts!(
                 "<2018-06-14 11:45>" =>
-                Timestamp::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0))
+                Timestamp::new(TimestampKind::ActiveDatetime(NaiveDate::from_ymd(2018, 06, 14).and_hms(11, 45, 0)))
             );
         }
 
@@ -833,7 +825,7 @@ mod tests {
         fn with_weekday() {
             assert_ts!(
                 "<2018-06-13 Wed>" =>
-                Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 13))
+                Timestamp::new(TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 13)))
             );
             assert_ts!("<2018-06-13 Mon>" => #);
         }
@@ -842,7 +834,7 @@ mod tests {
         fn without_weekday() {
             assert_ts!(
                 "<2018-06-22>" =>
-                Timestamp::ActiveDate(NaiveDate::from_ymd(2018, 06, 22))
+                Timestamp::new(TimestampKind::ActiveDate(NaiveDate::from_ymd(2018, 06, 22)))
             );
         }
 
@@ -855,7 +847,7 @@ mod tests {
         fn with_weekday() {
             assert_ts!(
                 "<2018-06-13 Wed>--<2018-06-16 Sat>" =>
-                Timestamp::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16))
+                Timestamp::new(TimestampKind::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16)))
             );
         }
 
@@ -863,15 +855,15 @@ mod tests {
         fn without_weekday() {
             assert_ts!(
                 "<2018-06-13>--<2018-06-16>" =>
-                Timestamp::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16))
+                Timestamp::new(TimestampKind::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16)))
             );
             assert_ts!(
                 "<2018-06-13 Wed>--<2018-06-16>" =>
-                Timestamp::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16))
+                Timestamp::new(TimestampKind::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16)))
             );
             assert_ts!(
                 "<2018-06-13>--<2018-06-16 Sat>" =>
-                Timestamp::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16))
+                Timestamp::new(TimestampKind::DateRange(NaiveDate::from_ymd(2018, 06, 13), NaiveDate::from_ymd(2018, 06, 16)))
             );
         }
     }
@@ -883,9 +875,9 @@ mod tests {
         fn with_weekday() {
             assert_ts!(
                 "[2018-06-13 Wed 11:13]" =>
-                Timestamp::InactiveDatetime(
+                Timestamp::new(TimestampKind::InactiveDatetime(
                     NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 13, 0)
-                )
+                ))
             );
             assert_ts!("[2018-06-13 Mon 11:13]" => #);
         }
@@ -894,9 +886,9 @@ mod tests {
         fn without_weekday() {
             assert_ts!(
                 "[2018-06-13 11:39]" =>
-                Timestamp::InactiveDatetime(
+                Timestamp::new(TimestampKind::InactiveDatetime(
                     NaiveDate::from_ymd(2018, 06, 13).and_hms(11, 39, 0)
-                )
+                ))
             );
         }
 
@@ -909,7 +901,7 @@ mod tests {
         fn with_weekday() {
             assert_ts!(
                 "[2018-06-13 Wed]" =>
-                Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
+                Timestamp::new(TimestampKind::InactiveDate(NaiveDate::from_ymd(2018, 06, 13)))
             );
             assert_ts!("[2018-06-13 Mon]" => #);
         }
@@ -918,7 +910,7 @@ mod tests {
         fn without_weekday() {
             assert_ts!(
                 "[2018-06-13]" =>
-                Timestamp::InactiveDate(NaiveDate::from_ymd(2018, 06, 13))
+                Timestamp::new(TimestampKind::InactiveDate(NaiveDate::from_ymd(2018, 06, 13)))
             );
         }
 
