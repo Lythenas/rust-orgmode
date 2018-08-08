@@ -288,7 +288,7 @@ named!(ts<CompleteStr, Ts, Error>,
             tsv: tsvariant >>
             repeater: opt!(repeater) >>
             warning: opt!(warning_period) >>
-            active: to_failure!(map_res!(alt!(tag!(">") | tag!("]")), 
+            active: to_failure!(map_res!(alt!(tag!(">") | tag!("]")),
                         |suffix: CompleteStr| check_active(*prefix, *suffix))) >>
             other: to_failure!(opt!(complete!(do_parse!(
                 to_failure!(tag!("--<")) >>
