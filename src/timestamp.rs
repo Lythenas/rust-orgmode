@@ -1,0 +1,284 @@
+use chrono::prelude::*;
+use std::str::FromStr;
+use failure::Error;
+
+/// Represents the action that is taken when you mark a task with a repeater as `DONE`.
+///
+/// Contains the amount of time to use when repeating and the strategy
+/// to use when applying the repeater (see [`RepeatStrategy`]).
+#[derive(Debug, PartialEq, Eq)]
+pub struct Repeater {
+    period: TimePeriod,
+    strategy: RepeatStrategy,
+}
+
+impl Repeater {
+    /// Constructs a new `Repeater` with the specified time period and repeat strategy.
+    pub fn new(period: TimePeriod, strategy: RepeatStrategy) -> Self {
+        Repeater { period, strategy }
+    }
+}
+
+/// The repeat strategies for a [`Repeater`].
+#[derive(Debug, PartialEq, Eq)]
+pub enum RepeatStrategy {
+    /// Add the repeat duration to the task date once.
+    Cumulative,
+    /// Add the repeat duration to the task date until the date is in the future (but at leas once).
+    CatchUp,
+    /// Add the repeat duration to the current time.
+    Restart,
+}
+
+/// Represents a warning delay for a [`Timestamp`].
+#[derive(Debug, PartialEq, Eq)]
+pub struct WarningDelay {
+    delay: TimePeriod,
+    strategy: WarningStrategy,
+}
+
+impl WarningDelay {
+    pub fn new(delay: TimePeriod, strategy: WarningStrategy) -> Self {
+        WarningDelay { delay, strategy }
+    }
+}
+
+/// The warning strategy for a [`WarningDelay`].
+#[derive(Debug, PartialEq, Eq)]
+pub enum WarningStrategy {
+    /// Warns for all (repeated) date. Represented as `-` in the org file.
+    All,
+    /// Warns only for the first date. Represented as `--` in the org file.
+    First,
+}
+
+/// Represents a amount of time.
+///
+/// Used e.g. as the warning period and in repeater.
+#[derive(Debug, PartialEq, Eq)]
+pub struct TimePeriod {
+    value: u32,
+    unit: TimeUnit,
+}
+
+impl TimePeriod {
+    /// Constructs a new `TimePeriod` with the specified unit and amount.
+    pub fn new(value: u32, unit: TimeUnit) -> Self {
+        Self { value, unit }
+    }
+}
+
+/// Represents the unit of time used for `Repeater` and `TimePeriod`.
+#[derive(Debug, PartialEq, Eq)]
+pub enum TimeUnit {
+    Year,
+    Month,
+    Week,
+    Day,
+    Hour,
+}
+
+/// Convenience trait implemented on `u32` to easily convert to a `TimePeriod`.
+pub trait AsTimePeriod {
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Year`.
+    fn year(self) -> TimePeriod;
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Month`.
+    fn month(self) -> TimePeriod;
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Week`.
+    fn week(self) -> TimePeriod;
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Day`.
+    fn day(self) -> TimePeriod;
+    /// Convert self to a `TimePeriod` wit unit `TimeUnit::Hour`.
+    fn hour(self) -> TimePeriod;
+}
+
+impl AsTimePeriod for u32 {
+    fn year(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Year)
+    }
+    fn month(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Month)
+    }
+    fn week(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Week)
+    }
+    fn day(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Day)
+    }
+    fn hour(self) -> TimePeriod {
+        TimePeriod::new(self, TimeUnit::Hour)
+    }
+}
+
+/// Represents a timestamp range. This is used for [`Timestamp::ActiveRange`] and
+/// [`Timestamp::InactiveRange`].
+#[derive(Debug, PartialEq, Eq)]
+pub enum TimestampRange {
+    /// `<DATE TIME-TIME REPEATER-OR-DELAY>` or
+    /// `[DATE TIME-TIME REPEATER-OR-DELAY]`
+    TimeRange(TimestampDataWithTime, Time),
+    /// `<DATE TIME REPEATER-OR-DELAY>--<DATE TIME REPEATER-OR-DELAY>` or
+    /// `[DATE TIME REPEATER-OR-DELAY]--[DATE TIME REPEATER-OR-DELAY]`
+    DateRange(TimestampData, TimestampData),
+}
+
+/// Internal data of a *normal* timestamp with optional [`Time`].
+#[derive(Debug, PartialEq, Eq)]
+pub struct TimestampData {
+    date: Date,
+    time: Option<Time>,
+    repeater: Option<Repeater>,
+    warning_delay: Option<WarningDelay>,
+}
+
+impl TimestampData {
+    pub fn new(date: Date) -> Self {
+        TimestampData {
+            date,
+            time: None,
+            repeater: None,
+            warning_delay: None,
+        }
+    }
+    pub fn with_time(date: Date, time: Time) -> Self {
+        TimestampData {
+            date,
+            time: Some(time),
+            repeater: None,
+            warning_delay: None,
+        }
+    }
+}
+
+/// Internal data of a timestamp with required [`Time`].
+#[derive(Debug, PartialEq, Eq)]
+pub struct TimestampDataWithTime {
+    date: Date,
+    time: Time,
+    repeater: Option<Repeater>,
+    warning_delay: Option<WarningDelay>,
+}
+
+/// Wrapper for the date of a timestamp.
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Date(NaiveDate);
+
+/// Wrapper for the time of a timestamp.
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Time(NaiveTime);
+
+/// Represents a timestamp in an org file. The variants are the same mentioned in
+/// [https://orgmode.org/worg/dev/org-syntax.html#Timestamp].
+///
+/// The diary variant is not implemented.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Timestamp {
+    //Diary,
+    /// `<DATE TIME REPEATER-OR-DELAY>`
+    Active(TimestampData),
+    /// `[DATE TIME REPEATER-OR-DELAY]`
+    Inactive(TimestampData),
+    /// `<DATE TIME REPEATER-OR-DELAY>--<DATE TIME REPEATER-OR-DELAY>` or
+    /// `<DATE TIME-TIME REPEATER-OR-DELAY>`
+    ActiveRange(TimestampRange),
+    /// `[DATE TIME REPEATER-OR-DELAY]--[DATE TIME REPEATER-OR-DELAY]` or
+    /// `[DATE TIME-TIME REPEATER-OR-DELAY]`
+    InactiveRange(TimestampRange),
+}
+
+impl Timestamp {
+    /// Returns `true` if the org timestamp is active.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate orgmode;
+    /// # use chrono::NaiveDate;
+    /// # use orgmode::Timestamp;
+    /// # use orgmode::TimestampData;
+    /// #
+    /// let ts = Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 04, 28))));
+    /// assert_eq!(x.is_active(), true);
+    ///
+    /// let x = Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 04, 28))));
+    /// assert_eq!(x.is_active(), false);
+    /// ```
+    pub fn is_active(&self) -> bool {
+        match self {
+            Timestamp::Active(_) | Timestamp::ActiveRange(_) => true,
+            _ => false,
+        }
+    }
+}
+
+impl FromStr for Timestamp {
+    type Err = TimestampParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use nom::types::CompleteStr;
+        use nom::ErrorKind;
+        ::parse::timestamp(CompleteStr(s))
+            .or_else(|err| {
+                match err.into_error_kind() {
+                    // TODO convert to useful error
+                    ErrorKind::Custom(e) => Err(TimestampParseError::Custom(e)),
+                    _ => unimplemented!(),
+                }
+            }).and_then(|(s, ts)| {
+                if s == CompleteStr("") {
+                    Ok(ts)
+                } else {
+                    Err(TimestampParseError::TooMuchInput(s.to_string()))
+                }
+            })
+    }
+}
+
+#[derive(Debug)]
+pub enum TimestampParseError {
+    TooMuchInput(String),
+    Custom(Error),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod time_period {
+        use super::*;
+
+        #[test]
+        fn test_year() {
+            assert_eq!(44.year(), TimePeriod::new(44, TimeUnit::Year));
+        }
+
+        #[test]
+        fn test_month() {
+            assert_eq!(44.month(), TimePeriod::new(44, TimeUnit::Month));
+        }
+
+        #[test]
+        fn test_day() {
+            assert_eq!(44.day(), TimePeriod::new(44, TimeUnit::Day));
+        }
+
+        #[test]
+        fn test_hour() {
+            assert_eq!(44.hour(), TimePeriod::new(44, TimeUnit::Hour));
+        }
+    }
+
+    mod timestamp {
+        #[test]
+        fn test_from_str() {
+            assert_eq!(
+                "<2018-06-13 21:22>".parse().ok(),
+                Some(Timestamp::Active(TimestampData::with_time(
+                    NaiveDate::from_ymd(2018, 06, 13),
+                    NaiveTime::from_hms(21, 22, 0)
+                )))
+            );
+        }
+    }
+}

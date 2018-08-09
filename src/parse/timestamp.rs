@@ -5,13 +5,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::str::{self, FromStr};
 
-use AsTimePeriod;
-use RepeatStrategy;
-use Repeater;
-use TimePeriod;
-use TimeUnit;
-use Timestamp;
-use TimestampKind;
+use timestamp::*;
 
 use nom::types::CompleteStr;
 
@@ -366,9 +360,9 @@ named!(repeat_strategy<CompleteStr, RepeatStrategy, Error>,
 /// Converts the given str to a `RepeatStrategy` if possible.
 fn to_strategy(s: &str) -> Result<RepeatStrategy, Error> {
     match s {
-        "+" => Ok(RepeatStrategy::AddOnce),
-        "++" => Ok(RepeatStrategy::AddUntilFuture),
-        ".+" => Ok(RepeatStrategy::AddToNow),
+        "+" => Ok(RepeatStrategy::Cumulative),
+        "++" => Ok(RepeatStrategy::CatchUp),
+        ".+" => Ok(RepeatStrategy::Restart),
         _ => Err(TimestampParseError::InvalidRepeater.into()),
     }
 }
@@ -565,21 +559,21 @@ mod tests {
                 "<2018-06-04 12:55 +1d -1h>" =>
                 Timestamp::with_warning_period(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.day(), AddOnce)
+                    Repeater::new(1.day(), Cumulative)
                 ), 1.hour())
             );
             assert_ts!(
                 "<2018-06-04 12:55 +1d -1h>" =>
                 Timestamp::with_warning_period(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.day(), AddOnce)
+                    Repeater::new(1.day(), Cumulative)
                 ), 1.hour())
             );
             assert_ts!(
                 "<2018-06-04 +1w -1d>" =>
                 Timestamp::with_warning_period(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.week(), AddOnce)
+                    Repeater::new(1.week(), Cumulative)
                 ), 1.day())
             );
         }
@@ -595,42 +589,42 @@ mod tests {
                 "<2018-06-04 12:55 +1w>" =>
                 Timestamp::new(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.week(), AddOnce)
+                    Repeater::new(1.week(), Cumulative)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 +1w>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.week(), AddOnce)
+                    Repeater::new(1.week(), Cumulative)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 +20d>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(20.day(), AddOnce)
+                    Repeater::new(20.day(), Cumulative)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 +5h>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(5.hour(), AddOnce)
+                    Repeater::new(5.hour(), Cumulative)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 +7m>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(7.month(), AddOnce)
+                    Repeater::new(7.month(), Cumulative)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 +1y>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.year(), AddOnce)
+                    Repeater::new(1.year(), Cumulative)
                 ))
             );
         }
@@ -641,42 +635,42 @@ mod tests {
                 "<2018-06-04 12:55 ++1w>" =>
                 Timestamp::new(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.week(), AddUntilFuture)
+                    Repeater::new(1.week(), CatchUp)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 ++1w>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.week(), AddUntilFuture)
+                    Repeater::new(1.week(), CatchUp)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 ++20d>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(20.day(), AddUntilFuture)
+                    Repeater::new(20.day(), CatchUp)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 ++5h>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(5.hour(), AddUntilFuture)
+                    Repeater::new(5.hour(), CatchUp)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 ++20m>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(20.month(), AddUntilFuture)
+                    Repeater::new(20.month(), CatchUp)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 ++5y>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(5.year(), AddUntilFuture)
+                    Repeater::new(5.year(), CatchUp)
                 ))
             );
         }
@@ -687,42 +681,42 @@ mod tests {
                 "<2018-06-04 12:55 .+1w>" =>
                 Timestamp::new(TimestampKind::RepeatingDatetime(
                     NaiveDate::from_ymd(2018, 06, 04).and_hms(12, 55, 0),
-                    Repeater::new(1.week(), AddToNow)
+                    Repeater::new(1.week(), Restart)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 .+1w>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(1.week(), AddToNow)
+                    Repeater::new(1.week(), Restart)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 .+20d>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(20.day(), AddToNow)
+                    Repeater::new(20.day(), Restart)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 .+5h>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(5.hour(), AddToNow)
+                    Repeater::new(5.hour(), Restart)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 .+2m>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(2.month(), AddToNow)
+                    Repeater::new(2.month(), Restart)
                 ))
             );
             assert_ts!(
                 "<2018-06-04 .+12y>" =>
                 Timestamp::new(TimestampKind::RepeatingDate(
                     NaiveDate::from_ymd(2018, 06, 04),
-                    Repeater::new(12.year(), AddToNow)
+                    Repeater::new(12.year(), Restart)
                 ))
             );
         }
