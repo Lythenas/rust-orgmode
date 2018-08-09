@@ -2,36 +2,39 @@ use chrono::prelude::*;
 use std::str::FromStr;
 use failure::Error;
 
-/// Represents the action that is taken when you mark a task with a repeater as `DONE`.
+/// Represents the action that is taken when you mark a task with
+/// a repeater as `DONE`.
 ///
 /// Contains the amount of time to use when repeating and the strategy
 /// to use when applying the repeater (see [`RepeatStrategy`]).
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Repeater {
     period: TimePeriod,
     strategy: RepeatStrategy,
 }
 
 impl Repeater {
-    /// Constructs a new `Repeater` with the specified time period and repeat strategy.
+    /// Constructs a new `Repeater` with the specified time period and
+    /// repeat strategy.
     pub fn new(period: TimePeriod, strategy: RepeatStrategy) -> Self {
         Repeater { period, strategy }
     }
 }
 
 /// The repeat strategies for a [`Repeater`].
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RepeatStrategy {
     /// Add the repeat duration to the task date once.
     Cumulative,
-    /// Add the repeat duration to the task date until the date is in the future (but at leas once).
+    /// Add the repeat duration to the task date until the date is in the
+    /// future (but at leas once).
     CatchUp,
     /// Add the repeat duration to the current time.
     Restart,
 }
 
 /// Represents a warning delay for a [`Timestamp`].
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct WarningDelay {
     delay: TimePeriod,
     strategy: WarningStrategy,
@@ -44,7 +47,7 @@ impl WarningDelay {
 }
 
 /// The warning strategy for a [`WarningDelay`].
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum WarningStrategy {
     /// Warns for all (repeated) date. Represented as `-` in the org file.
     All,
@@ -55,7 +58,7 @@ pub enum WarningStrategy {
 /// Represents a amount of time.
 ///
 /// Used e.g. as the warning period and in repeater.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TimePeriod {
     value: u32,
     unit: TimeUnit,
@@ -69,7 +72,7 @@ impl TimePeriod {
 }
 
 /// Represents the unit of time used for `Repeater` and `TimePeriod`.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TimeUnit {
     Year,
     Month,
@@ -110,8 +113,8 @@ impl AsTimePeriod for u32 {
     }
 }
 
-/// Represents a timestamp range. This is used for [`Timestamp::ActiveRange`] and
-/// [`Timestamp::InactiveRange`].
+/// Represents a timestamp range. This is used for [`Timestamp::ActiveRange`]
+/// and [`Timestamp::InactiveRange`].
 #[derive(Debug, PartialEq, Eq)]
 pub enum TimestampRange {
     /// `<DATE TIME-TIME REPEATER-OR-DELAY>` or
@@ -148,6 +151,37 @@ impl TimestampData {
             warning_delay: None,
         }
     }
+    pub fn and_opt_time(self, time: Option<Time>) -> Self {
+        TimestampData {
+            time,
+            ..self
+        }
+    }
+    pub fn and_opt_repeater(self, repeater: Option<Repeater>) -> Self {
+        TimestampData {
+            repeater,
+            ..self
+        }
+    }
+    pub fn and_opt_warning_delay(self, warning_delay: Option<WarningDelay>) -> Self {
+        TimestampData {
+            warning_delay,
+            ..self
+        }
+    }
+
+    pub fn get_date(&self) -> &Date {
+        &self.date
+    }
+    pub fn get_time(&self) -> &Option<Time> {
+        &self.time
+    }
+    pub fn get_repeater(&self) -> &Option<Repeater> {
+        &self.repeater
+    }
+    pub fn get_warning_delay(&self) -> &Option<WarningDelay> {
+        &self.warning_delay
+    }
 }
 
 /// Internal data of a timestamp with required [`Time`].
@@ -159,16 +193,39 @@ pub struct TimestampDataWithTime {
     warning_delay: Option<WarningDelay>,
 }
 
+impl TimestampDataWithTime {
+    pub fn with_everything(date: Date, time: Time, repeater: Option<Repeater>, warning_delay: Option<WarningDelay>) -> Self {
+        TimestampDataWithTime {
+            date,
+            time,
+            repeater,
+            warning_delay,
+        }
+    }
+}
+
 /// Wrapper for the date of a timestamp.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Date(NaiveDate);
 
+impl Date {
+    pub fn new(date: NaiveDate) -> Self {
+        Date(date)
+    }
+}
+
 /// Wrapper for the time of a timestamp.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Time(NaiveTime);
 
-/// Represents a timestamp in an org file. The variants are the same mentioned in
-/// [https://orgmode.org/worg/dev/org-syntax.html#Timestamp].
+impl Time {
+    pub fn new(time: NaiveTime) -> Self {
+        Time(time)
+    }
+}
+
+/// Represents a timestamp in an org file. The variants are the same
+/// mentioned in [https://orgmode.org/worg/dev/org-syntax.html#Timestamp].
 ///
 /// The diary variant is not implemented.
 #[derive(Debug, PartialEq, Eq)]
@@ -198,10 +255,14 @@ impl Timestamp {
     /// # use orgmode::Timestamp;
     /// # use orgmode::TimestampData;
     /// #
-    /// let ts = Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 04, 28))));
+    /// let ts = Timestamp::Active(
+    ///     TimestampData::new(NaiveDate::from_ymd(2018, 04, 28)))
+    /// );
     /// assert_eq!(x.is_active(), true);
     ///
-    /// let x = Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 04, 28))));
+    /// let x = Timestamp::Inactive(
+    ///     TimestampData::new(NaiveDate::from_ymd(2018, 04, 28)))
+    /// );
     /// assert_eq!(x.is_active(), false);
     /// ```
     pub fn is_active(&self) -> bool {

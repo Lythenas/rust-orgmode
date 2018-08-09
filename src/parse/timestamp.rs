@@ -1,11 +1,10 @@
-use chrono::prelude::*;
-use chrono::{Duration, NaiveDate, NaiveDateTime};
+use chrono::{Duration, NaiveDate, NaiveTime};
 use failure::Error;
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::{self, FromStr};
 
-use timestamp::*;
+use timestamp::{*, Date};
 
 use nom::types::CompleteStr;
 
@@ -17,7 +16,10 @@ fn is_digit(c: char) -> bool {
 }
 
 named!(parse_u32<CompleteStr, u32, Error>,
-    to_failure!(map_res!(take_while1!(is_digit), |s: CompleteStr| u32::from_str(*s)))
+    to_failure!(map_res!(
+        take_while1!(is_digit),
+        |s: CompleteStr| u32::from_str(*s)
+    ))
 );
 
 named!(parse_i32<CompleteStr, i32, Error>,
@@ -32,14 +34,15 @@ named!(parse_i32<CompleteStr, i32, Error>,
     ))
 );
 
-/// Converts the given `hour` and `minute` into a `NaiveTime` if possible or gives an error
-/// otherwise.
-fn naive_time((hour, minute): (u32, u32)) -> Result<NaiveTime, Error> {
-    NaiveTime::from_hms_opt(hour, minute, 0).ok_or_else(|| format_err!("invalid time"))
+/// Converts the given `hour` and `minute` into `Time` if possible
+/// or gives an error otherwise.
+fn to_time((hour, minute): (u32, u32)) -> Result<Time, Error> {
+    NaiveTime::from_hms_opt(hour, minute, 0).ok_or_else(|| format_err!("invalid time")).map(Time::new)
 }
 
-/// Parses a time string in the following format: `12:30` and returns a `NativeTime`.
-named!(time<CompleteStr, NaiveTime, Error>,
+/// Parses a time string in the following format: `12:30` and returns
+/// a `NaiveTime`.
+named!(time<CompleteStr, Time, Error>,
     to_failure!(
         map_res!(
             do_parse!(
@@ -48,17 +51,17 @@ named!(time<CompleteStr, NaiveTime, Error>,
                 m: parse_u32 >>
                 ((h, m))
             ),
-            naive_time
+            to_time
         )
     )
 );
 
-/// Converts the given `year`, `month`, `day` and optional `weekday` into a `NaiveDate` if possible
-/// or gives an error otherwise.
-fn naive_date(
+/// Converts the given `year`, `month`, `day` and optional `weekday` into
+/// a `Date` if possible or gives an error otherwise.
+fn to_date(
     (year, month, day, weekday): (i32, u32, u32, Option<&str>),
-) -> Result<NaiveDate, Error> {
-    use chrono::Weekday;
+) -> Result<Date, Error> {
+    use chrono::{Weekday, Datelike};
 
     let weekday: Option<Weekday> = match weekday {
         Some(wd) => Some(
@@ -75,239 +78,54 @@ fn naive_date(
             Some(wd) if wd == date.weekday() => Ok(date),
             _ => Err(format_err!("invalid weekday in date")),
         })
+        .map(Date::new)
 }
 
-/// Parses a date string in the following format: `2018-06-30` or `2018-06-30 Sat` and returns a
-/// `NaiveDate`.
-named!(date<CompleteStr, NaiveDate, Error>,
+/// Parses a date string in the format `YYYY-MM-DD DAYNAME` and returns
+/// a `NaiveDate`. The dayname is optional.
+///
+/// E.g. `2018-06-30` or `2018-06-30 Sat`.
+named!(date<CompleteStr, Date, Error>,
     to_failure!(
         map_res!(
             do_parse!(
-                y: parse_i32 >>
+                year: parse_i32 >>
                 to_failure!(tag!("-")) >>
-                m: parse_u32 >>
+                month: parse_u32 >>
                 to_failure!(tag!("-")) >>
-                d: parse_u32 >>
-                wd: to_failure!(opt!(complete!(
+                day: parse_u32 >>
+                dayname: to_failure!(opt!(complete!(
                     do_parse!(
                         tag!(" ") >>
-                        wd: alt!(tag!("Mon") | tag!("Tue") | tag!("Wed")
-                                 | tag!("Thu") | tag!("Fri")
-                                 | tag!("Sat") | tag!("Sun")) >>
-                        (wd)
+                        dayname: alt!(
+                            tag!("Mon") | tag!("Tue") | tag!("Wed")
+                            | tag!("Thu") | tag!("Fri")
+                            | tag!("Sat") | tag!("Sun")
+                        ) >>
+                        (dayname)
                     )
                 ))) >>
-                ((y, m, d, wd.map(|s| *s)))
+                ((year, month, day, dayname.map(|s| *s)))
             ),
-            naive_date
+            to_date
         )
-    )
-);
-
-/// Parses a datetime string in the following format: `2018-06-30 Sat 12:30` (weekday optional) and
-/// returns a `NaiveDateTime`.
-named!(datetime<CompleteStr, NaiveDateTime, Error>,
-    do_parse!(
-        date: date >>
-        to_failure!(tag!(" ")) >>
-        time: time >>
-        (date.and_time(time))
     )
 );
 
 #[derive(Debug, PartialEq, Fail)]
 enum TimestampParseError {
-    InactiveDateWithTimeRange,
-    InactiveDateWithRepeater,
-    RangedDateWithRepeater,
     InvalidRepeater,
+    InvalidWarning,
+    InvalidCompoundTimestamp,
 }
 
+// needed to derive Fail
 impl fmt::Display for TimestampParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::TimestampParseError::*;
-        match self {
-            InactiveDateWithTimeRange => {
-                write!(f, "Found inactive date with a time range. Not allowed.")
-            }
-            InactiveDateWithRepeater => {
-                write!(f, "Found inactive date with a repeater. Not allowed.")
-            }
-            RangedDateWithRepeater => {
-                write!(f, "Found time/datetime range with repeater. Not allowed.")
-            }
-            InvalidRepeater => write!(f, "Found invalid repeater."),
-        }
+        // TODO write actual error messages
+        write!(f, "{:?}", self)
     }
 }
-
-/// Helper struct for easier parsing.
-#[derive(Debug, PartialEq)]
-struct Ts {
-    active: bool,
-    variant: TsVariant,
-    repeater: Option<Repeater>,
-    warning: Option<TimePeriod>,
-}
-
-impl
-    TryFrom<(
-        bool,
-        TsVariant,
-        Option<Repeater>,
-        Option<TimePeriod>,
-        Option<TsVariant>,
-    )> for Ts
-{
-    type Error = ();
-
-    fn try_from(
-        (active, variant, repeater, warning, other): (
-            bool,
-            TsVariant,
-            Option<Repeater>,
-            Option<TimePeriod>,
-            Option<TsVariant>,
-        ),
-    ) -> Result<Self, Self::Error> {
-        if !active {
-            match variant {
-                TsVariant::DateWithTimeRange(_, _, _) => return Err(()),
-                TsVariant::DatetimeRange(_, _) => return Err(()),
-                _ => (),
-            };
-        }
-
-        let variant = match (variant, other) {
-            (TsVariant::Datetime(start), Some(TsVariant::Datetime(end))) => {
-                TsVariant::DatetimeRange(start, end)
-            }
-            (TsVariant::Date(start), Some(TsVariant::Date(end))) => {
-                TsVariant::DateRange(start, end)
-            }
-            (variant, None) => variant,
-            _ => return Err(()),
-        };
-
-        Ok(Ts {
-            active,
-            variant,
-            repeater,
-            warning,
-        })
-    }
-}
-
-impl TryFrom<Ts> for Timestamp {
-    type Error = Error;
-
-    fn try_from(ts: Ts) -> Result<Self, Self::Error> {
-        let Ts {
-            active,
-            variant,
-            repeater,
-            warning,
-        } = ts;
-
-        if let Some(repeater) = repeater {
-            if !active {
-                return Err(TimestampParseError::InactiveDateWithRepeater.into());
-            }
-
-            return match variant {
-                TsVariant::Date(date) => Ok(Timestamp::with_warning_period_opt(
-                    TimestampKind::RepeatingDate(date, repeater),
-                    warning,
-                )),
-                TsVariant::Datetime(datetime) => Ok(Timestamp::with_warning_period_opt(
-                    TimestampKind::RepeatingDatetime(datetime, repeater),
-                    warning,
-                )),
-                _ => Err(TimestampParseError::RangedDateWithRepeater.into()),
-            };
-        }
-
-        if active {
-            Ok(match variant {
-                TsVariant::Date(date) => Timestamp::new(TimestampKind::ActiveDate(date)),
-                TsVariant::Datetime(datetime) => {
-                    Timestamp::new(TimestampKind::ActiveDatetime(datetime))
-                }
-                TsVariant::DateWithTimeRange(date, start_time, end_time) => {
-                    Timestamp::new(TimestampKind::TimeRange {
-                        date,
-                        start_time,
-                        end_time,
-                    })
-                }
-                TsVariant::DateRange(start, end) => {
-                    Timestamp::new(TimestampKind::DateRange(start, end))
-                }
-                TsVariant::DatetimeRange(start_datetime, end_datetime) => {
-                    Timestamp::new(TimestampKind::DatetimeRange(start_datetime, end_datetime))
-                }
-            })
-        } else {
-            Ok(match variant {
-                TsVariant::Date(date) => Timestamp::new(TimestampKind::InactiveDate(date)),
-                TsVariant::Datetime(datetime) => {
-                    Timestamp::new(TimestampKind::InactiveDatetime(datetime))
-                }
-                TsVariant::DateWithTimeRange(_, _, _) => {
-                    return Err(TimestampParseError::InactiveDateWithTimeRange.into())
-                }
-                // TODO find out if this is valid
-                TsVariant::DateRange(start, end) => unimplemented!(),
-                TsVariant::DatetimeRange(start_datetime, end_datetime) => {
-                    Timestamp::new(TimestampKind::DatetimeRange(start_datetime, end_datetime))
-                }
-            })
-        }
-    }
-}
-
-/// Helper enum for easier parsing.
-#[derive(Debug, PartialEq)]
-enum TsVariant {
-    Date(NaiveDate),
-    Datetime(NaiveDateTime),
-    DateWithTimeRange(NaiveDate, NaiveTime, NaiveTime),
-    DateRange(NaiveDate, NaiveDate),
-    DatetimeRange(NaiveDateTime, NaiveDateTime),
-}
-
-impl TsVariant {
-    fn from(date: NaiveDate, time_range: Option<(NaiveTime, Option<NaiveTime>)>) -> Self {
-        match time_range {
-            None => TsVariant::Date(date),
-            Some((time, None)) => TsVariant::Datetime(date.and_time(time)),
-            Some((start_time, Some(end_time))) => {
-                TsVariant::DateWithTimeRange(date, start_time, end_time)
-            }
-        }
-    }
-}
-
-named!(ts<CompleteStr, Ts, Error>,
-    map_res!(
-        do_parse!(
-            prefix: to_failure!(alt!(tag!("<") | tag!("["))) >>
-            tsv: tsvariant >>
-            repeater: opt!(repeater) >>
-            warning: opt!(warning_period) >>
-            active: to_failure!(map_res!(alt!(tag!(">") | tag!("]")),
-                        |suffix: CompleteStr| check_active(*prefix, *suffix))) >>
-            other: to_failure!(opt!(complete!(do_parse!(
-                to_failure!(tag!("--<")) >>
-                tsv: tsvariant >>
-                to_failure!(tag!(">")) >>
-                (tsv)
-            )))) >>
-            ((active, tsv, repeater, warning, other))
-        ),
-        Ts::try_from
-    )
-);
 
 fn check_active(prefix: &str, suffix: &str) -> Result<bool, ()> {
     match (prefix, suffix) {
@@ -333,32 +151,36 @@ impl FromStr for TimeUnit {
 }
 
 impl From<(RepeatStrategy, u32, TimeUnit)> for Repeater {
-    fn from((strategy, amount, unit): (RepeatStrategy, u32, TimeUnit)) -> Self {
-        Repeater {
-            period: TimePeriod::new(amount, unit),
-            strategy,
-        }
+    fn from((strategy, value, unit): (RepeatStrategy, u32, TimeUnit)) -> Self {
+        Repeater::new(TimePeriod::new(value, unit), strategy)
     }
 }
 
+/// Parses a [`Repeater`].
 named!(repeater<CompleteStr, Repeater, Error>,
-    to_failure!(map_res!(do_parse!(
-        to_failure!(tag!(" ")) >>
+    to_failure!(do_parse!(
         strategy: repeat_strategy >>
-        amount: parse_u32 >>
-        unit: time_unit >>
-        ((strategy, amount, unit))
-    ), Repeater::try_from))
+        time_period: time_period >>
+        (Repeater::new(time_period, strategy))
+    ))
 );
 
+/// Parses a [`RepeatStrategy`].
 named!(repeat_strategy<CompleteStr, RepeatStrategy, Error>,
     to_failure!(
-        map_res!(alt!(tag!("++") | tag!("+") | tag!(".+")), cstr(self::to_strategy))
+        map_res!(
+            alt!(
+                tag!("++") |
+                tag!("+") |
+                tag!(".+")
+            ),
+            cstr(self::to_repeat_strategy)
+        )
     )
 );
 
-/// Converts the given str to a `RepeatStrategy` if possible.
-fn to_strategy(s: &str) -> Result<RepeatStrategy, Error> {
+/// Converts the given str to a [`RepeatStrategy`] if possible.
+fn to_repeat_strategy(s: &str) -> Result<RepeatStrategy, Error> {
     match s {
         "+" => Ok(RepeatStrategy::Cumulative),
         "++" => Ok(RepeatStrategy::CatchUp),
@@ -368,11 +190,8 @@ fn to_strategy(s: &str) -> Result<RepeatStrategy, Error> {
 }
 
 impl From<(u32, TimeUnit)> for TimePeriod {
-    fn from((amount, unit): (u32, TimeUnit)) -> Self {
-        TimePeriod {
-            amount: amount,
-            unit,
-        }
+    fn from((value, unit): (u32, TimeUnit)) -> Self {
+        TimePeriod::new(value, unit)
     }
 }
 
@@ -381,7 +200,8 @@ fn cstr<T>(f: impl Fn(&str) -> T) -> impl Fn(CompleteStr) -> T {
     move |s| f(*s)
 }
 
-/// Parses a `TimeUnit` using its `from_str`-method if there is a valid character.
+/// Parses a `TimeUnit` using its `from_str`-method if there is a
+/// valid character.
 named!(time_unit<CompleteStr, TimeUnit, Error>,
     to_failure!(map_res!(
         alt!(tag!("y") | tag!("m") | tag!("w") | tag!("d") | tag!("h")),
@@ -389,38 +209,168 @@ named!(time_unit<CompleteStr, TimeUnit, Error>,
     ))
 );
 
-named!(warning_period<CompleteStr, TimePeriod, Error>,
+/// Parses a [`TimePeriod`].
+named!(time_period<CompleteStr, TimePeriod, Error>,
     to_failure!(do_parse!(
-        to_failure!(tag!(" -")) >>
-        amount: to_failure!(parse_u32) >>
+        value: to_failure!(parse_u32) >>
         unit: time_unit >>
-        (TimePeriod { amount, unit, })
+        (TimePeriod::new(value, unit))
     ))
 );
 
-named!(tsvariant<CompleteStr, TsVariant, Error>,
-    to_failure!(do_parse!(
-        date: date >>
-        time_range: to_failure!(opt!(do_parse!(
-            to_failure!(tag!(" ")) >>
-            start_time: time >>
-            end_time: to_failure!(opt!(do_parse!(
-                to_failure!(tag!("-")) >>
-                time: time >>
-                (time)
-            ))) >>
-            ((start_time, end_time))
-        ))) >>
-        (TsVariant::from(date, time_range))
-    ))
-);
-
-named!(pub timestamp<CompleteStr, Timestamp, Error>,
-    map_res!(
-        ts,
-        TryFrom::try_from
+/// Parses a [`WarningStrategy`].
+named!(warning_strategy<CompleteStr, WarningStrategy, Error>,
+    to_failure!(
+        map_res!(
+            alt!(
+                tag!("++") |
+                tag!("+") |
+                tag!(".+")
+            ),
+            cstr(self::to_warning_strategy)
+        )
     )
 );
+
+/// Converts the given str to a [`WarningStrategy`] if possible.
+fn to_warning_strategy(s: &str) -> Result<WarningStrategy, Error> {
+    match s {
+        "-" => Ok(WarningStrategy::All),
+        "--" => Ok(WarningStrategy::First),
+        _ => Err(TimestampParseError::InvalidWarning.into()),
+    }
+}
+
+/// Parses a [`WarningDelay`].
+named!(warning_delay<CompleteStr, WarningDelay, Error>,
+    to_failure!(do_parse!(
+        warning_strategy: warning_strategy >>
+        time_period: time_period >>
+        (WarningDelay::new(time_period, warning_strategy))
+    ))
+);
+
+/// Parses a `(Option<Repeater>, Option<WarningDelay>)`.
+named!(repeater_and_delay<CompleteStr,
+       (Option<Repeater>, Option<WarningDelay>), Error>,
+    to_failure!(do_parse!(
+        // repeater and warning delay can be flipped
+        repeater1: opt!(repeater) >>
+        warning_delay: opt!(warning_delay) >>
+        repeater2: opt!(repeater) >>
+        ((repeater1.or(repeater2), warning_delay))
+    ))
+);
+
+/// Parses a [`TimestampData`]. E.g. `DATE TIME[-TIME] REPEATER-OR-DELAY`
+/// with optional second time for a time range.
+named!(inner_timestamp<CompleteStr, (TimestampData, Option<Time>), Error>,
+    to_failure!(do_parse!(
+        date: date >>
+        time1: to_failure!(opt!(time)) >>
+        time2: to_failure!(opt!(do_parse!(
+            to_failure!(tag!("-")) >>
+            time: time >>
+            (time)
+        ))) >>
+        repeater_and_delay: repeater_and_delay >>
+        (to_timestamp_data(date, time1, repeater_and_delay), time2)
+    ))
+);
+
+fn to_timestamp_data(date: Date, time: Option<Time>, (repeater, delay): (Option<Repeater>, Option<WarningDelay>)) -> TimestampData {
+    TimestampData::new(date).and_opt_time(time).and_opt_repeater(repeater).and_opt_warning_delay(delay)
+}
+
+/// Parses a single timestamp.
+///
+/// Which is one of
+///
+/// * `<DATE TIME REPEATER-OR-DELAY>`
+/// * `[DATE TIME REPEATER-OR-DELAY]`
+/// * `<DATE TIME-TIME REPEATER-OR-DELAY>`
+/// * `[DATE TIME-TIME REPEATER-OR-DELAY]`
+named!(single_timestamp<CompleteStr, Timestamp, Error>,
+    to_failure!(do_parse!(
+        prefix: to_failure!(alt!(tag!("<") | tag!("["))) >>
+        inner_timestamp: inner_timestamp >>
+        suffix: to_failure!(switch!(value!(prefix),
+            CompleteStr("<") => tag!(">") |
+            CompleteStr("[") => tag!("]")
+        )) >>
+        (self::to_single_timestamp(*prefix, inner_timestamp))
+    ))
+);
+
+fn to_single_timestamp(
+    prefix: &str,
+    (timestamp_data, end_time): (TimestampData, Option<Time>),
+) -> Timestamp {
+    if prefix == "<" {
+        // active
+        match to_timestamp_range_time_range(&timestamp_data, end_time) {
+            Some(range) => Timestamp::ActiveRange(range),
+            None => Timestamp::Active(timestamp_data),
+        }
+    } else {
+        // inactive
+        match to_timestamp_range_time_range(&timestamp_data, end_time) {
+            Some(range) => Timestamp::InactiveRange(range),
+            None => Timestamp::Inactive(timestamp_data),
+        }
+    }
+}
+
+/// Converts timestamp data and a second optional time into a
+/// [`TimestampRange::TimeRange`] if possible.
+fn to_timestamp_range_time_range(
+    timestamp_data: &TimestampData,
+    end_time: Option<Time>,
+) -> Option<TimestampRange> {
+    if let Some(end_time) = end_time {
+        if let Some(start_time) = timestamp_data.get_time() {
+            // TODO maybe check if end time is greater than start time
+            Some(TimestampRange::TimeRange(
+                TimestampDataWithTime::with_everything(
+                    timestamp_data.get_date().clone(),
+                    start_time.clone(),
+                    timestamp_data.get_repeater().clone(),
+                    timestamp_data.get_warning_delay().clone()
+                ),
+                end_time
+            ))
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+named!(pub timestamp<CompleteStr, Timestamp, Error>,
+    to_failure!(map_res!(
+        to_failure!(do_parse!(
+            first: single_timestamp >>
+            second: to_failure!(opt!(do_parse!(
+                to_failure!(tag!("--")) >>
+                timestamp: single_timestamp >>
+                (timestamp)
+            ))) >>
+            ((first, second))
+        )),
+        self::to_timestamp
+    ))
+);
+
+fn to_timestamp((start, end): (Timestamp, Option<Timestamp>)) -> Result<Timestamp, Error> {
+    use Timestamp::*;
+    match (start, end) {
+        (Active(start), Some(Active(end))) => Ok(ActiveRange(TimestampRange::DateRange(start, end))),
+        (Inactive(start), Some(Inactive(end))) => Ok(InactiveRange(TimestampRange::DateRange(start, end))),
+        (start, None) => Ok(start),
+        (_, _) => Err(TimestampParseError::InvalidCompoundTimestamp.into())
+    }
+}
 
 #[cfg(test)]
 mod tests {
