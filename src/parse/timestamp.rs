@@ -342,11 +342,13 @@ fn to_timestamp_range_time_range(
         if let Some(start_time) = timestamp_data.get_time() {
             // TODO maybe check if end time is greater than start time
             Some(TimestampRange::TimeRange(
-                TimestampDataWithTime::with_everything(
+                TimestampDataWithTime::new(
                     timestamp_data.get_date().clone(),
-                    start_time.clone(),
-                    timestamp_data.get_repeater().clone(),
-                    timestamp_data.get_warning_delay().clone(),
+                    start_time.clone()
+                ).and_opt_repeater(
+                    timestamp_data.get_repeater().clone()
+                ).and_opt_warning_delay(
+                    timestamp_data.get_warning_delay().clone()
                 ),
                 end_time,
             ))
@@ -611,25 +613,6 @@ mod tests {
         }
 
         #[test]
-        fn active_with_time_range() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::TimeRange(
-                    TimestampDataWithTime::new(
-                        NaiveDate::from_ymd(2018, 08, 04),
-                        NaiveTime::from_hms(12, 0, 0)
-                    ),
-                    NaiveTime::from_hms(13, 0, 0).into()
-                )
-            );
-            assert_ts_many!(
-                "<2018-08-04 12:00-13:00>" =>
-                expected.clone();
-                "<2018-08-04 Sat 12:00-13:00>" =>
-                expected.clone()
-            );
-        }
-
-        #[test]
         fn active_with_time_and_repeater() {
             let expected = Timestamp::Active(
                 TimestampData::with_time(
@@ -690,11 +673,92 @@ mod tests {
         }
 
         #[test]
-        fn active_with_time_range_and_repeater() {}
+        fn active_with_time_range() {
+            let expected = Timestamp::ActiveRange(
+                TimestampRange::TimeRange(
+                    TimestampDataWithTime::new(
+                        NaiveDate::from_ymd(2018, 08, 04),
+                        NaiveTime::from_hms(12, 0, 0)
+                    ),
+                    NaiveTime::from_hms(13, 0, 0).into()
+                )
+            );
+            assert_ts_many!(
+                "<2018-08-04 12:00-13:00>" =>
+                expected.clone();
+                "<2018-08-04 Sat 12:00-13:00>" =>
+                expected.clone()
+            );
+        }
+
         #[test]
-        fn active_with_time_range_and_warning() {}
+        fn active_with_time_range_and_repeater() {
+            let expected = Timestamp::ActiveRange(
+                TimestampRange::TimeRange(
+                    TimestampDataWithTime::new(
+                        NaiveDate::from_ymd(2018, 08, 04),
+                        NaiveTime::from_hms(12, 0, 0)
+                    ).and_repeater(
+                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
+                    ),
+                    NaiveTime::from_hms(13, 0, 0).into()
+                )
+            );
+            assert_ts_many!(
+                "<2018-08-04 12:00-13:00 +1h>" =>
+                expected.clone();
+                "<2018-08-04 Sat 12:00-13:00 +1h>" =>
+                expected.clone()
+            );
+        }
+
         #[test]
-        fn active_with_time_range_and_repeater_and_warning() {}
+        fn active_with_time_range_and_warning() {
+            let expected = Timestamp::ActiveRange(
+                TimestampRange::TimeRange(
+                    TimestampDataWithTime::new(
+                        NaiveDate::from_ymd(2018, 08, 04),
+                        NaiveTime::from_hms(12, 0, 0)
+                    ).and_warning_delay(
+                        WarningDelay::new(1.hour(), WarningStrategy::All)
+                    ),
+                    NaiveTime::from_hms(13, 0, 0).into()
+                )
+            );
+            assert_ts_many!(
+                "<2018-08-04 12:00-13:00 -1h>" =>
+                expected.clone();
+                "<2018-08-04 Sat 12:00-13:00 -1h>" =>
+                expected.clone()
+            );
+        }
+
+        #[test]
+        fn active_with_time_range_and_repeater_and_warning() {
+            let expected = Timestamp::ActiveRange(
+                TimestampRange::TimeRange(
+                    TimestampDataWithTime::new(
+                        NaiveDate::from_ymd(2018, 08, 04),
+                        NaiveTime::from_hms(12, 0, 0)
+                    ).and_repeater(
+                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
+                    ).and_warning_delay(
+                        WarningDelay::new(1.hour(), WarningStrategy::All)
+                    ),
+                    NaiveTime::from_hms(13, 0, 0).into()
+                )
+            );
+            assert_ts_many!(
+                "<2018-08-04 12:00-13:00 +1h -1h>" =>
+                expected.clone();
+                "<2018-08-04 Sat 12:00-13:00 +1h -1h>" =>
+                expected.clone();
+                "<2018-08-04 12:00-13:00 -1h +1h>" =>
+                expected.clone();
+                "<2018-08-04 Sat 12:00-13:00 -1h +1h>" =>
+                expected.clone()
+            );
+        }
 
         // TODO date range
 
