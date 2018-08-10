@@ -16,54 +16,111 @@ extern crate itertools;
 pub mod macros;
 #[macro_use]
 mod enum_from_str;
-
+mod parse;
 mod timestamp;
 
-mod parse;
-
+use chrono::prelude::*;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use chrono::prelude::*;
-
-pub use timestamp::*;
 pub use parse::*;
+pub use timestamp::*;
 
-/// Represents an org file.
+// /// Represents an org file.
+// #[derive(Debug, PartialEq, Eq)]
+// pub struct OrgFile {
+//     preface: String,
+//     properties: HashMap<String, String>,
+//     nodes: Vec<OrgNode>,
+// }
+//
+// impl FromStr for OrgFile {
+//     type Err = ();
+//
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         unimplemented!();
+//     }
+// }
+
+// /// Represents one *node* in the org file. A node is a headline (a line starting with one or more `*`).
+// ///
+// /// This node can contain many more nodes that are sub-headlines of this one. (It is a tree or
+// /// sub-tree).
+// #[derive(Debug, PartialEq, Eq)]
+// pub struct OrgNode {
+//     level: u8,
+//     title: String,
+//     state: State,
+//     priority: Priority,
+//     //tags: Vec<String>,
+//     scheduled: Option<Timestamp>,
+//     deadline: Option<Timestamp>,
+//     closed: Option<Timestamp>,
+//     timestamps: Vec<Timestamp>,
+//     //properties: OrgProperties,
+//     content: OrgContent,
+//     //commented: bool,
+//     nodes: Vec<OrgNode>,
+// }
+
+/// Represents a headline in an org file.
+///
+/// `STARS KEYWORD PRIORITY TITLE TAGS`
+///
+/// The stars represent the level.
+///
+/// The keyword is associated with a specific state.
+///
+/// The priority is of format `[#A]`. Where `A` is a letter from `A` to `Z`.
+///
+/// The title is arbitrary (but no newlines). If the title starts with `COMMENT`
+/// the headline will be considered as commented.
+///
+/// The tags are in the following format: `:tag1:tag2:` and can contain any
+/// alpha-numeric character, underscore, at sign, hash sign or percent sign.
+///
+/// A headline can contain directly one section and multiple sub headlines
+/// that are (at least?) one level deeper.
 #[derive(Debug, PartialEq, Eq)]
-pub struct OrgFile {
-    preface: String,
-    properties: HashMap<String, String>,
-    nodes: Vec<OrgNode>,
+pub struct Headline {
+    level: u8,
+    keyword: Option<State>,
+    priority: Option<Priority>,
+    title: String,
+    commented: bool,
+    tags: Vec<String>,
+    section: Option<Section>,
+    sub_headlines: Vec<Headline>,
 }
 
-impl FromStr for OrgFile {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        unimplemented!();
+impl Headline {
+    pub fn new(
+        level: u8,
+        keyword: Option<State>,
+        priority: Option<Priority>,
+        title: String,
+        tags: Vec<String>,
+    ) -> Self {
+        Headline {
+            level,
+            keyword,
+            priority,
+            commented: title.starts_with("COMMENT"),
+            title,
+            tags,
+            section: None,
+            sub_headlines: Vec::new(),
+        }
     }
 }
 
-/// Represents one *node* in the org file. A node is a headline (a line starting with one or more `*`).
-///
-/// This node can contain many more nodes that are sub-headlines of this one. (It is a tree or
-/// sub-tree).
 #[derive(Debug, PartialEq, Eq)]
-pub struct OrgNode {
-    level: u8,
-    title: String,
-    state: State,
-    priority: Priority,
-    //tags: Vec<String>,
-    scheduled: Option<Timestamp>,
-    deadline: Option<Timestamp>,
-    closed: Option<Timestamp>,
-    timestamps: Vec<Timestamp>,
-    //properties: OrgProperties,
-    content: OrgContent,
-    //commented: bool,
-    nodes: Vec<OrgNode>,
+pub struct Section(String);
+
+impl Section {
+    fn new(s: impl Into<String>) -> Self {
+        Section(s.into())
+    }
 }
 
 /// The state of a [`OrgNode`]. Can be eighter `Todo` or `Done`. The enum variants accept an
@@ -76,6 +133,7 @@ pub struct OrgNode {
 pub enum State {
     Todo(String),
     Done(String),
+    Other(String),
     None,
 }
 
