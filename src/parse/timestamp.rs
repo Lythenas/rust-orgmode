@@ -538,6 +538,63 @@ mod tests {
         }
 
         #[test]
+        fn active_with_repeater() {
+            let expected = Timestamp::Active(
+                TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 04)
+                ).and_repeater(
+                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
+                )
+            );
+            assert_ts_many!(
+                "<2018-08-04 +1h>" =>
+                expected.clone();
+                "<2018-08-04 Sat +1h>" =>
+                expected.clone()
+            );
+        }
+
+        #[test]
+        fn active_with_warning() {
+            let expected = Timestamp::Active(
+                TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 04)
+                ).and_warning_delay(
+                    WarningDelay::new(1.hour(), WarningStrategy::All)
+                )
+            );
+            assert_ts_many!(
+                "<2018-08-04 -1h>" =>
+                expected.clone();
+                "<2018-08-04 Sat -1h>" =>
+                expected.clone()
+            );
+        }
+
+        #[test]
+        fn active_with_repeater_and_warning() {
+            let expected = Timestamp::Active(
+                TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 04)
+                ).and_repeater(
+                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
+                ).and_warning_delay(
+                    WarningDelay::new(1.hour(), WarningStrategy::All)
+                )
+            );
+            assert_ts_many!(
+                "<2018-08-04 +1h -1h>" =>
+                expected.clone();
+                "<2018-08-04 Sat +1h -1h>" =>
+                expected.clone();
+                "<2018-08-04 -1h +1h>" =>
+                expected.clone();
+                "<2018-08-04 Sat -1h +1h>" =>
+                expected.clone()
+            );
+        }
+
+        #[test]
         fn active_with_time() {
             let expected = Timestamp::Active(
                 TimestampData::with_time(
