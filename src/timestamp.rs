@@ -136,7 +136,7 @@ pub struct TimestampData {
 
 impl TimestampData {
     pub fn new(date: impl Into<Date>) -> Self {
-        TimestampData {
+        Self {
             date: date.into(),
             time: None,
             repeater: None,
@@ -144,7 +144,7 @@ impl TimestampData {
         }
     }
     pub fn with_time(date: impl Into<Date>, time: impl Into<Time>) -> Self {
-        TimestampData {
+        Self {
             date: date.into(),
             time: Some(time.into()),
             repeater: None,
@@ -155,7 +155,7 @@ impl TimestampData {
         self.and_opt_time(Some(time.into()))
     }
     pub fn and_opt_time(self, time: Option<impl Into<Time>>) -> Self {
-        TimestampData {
+        Self {
             time: time.map(Into::into),
             ..self
         }
@@ -164,7 +164,7 @@ impl TimestampData {
         self.and_opt_repeater(Some(repeater))
     }
     pub fn and_opt_repeater(self, repeater: Option<Repeater>) -> Self {
-        TimestampData {
+        Self {
             repeater,
             ..self
         }
@@ -173,7 +173,7 @@ impl TimestampData {
         self.and_opt_warning_delay(Some(warning_delay))
     }
     pub fn and_opt_warning_delay(self, warning_delay: Option<WarningDelay>) -> Self {
-        TimestampData {
+        Self {
             warning_delay,
             ..self
         }
@@ -212,12 +212,22 @@ impl TimestampDataWithTime {
         }
     }
 
-    pub fn with_everything(date: Date, time: Time, repeater: Option<Repeater>, warning_delay: Option<WarningDelay>) -> Self {
-        TimestampDataWithTime {
-            date,
-            time,
+    pub fn and_repeater(self, repeater: Repeater) -> Self {
+        self.and_opt_repeater(Some(repeater))
+    }
+    pub fn and_opt_repeater(self, repeater: Option<Repeater>) -> Self {
+        Self {
             repeater,
+            ..self
+        }
+    }
+    pub fn and_warning_delay(self, warning_delay: WarningDelay) -> Self {
+        self.and_opt_warning_delay(Some(warning_delay))
+    }
+    pub fn and_opt_warning_delay(self, warning_delay: Option<WarningDelay>) -> Self {
+        Self {
             warning_delay,
+            ..self
         }
     }
 }
