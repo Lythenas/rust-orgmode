@@ -222,9 +222,8 @@ named!(warning_strategy<CompleteStr, WarningStrategy, Error>,
     to_failure!(
         map_res!(
             alt!(
-                tag!("++") |
-                tag!("+") |
-                tag!(".+")
+                tag!("-") |
+                tag!("--")
             ),
             cstr(self::to_warning_strategy)
         )
@@ -524,11 +523,47 @@ mod tests {
         #[test]
         fn test() {
             assert_ts_many!(
-                "<2018-06-04>" => Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 06, 04)));
-                "<2018-06-04 12:00>" => Timestamp::Active(TimestampData::with_time(NaiveDate::from_ymd(2018, 06, 04), NaiveTime::from_hms(12, 0, 0)))
-            );
-            assert_ts!(
-                "<2018-06-04>" => Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 06, 04)))
+                "<2018-06-04>" =>
+                Timestamp::Active(
+                    TimestampData::new(
+                        NaiveDate::from_ymd(2018, 06, 04)
+                    )
+                );
+                "<2018-06-04 12:00>" =>
+                Timestamp::Active(
+                    TimestampData::with_time(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        NaiveTime::from_hms(12, 0, 0)
+                    )
+                );
+                "<2018-06-04 12:00-13:00>" =>
+                Timestamp::ActiveRange(
+                    TimestampRange::TimeRange(
+                        TimestampDataWithTime::new(
+                            NaiveDate::from_ymd(2018, 06, 04),
+                            NaiveTime::from_hms(12, 0, 0)
+                        ),
+                        NaiveTime::from_hms(13, 0, 0).into()
+                    )
+                );
+                "<2018-06-04 12:00 +1h>" =>
+                Timestamp::Active(
+                    TimestampData::with_time(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        NaiveTime::from_hms(12, 0, 0)
+                    ).and_repeater(
+                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
+                    )
+                );
+                "<2018-06-04 12:00 -1h>" =>
+                Timestamp::Active(
+                    TimestampData::with_time(
+                        NaiveDate::from_ymd(2018, 06, 04),
+                        NaiveTime::from_hms(12, 0, 0)
+                    ).and_warning_delay(
+                        WarningDelay::new(1.hour(), WarningStrategy::All)
+                    )
+                )
             );
         }
     }

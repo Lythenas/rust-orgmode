@@ -151,17 +151,26 @@ impl TimestampData {
             warning_delay: None,
         }
     }
-    pub fn and_opt_time(self, time: impl Into<Option<Time>>) -> Self {
+    pub fn and_time(self, time: impl Into<Time>) -> Self {
+        self.and_opt_time(Some(time.into()))
+    }
+    pub fn and_opt_time(self, time: Option<impl Into<Time>>) -> Self {
         TimestampData {
-            time: time.into(),
+            time: time.map(Into::into),
             ..self
         }
+    }
+    pub fn and_repeater(self, repeater: Repeater) -> Self {
+        self.and_opt_repeater(Some(repeater))
     }
     pub fn and_opt_repeater(self, repeater: Option<Repeater>) -> Self {
         TimestampData {
             repeater,
             ..self
         }
+    }
+    pub fn and_warning_delay(self, warning_delay: WarningDelay) -> Self {
+        self.and_opt_warning_delay(Some(warning_delay))
     }
     pub fn and_opt_warning_delay(self, warning_delay: Option<WarningDelay>) -> Self {
         TimestampData {
@@ -194,6 +203,15 @@ pub struct TimestampDataWithTime {
 }
 
 impl TimestampDataWithTime {
+    pub fn new(date: impl Into<Date>, time: impl Into<Time>) -> Self {
+        TimestampDataWithTime {
+            date: date.into(),
+            time: time.into(),
+            repeater: None,
+            warning_delay: None,
+        }
+    }
+
     pub fn with_everything(date: Date, time: Time, repeater: Option<Repeater>, warning_delay: Option<WarningDelay>) -> Self {
         TimestampDataWithTime {
             date,
