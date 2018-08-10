@@ -115,7 +115,7 @@ impl AsTimePeriod for u32 {
 
 /// Represents a timestamp range. This is used for [`Timestamp::ActiveRange`]
 /// and [`Timestamp::InactiveRange`].
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TimestampRange {
     /// `<DATE TIME-TIME REPEATER-OR-DELAY>` or
     /// `[DATE TIME-TIME REPEATER-OR-DELAY]`
@@ -126,7 +126,7 @@ pub enum TimestampRange {
 }
 
 /// Internal data of a *normal* timestamp with optional [`Time`].
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TimestampData {
     date: Date,
     time: Option<Time>,
@@ -194,7 +194,7 @@ impl TimestampData {
 }
 
 /// Internal data of a timestamp with required [`Time`].
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TimestampDataWithTime {
     date: Date,
     time: Time,
@@ -258,7 +258,7 @@ impl From<NaiveTime> for Time {
 /// mentioned in [https://orgmode.org/worg/dev/org-syntax.html#Timestamp].
 ///
 /// The diary variant is not implemented.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Timestamp {
     //Diary,
     /// `<DATE TIME REPEATER-OR-DELAY>`
