@@ -278,6 +278,7 @@ named!(inner_timestamp<CompleteStr, (TimestampData, Option<Time>), Error>,
     ))
 );
 
+/// Converts a date and optional time, repeater and warning delay to [`TimestampData`].
 fn to_timestamp_data(date: Date, time: Option<Time>, (repeater, delay): (Option<Repeater>, Option<WarningDelay>)) -> TimestampData {
     TimestampData::new(date).and_opt_time(time).and_opt_repeater(repeater).and_opt_warning_delay(delay)
 }
@@ -298,16 +299,17 @@ named!(single_timestamp<CompleteStr, Timestamp, Error>,
             CompleteStr("<") => tag!(">") |
             CompleteStr("[") => tag!("]")
         )) >>
-        (self::to_single_timestamp(*prefix, inner_timestamp))
+        (self::to_single_timestamp(*prefix == "<", inner_timestamp))
     ))
 );
 
+/// Converts timestamp data and optional time to a single (active or inactive) [`Timestamp`].
+/// This can also be a time range.
 fn to_single_timestamp(
-    prefix: &str,
+    active: bool,
     (timestamp_data, end_time): (TimestampData, Option<Time>),
 ) -> Timestamp {
-    if prefix == "<" {
-        // active
+    if active {
         match to_timestamp_range_time_range(&timestamp_data, end_time) {
             Some(range) => Timestamp::ActiveRange(range),
             None => Timestamp::Active(timestamp_data),
@@ -347,6 +349,9 @@ fn to_timestamp_range_time_range(
     }
 }
 
+/// Parses a complete timestamp in one of the accepted format.
+///
+/// See [`Timestamp`].
 named!(pub timestamp<CompleteStr, Timestamp, Error>,
     to_failure!(map_res!(
         to_failure!(do_parse!(
@@ -362,6 +367,10 @@ named!(pub timestamp<CompleteStr, Timestamp, Error>,
     ))
 );
 
+/// Converts two single timestamps (the second is optional) to complete [`Timestamp`] if possible.
+///
+/// It can't be converted e.g. when one of the timestamps is already a time range but both are
+/// given. (`<2018-06-20 12:30-14:00>--<2018-07-01 22:00>`)
 fn to_timestamp((start, end): (Timestamp, Option<Timestamp>)) -> Result<Timestamp, Error> {
     use Timestamp::*;
     match (start, end) {
