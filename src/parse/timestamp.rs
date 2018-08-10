@@ -1,12 +1,12 @@
-use chrono::{Duration, NaiveDate, NaiveTime};
+use chrono::{NaiveDate, NaiveTime};
 use failure::Error;
-use std::convert::TryFrom;
+use nom::types::CompleteStr;
 use std::fmt;
 use std::str::{self, FromStr};
-
 use timestamp::{Date, *};
 
-use nom::types::CompleteStr;
+// TODO add better error returns to the parsers.
+// e.g. with return_error! or add_return_error!.
 
 // Helpers for date and time etc.
 
@@ -123,14 +123,6 @@ impl fmt::Display for TimestampParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // TODO write actual error messages
         write!(f, "{:?}", self)
-    }
-}
-
-fn check_active(prefix: &str, suffix: &str) -> Result<bool, ()> {
-    match (prefix, suffix) {
-        ("<", ">") => Ok(true),
-        ("[", "]") => Ok(false),
-        _ => Err(()),
     }
 }
 
@@ -304,7 +296,7 @@ named!(single_timestamp<CompleteStr, Timestamp, Error>,
     to_failure!(do_parse!(
         prefix: to_failure!(alt!(tag!("<") | tag!("["))) >>
         inner_timestamp: inner_timestamp >>
-        suffix: to_failure!(switch!(value!(prefix),
+        to_failure!(switch!(value!(prefix),
             CompleteStr("<") => tag!(">") |
             CompleteStr("[") => tag!("]")
         )) >>
@@ -342,14 +334,9 @@ fn to_timestamp_range_time_range(
         if let Some(start_time) = timestamp_data.get_time() {
             // TODO maybe check if end time is greater than start time
             Some(TimestampRange::TimeRange(
-                TimestampDataWithTime::new(
-                    timestamp_data.get_date().clone(),
-                    start_time.clone()
-                ).and_opt_repeater(
-                    timestamp_data.get_repeater().clone()
-                ).and_opt_warning_delay(
-                    timestamp_data.get_warning_delay().clone()
-                ),
+                TimestampDataWithTime::new(timestamp_data.get_date().clone(), start_time.clone())
+                    .and_opt_repeater(timestamp_data.get_repeater().clone())
+                    .and_opt_warning_delay(timestamp_data.get_warning_delay().clone()),
                 end_time,
             ))
         } else {
@@ -526,22 +513,15 @@ mod tests {
 
         #[test]
         fn date_only() {
-            let expected = Timestamp::Active(
-                TimestampData::new(
-                    NaiveDate::from_ymd(2018, 08, 04)
-                )
-            );
+            let expected = Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 04)));
             assert_ts_many!(
                 "<2018-08-04>" =>
                 expected.clone();
                 "<2018-08-04 Sat>" =>
                 expected.clone()
             );
-            let expected = Timestamp::Inactive(
-                TimestampData::new(
-                    NaiveDate::from_ymd(2018, 08, 04)
-                )
-            );
+            let expected =
+                Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 08, 04)));
             assert_ts_many!(
                 "[2018-08-04]" =>
                 expected.clone();
@@ -553,11 +533,8 @@ mod tests {
         #[test]
         fn with_repeater() {
             let expected = Timestamp::Active(
-                TimestampData::new(
-                    NaiveDate::from_ymd(2018, 08, 04)
-                ).and_repeater(
-                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                )
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
             );
             assert_ts_many!(
                 "<2018-08-04 +1h>" =>
@@ -566,11 +543,8 @@ mod tests {
                 expected.clone()
             );
             let expected = Timestamp::Inactive(
-                TimestampData::new(
-                    NaiveDate::from_ymd(2018, 08, 04)
-                ).and_repeater(
-                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                )
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
             );
             assert_ts_many!(
                 "[2018-08-04 +1h]" =>
@@ -583,11 +557,8 @@ mod tests {
         #[test]
         fn with_warning() {
             let expected = Timestamp::Active(
-                TimestampData::new(
-                    NaiveDate::from_ymd(2018, 08, 04)
-                ).and_warning_delay(
-                    WarningDelay::new(1.hour(), WarningStrategy::All)
-                )
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "<2018-08-04 -1h>" =>
@@ -596,11 +567,8 @@ mod tests {
                 expected.clone()
             );
             let expected = Timestamp::Inactive(
-                TimestampData::new(
-                    NaiveDate::from_ymd(2018, 08, 04)
-                ).and_warning_delay(
-                    WarningDelay::new(1.hour(), WarningStrategy::All)
-                )
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "[2018-08-04 -1h]" =>
@@ -613,13 +581,9 @@ mod tests {
         #[test]
         fn with_repeater_and_warning() {
             let expected = Timestamp::Active(
-                TimestampData::new(
-                    NaiveDate::from_ymd(2018, 08, 04)
-                ).and_repeater(
-                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                ).and_warning_delay(
-                    WarningDelay::new(1.hour(), WarningStrategy::All)
-                )
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "<2018-08-04 +1h -1h>" =>
@@ -632,13 +596,9 @@ mod tests {
                 expected.clone()
             );
             let expected = Timestamp::Inactive(
-                TimestampData::new(
-                    NaiveDate::from_ymd(2018, 08, 04)
-                ).and_repeater(
-                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                ).and_warning_delay(
-                    WarningDelay::new(1.hour(), WarningStrategy::All)
-                )
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "[2018-08-04 +1h -1h]" =>
@@ -654,24 +614,20 @@ mod tests {
 
         #[test]
         fn with_time() {
-            let expected = Timestamp::Active(
-                TimestampData::with_time(
-                    NaiveDate::from_ymd(2018, 08, 04),
-                    NaiveTime::from_hms(12, 0, 0)
-                )
-            );
+            let expected = Timestamp::Active(TimestampData::with_time(
+                NaiveDate::from_ymd(2018, 08, 04),
+                NaiveTime::from_hms(12, 0, 0),
+            ));
             assert_ts_many!(
                 "<2018-08-04 12:00>" =>
                 expected.clone();
                 "<2018-08-04 Sat 12:00>" =>
                 expected.clone()
             );
-            let expected = Timestamp::Inactive(
-                TimestampData::with_time(
-                    NaiveDate::from_ymd(2018, 08, 04),
-                    NaiveTime::from_hms(12, 0, 0)
-                )
-            );
+            let expected = Timestamp::Inactive(TimestampData::with_time(
+                NaiveDate::from_ymd(2018, 08, 04),
+                NaiveTime::from_hms(12, 0, 0),
+            ));
             assert_ts_many!(
                 "[2018-08-04 12:00]" =>
                 expected.clone();
@@ -685,10 +641,8 @@ mod tests {
             let expected = Timestamp::Active(
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
-                    NaiveTime::from_hms(12, 0, 0)
-                ).and_repeater(
-                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                )
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
             );
             assert_ts_many!(
                 "<2018-08-04 12:00 +1h>" =>
@@ -699,10 +653,8 @@ mod tests {
             let expected = Timestamp::Inactive(
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
-                    NaiveTime::from_hms(12, 0, 0)
-                ).and_repeater(
-                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                )
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
             );
             assert_ts_many!(
                 "[2018-08-04 12:00 +1h]" =>
@@ -717,10 +669,8 @@ mod tests {
             let expected = Timestamp::Active(
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
-                    NaiveTime::from_hms(12, 0, 0)
-                ).and_warning_delay(
-                    WarningDelay::new(1.hour(), WarningStrategy::All)
-                )
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "<2018-08-04 12:00 -1h>" =>
@@ -731,10 +681,8 @@ mod tests {
             let expected = Timestamp::Inactive(
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
-                    NaiveTime::from_hms(12, 0, 0)
-                ).and_warning_delay(
-                    WarningDelay::new(1.hour(), WarningStrategy::All)
-                )
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "[2018-08-04 12:00 -1h]" =>
@@ -749,12 +697,9 @@ mod tests {
             let expected = Timestamp::Active(
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
-                    NaiveTime::from_hms(12, 0, 0)
-                ).and_repeater(
-                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                ). and_warning_delay(
-                    WarningDelay::new(1.hour(), WarningStrategy::All)
-                )
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "<2018-08-04 12:00 +1h -1h>" =>
@@ -769,12 +714,9 @@ mod tests {
             let expected = Timestamp::Inactive(
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
-                    NaiveTime::from_hms(12, 0, 0)
-                ).and_repeater(
-                    Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                ). and_warning_delay(
-                    WarningDelay::new(1.hour(), WarningStrategy::All)
-                )
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "[2018-08-04 12:00 +1h -1h]" =>
@@ -790,15 +732,13 @@ mod tests {
 
         #[test]
         fn with_time_range() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::TimeRange(
-                    TimestampDataWithTime::new(
-                        NaiveDate::from_ymd(2018, 08, 04),
-                        NaiveTime::from_hms(12, 0, 0)
-                    ),
-                    NaiveTime::from_hms(13, 0, 0).into()
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::TimeRange(
+                TimestampDataWithTime::new(
+                    NaiveDate::from_ymd(2018, 08, 04),
+                    NaiveTime::from_hms(12, 0, 0),
+                ),
+                NaiveTime::from_hms(13, 0, 0).into(),
+            ));
             assert_ts_many!(
                 "<2018-08-04 12:00-13:00>" =>
                 expected.clone();
@@ -809,17 +749,13 @@ mod tests {
 
         #[test]
         fn with_time_range_and_repeater() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::TimeRange(
-                    TimestampDataWithTime::new(
-                        NaiveDate::from_ymd(2018, 08, 04),
-                        NaiveTime::from_hms(12, 0, 0)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ),
-                    NaiveTime::from_hms(13, 0, 0).into()
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::TimeRange(
+                TimestampDataWithTime::new(
+                    NaiveDate::from_ymd(2018, 08, 04),
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
+                NaiveTime::from_hms(13, 0, 0).into(),
+            ));
             assert_ts_many!(
                 "<2018-08-04 12:00-13:00 +1h>" =>
                 expected.clone();
@@ -830,17 +766,13 @@ mod tests {
 
         #[test]
         fn with_time_range_and_warning() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::TimeRange(
-                    TimestampDataWithTime::new(
-                        NaiveDate::from_ymd(2018, 08, 04),
-                        NaiveTime::from_hms(12, 0, 0)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    ),
-                    NaiveTime::from_hms(13, 0, 0).into()
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::TimeRange(
+                TimestampDataWithTime::new(
+                    NaiveDate::from_ymd(2018, 08, 04),
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                NaiveTime::from_hms(13, 0, 0).into(),
+            ));
             assert_ts_many!(
                 "<2018-08-04 12:00-13:00 -1h>" =>
                 expected.clone();
@@ -851,19 +783,14 @@ mod tests {
 
         #[test]
         fn with_time_range_and_repeater_and_warning() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::TimeRange(
-                    TimestampDataWithTime::new(
-                        NaiveDate::from_ymd(2018, 08, 04),
-                        NaiveTime::from_hms(12, 0, 0)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    ),
-                    NaiveTime::from_hms(13, 0, 0).into()
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::TimeRange(
+                TimestampDataWithTime::new(
+                    NaiveDate::from_ymd(2018, 08, 04),
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                NaiveTime::from_hms(13, 0, 0).into(),
+            ));
             assert_ts_many!(
                 "<2018-08-04 12:00-13:00 +1h -1h>" =>
                 expected.clone();
@@ -874,19 +801,14 @@ mod tests {
                 "<2018-08-04 Sat 12:00-13:00 -1h +1h>" =>
                 expected.clone()
             );
-            let expected = Timestamp::InactiveRange(
-                TimestampRange::TimeRange(
-                    TimestampDataWithTime::new(
-                        NaiveDate::from_ymd(2018, 08, 04),
-                        NaiveTime::from_hms(12, 0, 0)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    ),
-                    NaiveTime::from_hms(13, 0, 0).into()
-                )
-            );
+            let expected = Timestamp::InactiveRange(TimestampRange::TimeRange(
+                TimestampDataWithTime::new(
+                    NaiveDate::from_ymd(2018, 08, 04),
+                    NaiveTime::from_hms(12, 0, 0),
+                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                NaiveTime::from_hms(13, 0, 0).into(),
+            ));
             assert_ts_many!(
                 "[2018-08-04 12:00-13:00 +1h -1h]" =>
                 expected.clone();
@@ -901,16 +823,10 @@ mod tests {
 
         #[test]
         fn with_date_range() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06)),
+            ));
             assert_ts_many!(
                 "<2018-08-04>--<2018-08-06>" =>
                 expected.clone();
@@ -921,16 +837,10 @@ mod tests {
                 "<2018-08-04 Sat>--<2018-08-06 Mon>" =>
                 expected.clone()
             );
-            let expected = Timestamp::InactiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    )
-                )
-            );
+            let expected = Timestamp::InactiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06)),
+            ));
             assert_ts_many!(
                 "[2018-08-04]--[2018-08-06]" =>
                 expected.clone();
@@ -945,17 +855,13 @@ mod tests {
 
         #[test]
         fn with_date_range_and_start_time() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::with_time(
-                        NaiveDate::from_ymd(2018, 08, 04),
-                        NaiveTime::from_hms(12, 0, 0)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::with_time(
+                    NaiveDate::from_ymd(2018, 08, 04),
+                    NaiveTime::from_hms(12, 0, 0),
+                ),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06)),
+            ));
             assert_ts_many!(
                 "<2018-08-04 12:00>--<2018-08-06>" =>
                 expected.clone();
@@ -970,17 +876,13 @@ mod tests {
 
         #[test]
         fn with_date_range_and_end_time() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ),
-                    TimestampData::with_time(
-                        NaiveDate::from_ymd(2018, 08, 06),
-                        NaiveTime::from_hms(13, 0, 0)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04)),
+                TimestampData::with_time(
+                    NaiveDate::from_ymd(2018, 08, 06),
+                    NaiveTime::from_hms(13, 0, 0),
+                ),
+            ));
             assert_ts_many!(
                 "<2018-08-04>--<2018-08-06 13:00>" =>
                 expected.clone();
@@ -995,18 +897,16 @@ mod tests {
 
         #[test]
         fn with_date_range_and_start_and_end_time() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::with_time(
-                        NaiveDate::from_ymd(2018, 08, 04),
-                        NaiveTime::from_hms(12, 0, 0)
-                    ),
-                    TimestampData::with_time(
-                        NaiveDate::from_ymd(2018, 08, 06),
-                        NaiveTime::from_hms(13, 0, 0)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::with_time(
+                    NaiveDate::from_ymd(2018, 08, 04),
+                    NaiveTime::from_hms(12, 0, 0),
+                ),
+                TimestampData::with_time(
+                    NaiveDate::from_ymd(2018, 08, 06),
+                    NaiveTime::from_hms(13, 0, 0),
+                ),
+            ));
             assert_ts_many!(
                 "<2018-08-04 12:00>--<2018-08-06 13:00>" =>
                 expected.clone();
@@ -1021,18 +921,11 @@ mod tests {
 
         #[test]
         fn with_date_range_and_start_repeater() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06)),
+            ));
             assert_ts_many!(
                 "<2018-08-04 +1h>--<2018-08-06>" =>
                 expected.clone();
@@ -1047,18 +940,11 @@ mod tests {
 
         #[test]
         fn with_date_range_and_start_warning() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06)),
+            ));
             assert_ts_many!(
                 "<2018-08-04 -1h>--<2018-08-06>" =>
                 expected.clone();
@@ -1073,20 +959,12 @@ mod tests {
 
         #[test]
         fn with_date_range_and_start_repeater_and_warning() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06)),
+            ));
             assert_ts_many!(
                 "<2018-08-04 +1h -1h>--<2018-08-06>" =>
                 expected.clone();
@@ -1109,18 +987,11 @@ mod tests {
 
         #[test]
         fn with_date_range_and_end_repeater() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
+            ));
             assert_ts_many!(
                 "<2018-08-04>--<2018-08-06 +1h>" =>
                 expected.clone();
@@ -1135,18 +1006,11 @@ mod tests {
 
         #[test]
         fn with_date_range_and_end_warning() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+            ));
             assert_ts_many!(
                 "<2018-08-04>--<2018-08-06 -1h>" =>
                 expected.clone();
@@ -1161,20 +1025,12 @@ mod tests {
 
         #[test]
         fn with_date_range_and_end_repeater_and_warning() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+            ));
             assert_ts_many!(
                 "<2018-08-04>--<2018-08-06 +1h -1h>" =>
                 expected.clone();
@@ -1197,24 +1053,14 @@ mod tests {
 
         #[test]
         fn with_date_range_and_start_repeater_and_warning_and_end_repeater_and_warning() {
-            let expected = Timestamp::ActiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    )
-                )
-            );
+            let expected = Timestamp::ActiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+            ));
             assert_ts_many!(
                 "<2018-08-04 +1h -1h>--<2018-08-06 +1h -1h>" =>
                 expected.clone();
@@ -1225,24 +1071,14 @@ mod tests {
                 "<2018-08-04 Sat +1h -1h>--<2018-08-06 Mon +1h -1h>" =>
                 expected.clone()
             );
-            let expected = Timestamp::InactiveRange(
-                TimestampRange::DateRange(
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 04)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    ),
-                    TimestampData::new(
-                        NaiveDate::from_ymd(2018, 08, 06)
-                    ).and_repeater(
-                        Repeater::new(1.hour(), RepeatStrategy::Cumulative)
-                    ).and_warning_delay(
-                        WarningDelay::new(1.hour(), WarningStrategy::All)
-                    )
-                )
-            );
+            let expected = Timestamp::InactiveRange(TimestampRange::DateRange(
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 04))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                TimestampData::new(NaiveDate::from_ymd(2018, 08, 06))
+                    .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                    .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+            ));
             assert_ts_many!(
                 "[2018-08-04 +1h -1h]--[2018-08-06 +1h -1h]" =>
                 expected.clone();
