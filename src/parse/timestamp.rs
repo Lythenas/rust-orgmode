@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::str::{self, FromStr};
 
-use timestamp::{*, Date};
+use timestamp::{Date, *};
 
 use nom::types::CompleteStr;
 
@@ -37,7 +37,9 @@ named!(parse_i32<CompleteStr, i32, Error>,
 /// Converts the given `hour` and `minute` into `Time` if possible
 /// or gives an error otherwise.
 fn to_time((hour, minute): (u32, u32)) -> Result<Time, Error> {
-    NaiveTime::from_hms_opt(hour, minute, 0).ok_or_else(|| format_err!("invalid time")).map(Time::new)
+    NaiveTime::from_hms_opt(hour, minute, 0)
+        .ok_or_else(|| format_err!("invalid time"))
+        .map(Time::new)
 }
 
 /// Parses a time string in the following format: `12:30` and returns
@@ -58,10 +60,8 @@ named!(time<CompleteStr, Time, Error>,
 
 /// Converts the given `year`, `month`, `day` and optional `weekday` into
 /// a `Date` if possible or gives an error otherwise.
-fn to_date(
-    (year, month, day, weekday): (i32, u32, u32, Option<&str>),
-) -> Result<Date, Error> {
-    use chrono::{Weekday, Datelike};
+fn to_date((year, month, day, weekday): (i32, u32, u32, Option<&str>)) -> Result<Date, Error> {
+    use chrono::{Datelike, Weekday};
 
     let weekday: Option<Weekday> = match weekday {
         Some(wd) => Some(
@@ -77,8 +77,7 @@ fn to_date(
             None => Ok(date),
             Some(wd) if wd == date.weekday() => Ok(date),
             _ => Err(format_err!("invalid weekday in date")),
-        })
-        .map(Date::new)
+        }).map(Date::new)
 }
 
 /// Parses a date string in the format `YYYY-MM-DD DAYNAME` and returns
@@ -255,9 +254,9 @@ named!(repeater_and_delay<CompleteStr,
        (Option<Repeater>, Option<WarningDelay>), Error>,
     to_failure!(do_parse!(
         // repeater and warning delay can be flipped
-        repeater1: opt!(repeater) >>
-        warning_delay: opt!(warning_delay) >>
-        repeater2: opt!(repeater) >>
+        repeater1: opt!(preceded!(to_failure!(tag!(" ")), repeater)) >>
+        warning_delay: opt!(preceded!(to_failure!(tag!(" ")), warning_delay)) >>
+        repeater2: opt!(preceded!(to_failure!(tag!(" ")), repeater)) >>
         ((repeater1.or(repeater2), warning_delay))
     ))
 );
@@ -267,7 +266,11 @@ named!(repeater_and_delay<CompleteStr,
 named!(inner_timestamp<CompleteStr, (TimestampData, Option<Time>), Error>,
     to_failure!(do_parse!(
         date: date >>
-        time1: to_failure!(opt!(time)) >>
+        time1: to_failure!(opt!(do_parse!(
+                    to_failure!(tag!(" ")) >>
+                    time: time >>
+                    (time)
+        ))) >>
         time2: to_failure!(opt!(do_parse!(
             to_failure!(tag!("-")) >>
             time: time >>
@@ -279,8 +282,15 @@ named!(inner_timestamp<CompleteStr, (TimestampData, Option<Time>), Error>,
 );
 
 /// Converts a date and optional time, repeater and warning delay to [`TimestampData`].
-fn to_timestamp_data(date: Date, time: Option<Time>, (repeater, delay): (Option<Repeater>, Option<WarningDelay>)) -> TimestampData {
-    TimestampData::new(date).and_opt_time(time).and_opt_repeater(repeater).and_opt_warning_delay(delay)
+fn to_timestamp_data(
+    date: Date,
+    time: Option<Time>,
+    (repeater, delay): (Option<Repeater>, Option<WarningDelay>),
+) -> TimestampData {
+    TimestampData::new(date)
+        .and_opt_time(time)
+        .and_opt_repeater(repeater)
+        .and_opt_warning_delay(delay)
 }
 
 /// Parses a single timestamp.
@@ -337,9 +347,9 @@ fn to_timestamp_range_time_range(
                     timestamp_data.get_date().clone(),
                     start_time.clone(),
                     timestamp_data.get_repeater().clone(),
-                    timestamp_data.get_warning_delay().clone()
+                    timestamp_data.get_warning_delay().clone(),
                 ),
-                end_time
+                end_time,
             ))
         } else {
             None
@@ -374,10 +384,14 @@ named!(pub timestamp<CompleteStr, Timestamp, Error>,
 fn to_timestamp((start, end): (Timestamp, Option<Timestamp>)) -> Result<Timestamp, Error> {
     use Timestamp::*;
     match (start, end) {
-        (Active(start), Some(Active(end))) => Ok(ActiveRange(TimestampRange::DateRange(start, end))),
-        (Inactive(start), Some(Inactive(end))) => Ok(InactiveRange(TimestampRange::DateRange(start, end))),
+        (Active(start), Some(Active(end))) => {
+            Ok(ActiveRange(TimestampRange::DateRange(start, end)))
+        }
+        (Inactive(start), Some(Inactive(end))) => {
+            Ok(InactiveRange(TimestampRange::DateRange(start, end)))
+        }
         (start, None) => Ok(start),
-        (_, _) => Err(TimestampParseError::InvalidCompoundTimestamp.into())
+        (_, _) => Err(TimestampParseError::InvalidCompoundTimestamp.into()),
     }
 }
 
@@ -427,6 +441,16 @@ mod tests {
                 "Parsing of {:?} failed.",
                 $str
             )
+        }};
+    }
+
+    macro_rules! assert_ts_many {
+        ($str:expr => $res:expr) => {{
+            assert_ts!($str => $res);
+        }};
+        ($str:expr => $res:expr; $($rest:tt)* ) => {{
+            assert_ts!($str => $res);
+            assert_ts_many!($($rest)*);
         }};
     }
 
@@ -499,6 +523,10 @@ mod tests {
 
         #[test]
         fn test() {
+            assert_ts_many!(
+                "<2018-06-04>" => Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 06, 04)));
+                "<2018-06-04 12:00>" => Timestamp::Active(TimestampData::with_time(NaiveDate::from_ymd(2018, 06, 04), NaiveTime::from_hms(12, 0, 0)))
+            );
             assert_ts!(
                 "<2018-06-04>" => Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 06, 04)))
             );
