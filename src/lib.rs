@@ -19,9 +19,7 @@ mod enum_from_str;
 mod parse;
 mod timestamp;
 
-use chrono::prelude::*;
 use std::collections::HashMap;
-use std::str::FromStr;
 
 pub use parse::*;
 pub use timestamp::*;
@@ -98,18 +96,31 @@ impl Headline {
         level: u8,
         keyword: Option<State>,
         priority: Option<Priority>,
-        title: String,
+        title: impl Into<String>,
         tags: Vec<String>,
     ) -> Self {
+        let title = title.into();
         Headline {
             level,
             keyword,
             priority,
             commented: title.starts_with("COMMENT"),
-            title,
+            title: title,
             tags,
             section: None,
             sub_headlines: Vec::new(),
+        }
+    }
+    pub fn and_section(self, section: Section) -> Self {
+        Headline {
+            section: Some(section),
+            ..self
+        }
+    }
+    pub fn and_sub_headlines(self, sub_headlines: Vec<Headline>) -> Self {
+        Headline {
+            sub_headlines,
+            ..self
         }
     }
 }
@@ -128,13 +139,10 @@ impl Section {
 /// anything.
 ///
 /// `TODO` and `NEXT` will be parsed as `State::Todo` and `DONE` will be parsed as `State::Done`.
-/// An empty string will be parsed as `State::None`.
 #[derive(Debug, PartialEq, Eq)]
 pub enum State {
     Todo(String),
     Done(String),
-    Other(String),
-    None,
 }
 
 pub type OrgProperties = HashMap<String, String>;
@@ -160,7 +168,7 @@ mod tests {
         use std::char;
 
         for i in 'A' as u32..('Z' as u32 + 1) {
-            let prio = Priority::from_str(&char::from_u32(i).unwrap().to_string());
+            let prio = &char::from_u32(i).unwrap().to_string().parse::<Priority>();
             assert!(prio.is_ok());
         }
     }

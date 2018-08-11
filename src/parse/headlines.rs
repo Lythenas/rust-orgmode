@@ -14,20 +14,19 @@ named!(level<CompleteStr, u8, Error>,
 
 /// Parses the keyword at the beginning of the headline (after the stars).
 named!(keyword<CompleteStr, State, Error>,
-    to_failure!(map!(
+    to_failure!(map_opt!(
         take_until!(" "),
         to_keyword
     ))
 );
 
 /// Converts the string to a keyword.
-fn to_keyword(s: CompleteStr) -> State {
+fn to_keyword(s: CompleteStr) -> Option<State> {
     // TODO make this more dynamic
     match *s {
-        "" => State::None,
-        "TODO" => State::Todo(String::from(*s)),
-        "DONE" => State::Done(String::from(*s)),
-        _ => State::Other(String::from(*s)),
+        "TODO" => Some(State::Todo(String::from(*s))),
+        "DONE" => Some(State::Done(String::from(*s))),
+        _ => None,
     }
 }
 
@@ -45,7 +44,7 @@ named!(priority<CompleteStr, Priority, Error>,
 );
 
 named!(title<CompleteStr, String, Error>,
-    dbg_dmp!(to_failure!(map!(
+    to_failure!(map!(
         recognize!(
             fold_many0!(
                 verify!(
@@ -58,7 +57,7 @@ named!(title<CompleteStr, String, Error>,
             )
         ),
         |s: CompleteStr| String::from(*s)
-    )))
+    ))
 );
 
 /// Parses the tags of a headline.
@@ -81,7 +80,18 @@ named!(tags<CompleteStr, Vec<String>, Error>,
 /// Currently just takes all input until a new headline begins..
 named!(section<CompleteStr, Section, Error>,
     to_failure!(map!(
-        take_until!("\n*"),
+        recognize!(
+            fold_many0!(
+                verify!(
+                    // TODO maybe matching \n* is not the best,
+                    // also take!(1) is no good here
+                    alt_complete!(take_until!("\n*") | take!(1) | eof!()),
+                    |s: CompleteStr| (*s).len() != 0 && !(*s).ends_with("\n*")
+                ),
+                (),
+                |acc: (), _| acc
+            )
+        ),
         |s: CompleteStr| Section::new(*s)
     ))
 );
@@ -89,10 +99,9 @@ named!(section<CompleteStr, Section, Error>,
 named!(headline<CompleteStr, Headline, Error>,
     to_failure!(do_parse!(
         level: level >>
+        keyword: opt!(preceded!(to_failure!(tag!(" ")), keyword)) >>
+        priority: opt!(preceded!(to_failure!(tag!(" ")), priority)) >>
         to_failure!(tag!(" ")) >>
-        keyword: opt!(keyword) >>
-        to_failure!(tag!(" ")) >>
-        priority: opt!(priority) >>
         title: title >>
         // TODO parse tags
         //to_failure!(tag!(" ")) >>
@@ -107,6 +116,91 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_headline() {
+        assert_eq!(
+            headline(CompleteStr("* Headline without keyword and priority")).ok(),
+            Some((
+                CompleteStr(""),
+                Headline::new(
+                    1,
+                    None,
+                    None,
+                    "Headline without keyword and priority",
+                    Vec::new()
+                )
+            ))
+        );
+        assert_eq!(
+            headline(CompleteStr(
+                "* TODO [#A] Headline with keyword and priority"
+            )).ok(),
+            Some((
+                CompleteStr(""),
+                Headline::new(
+                    1,
+                    Some(State::Todo("TODO".into())),
+                    Some(Priority::A),
+                    "Headline with keyword and priority",
+                    Vec::new()
+                )
+            ))
+        );
+        /*assert_eq!(
+            headline(CompleteStr(
+                "* TODO [#A] Headline with keyword and priority :tag1:tag2:"
+            )).ok(),
+            Some((
+                CompleteStr(""),
+                Headline::new(
+                    1,
+                    Some(State::Todo("TODO".into())),
+                    Some(Priority::A),
+                    "Headline with keyword and priority",
+                    vec!["tag1".into(), "tag2".into()]
+                )
+            ))
+        );*/
+    }
+
+    #[test]
+    fn test_level() {
+        assert_eq!(
+            level(CompleteStr("***")).ok(),
+            Some((
+                CompleteStr(""),
+                3
+            ))
+        );
+        assert_eq!(
+            level(CompleteStr("***** Title here")).ok(),
+            Some((
+                CompleteStr(" Title here"),
+                5
+            ))
+        );
+    }
+
+    #[test]
+    fn test_section() {
+        assert_eq!(
+            section(CompleteStr("Section content,\n...\nmore...")).ok(),
+            Some((
+                CompleteStr(""),
+                Section::new("Section content,\n...\nmore...")
+            ))
+        );
+        assert_eq!(
+            section(CompleteStr(
+                "Section content,\n...\nmore...\n\n** New headline"
+            )).ok(),
+            Some((
+                CompleteStr("\n** New headline"),
+                Section::new("Section content,\n...\nmore...\n")
+            ))
+        );
+    }
+
+    #[test]
     fn test_tags() {
         assert_eq!(
             tags(CompleteStr(":tag1:tag2:tag3:")).ok(),
@@ -118,11 +212,53 @@ mod tests {
     }
 
     #[test]
+    fn test_priority() {
+        assert_eq!(
+            priority(CompleteStr("[#A]")).ok(),
+            Some((
+                CompleteStr(""),
+                Priority::A
+            ))
+        );
+        assert_eq!(
+            priority(CompleteStr("[#Z] Headline")).ok(),
+            Some((
+                CompleteStr(" Headline"),
+                Priority::Z
+            ))
+        );
+    }
+
+    #[test]
+    fn test_keyword() {
+        assert_eq!(
+            keyword(CompleteStr("TODO ")).ok(),
+            Some((
+                CompleteStr(" "),
+                State::Todo("TODO".into())
+            ))
+        );
+        assert_eq!(
+            keyword(CompleteStr("DONE Headline")).ok(),
+            Some((
+                CompleteStr(" Headline"),
+                State::Done("DONE".into())
+            ))
+        );
+    }
+
+    #[test]
     fn test_title() {
         assert_eq!(
             title(CompleteStr("This is a test title.")).ok(),
+            Some((CompleteStr(""), String::from("This is a test title.")))
+        );
+        assert_eq!(
+            title(CompleteStr(
+                "This is a test title.\nThis is not part of the title anymore."
+            )).ok(),
             Some((
-                CompleteStr(""),
+                CompleteStr("\nThis is not part of the title anymore."),
                 String::from("This is a test title.")
             ))
         );
