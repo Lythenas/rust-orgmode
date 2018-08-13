@@ -160,8 +160,11 @@ impl Headline {
 pub struct PropertyDrawer(Vec<NodeProperty>);
 
 impl PropertyDrawer {
-    pub fn new() -> Self {
-        PropertyDrawer(Vec::new())
+    pub fn new(vec: Vec<NodeProperty>) -> Self {
+        PropertyDrawer(vec)
+    }
+    pub fn empty() -> Self {
+        PropertyDrawer::new(Vec::new())
     }
 }
 

@@ -129,25 +129,54 @@ fn to_planning(
         .and_opt_closed(closed)
 }
 
-// TODO
-// PROPERTY_DRAWER = :PROPERTIES: \
-// CONTENTS \
-// :END:
-// CONTENTS = NODE_PROPERTY
-//
-// TODO (for later) make this recognize an indented property drawer
+/// Parses a property drawer with node properties.
+///
+/// TODO (for later) make this recognize an indented property drawer
 named!(property_drawer<CompleteStr, PropertyDrawer, Error>,
-    value!(PropertyDrawer::new())
+    do_parse!(
+        to_failure!(tag!(":PROPERTIES:\n")) >>
+        list: opt!(separated_list!(to_failure!(tag!("\n")), node_property)) >>
+        to_failure!(opt!(tag!("\n"))) >>
+        to_failure!(tag!(":END:")) >>
+        (PropertyDrawer::new(list.unwrap_or_default()))
+    )
 );
 
-// TODO
-// :NAME: VALUE
-// :NAME+: VALUE
-// :NAME:
-// :NAME+:
+/// Parses a single node property of a property drawer.
+///
+/// Can be of the following formats:
+///
+/// * `:NAME: VALUE`
+/// * `:NAME+: VALUE`
+/// * `:NAME:`
+/// * `:NAME+:`
+///
+/// **Note:** `NAME` can't be `END`.
 named!(node_property<CompleteStr, NodeProperty, Error>,
-    value!(NodeProperty::Key("".to_string()))
+    to_failure!(do_parse!(
+        name: verify!(
+            delimited!(tag!(":"), take_while!(|c| c != ':'), tag!(":")),
+            |name: CompleteStr| *name != "END"
+        ) >>
+        value: opt!(preceded!(tag!(" "), take_while!(|c| c != '\n'))) >>
+        (to_node_property(*name, value.map(|v| *v)))
+    ))
 );
+
+fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
+    match value {
+        Some(value) if !value.is_empty() => if name.ends_with('+') {
+            NodeProperty::KeyPlusValue(name[..name.len()-1].to_string(), value.to_string())
+        } else {
+            NodeProperty::KeyValue(name.to_string(), value.to_string())
+        },
+        None | Some(_) => if name.ends_with('+') {
+            NodeProperty::KeyPlus(name[..name.len()-1].to_string())
+        } else {
+            NodeProperty::Key(name.to_string())
+        },
+    }
+}
 
 named!(headline<CompleteStr, Headline, Error>,
     to_failure!(do_parse!(
@@ -215,6 +244,56 @@ mod tests {
                 )
             ))
         );*/
+    }
+
+    #[test]
+    fn test_property_drawer() {
+        assert_eq!(
+            property_drawer(CompleteStr(":PROPERTIES:\n:END:")).ok(),
+            Some((
+                CompleteStr(""),
+                PropertyDrawer::empty()
+            ))
+        );
+        assert_eq!(
+            property_drawer(CompleteStr(":PROPERTIES:\n:test_name:\n:END:")).ok(),
+            Some((
+                CompleteStr(""),
+                PropertyDrawer::new(vec![NodeProperty::Key("test_name".to_string())])
+            ))
+        );
+    }
+
+    #[test]
+    fn test_node_property() {
+        assert_eq!(
+            node_property(CompleteStr(":some_name: some value")).ok(),
+            Some((
+                CompleteStr(""),
+                NodeProperty::KeyValue("some_name".to_string(), "some value".to_string())
+            ))
+        );
+        assert_eq!(
+            node_property(CompleteStr(":some_name+: some value")).ok(),
+            Some((
+                CompleteStr(""),
+                NodeProperty::KeyPlusValue("some_name".to_string(), "some value".to_string())
+            ))
+        );
+        assert_eq!(
+            node_property(CompleteStr(":some_name+:")).ok(),
+            Some((
+                CompleteStr(""),
+                NodeProperty::KeyPlus("some_name".to_string())
+            ))
+        );
+        assert_eq!(
+            node_property(CompleteStr(":some_name:")).ok(),
+            Some((
+                CompleteStr(""),
+                NodeProperty::Key("some_name".to_string())
+            ))
+        );
     }
 
     #[test]
