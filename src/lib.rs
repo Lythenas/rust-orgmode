@@ -174,11 +174,46 @@ pub enum NodeProperty {
 }
 
 #[derive(Debug, PartialEq, Eq, Default)]
-pub struct Planning();
+pub struct Planning {
+    deadline: Option<Timestamp>,
+    scheduled: Option<Timestamp>,
+    closed: Option<Timestamp>,
+}
 
 impl Planning {
     pub fn new() -> Self {
-        Planning()
+        Planning {
+            deadline: None,
+            scheduled: None,
+            closed: None,
+        }
+    }
+    pub fn and_deadline(self, deadline: Timestamp) -> Self {
+        self.and_opt_deadline(Some(deadline))
+    }
+    pub fn and_opt_deadline(self, deadline: Option<Timestamp>) -> Self {
+        Planning {
+            deadline,
+            ..self
+        }
+    }
+    pub fn and_scheduled(self, scheduled: Timestamp) -> Self {
+        self.and_opt_scheduled(Some(scheduled))
+    }
+    pub fn and_opt_scheduled(self, scheduled: Option<Timestamp>) -> Self {
+        Planning {
+            scheduled,
+            ..self
+        }
+    }
+    pub fn and_closed(self, closed: Timestamp) -> Self {
+        self.and_opt_closed(Some(closed))
+    }
+    pub fn and_opt_closed(self, closed: Option<Timestamp>) -> Self {
+        Planning {
+            closed,
+            ..self
+        }
     }
 }
 

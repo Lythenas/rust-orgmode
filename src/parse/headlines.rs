@@ -77,7 +77,7 @@ named!(tags<CompleteStr, Vec<String>, Error>,
 
 /// Parses a section.
 ///
-/// Currently just takes all input until a new headline begins..
+/// Currently just takes all input until a new headline begins.
 named!(section<CompleteStr, Section, Error>,
     to_failure!(map!(
         recognize!(
@@ -96,13 +96,38 @@ named!(section<CompleteStr, Section, Error>,
     ))
 );
 
-// TODO
-// PLANNING = INFO*
-// INFO = KEYWORD: TIMESTAMP
-// KEYWORD = DEADLINE | SCHEDULED | CLOSED
+/// Parses a planning line. (optional line directly under the headline)
 named!(planning<CompleteStr, Planning, Error>,
-    value!(Planning::new())
+    map!(
+        permutation!(
+            opt!(delimited!(
+                to_failure!(tag!("DEADLINE: ")),
+                timestamp,
+                to_failure!(opt!(tag!(" ")))
+            )),
+            opt!(delimited!(
+                to_failure!(tag!("SCHEDULED: ")),
+                timestamp,
+                to_failure!(opt!(tag!(" ")))
+            )),
+            opt!(delimited!(
+                to_failure!(tag!("CLOSED: ")),
+                timestamp,
+                to_failure!(opt!(tag!(" ")))
+            ))
+        ),
+        to_planning
+    )
 );
+
+fn to_planning(
+    (deadline, scheduled, closed): (Option<Timestamp>, Option<Timestamp>, Option<Timestamp>),
+) -> Planning {
+    Planning::default()
+        .and_opt_deadline(deadline)
+        .and_opt_scheduled(scheduled)
+        .and_opt_closed(closed)
+}
 
 // TODO
 // PROPERTY_DRAWER = :PROPERTIES: \
@@ -161,10 +186,7 @@ mod tests {
             headline(CompleteStr("* Headline without keyword and priority")).ok(),
             Some((
                 CompleteStr(""),
-                Headline::new(
-                    1,
-                    "Headline without keyword and priority",
-                )
+                Headline::new(1, "Headline without keyword and priority",)
             ))
         );
         assert_eq!(
@@ -173,11 +195,9 @@ mod tests {
             )).ok(),
             Some((
                 CompleteStr(""),
-                Headline::new(
-                    1,
-                    "Headline with keyword and priority",
-                ).and_keyword(State::Todo("TODO".into()))
-                .and_priority(Priority::A)
+                Headline::new(1, "Headline with keyword and priority",)
+                    .and_keyword(State::Todo("TODO".into()))
+                    .and_priority(Priority::A)
             ))
         );
         /*assert_eq!(
@@ -198,20 +218,55 @@ mod tests {
     }
 
     #[test]
-    fn test_level() {
+    fn test_planning() {
+        use chrono::NaiveDate;
         assert_eq!(
-            level(CompleteStr("***")).ok(),
+            planning(CompleteStr("DEADLINE: <2018-08-13>")).ok(),
             Some((
                 CompleteStr(""),
-                3
+                Planning::default().and_deadline(Timestamp::Active(TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 13)
+                )))
             ))
         );
         assert_eq!(
-            level(CompleteStr("***** Title here")).ok(),
+            planning(CompleteStr("SCHEDULED: <2018-08-13>")).ok(),
             Some((
-                CompleteStr(" Title here"),
-                5
+                CompleteStr(""),
+                Planning::default().and_scheduled(Timestamp::Active(TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 13)
+                )))
             ))
+        );
+        assert_eq!(
+            planning(CompleteStr("CLOSED: [2018-08-13]")).ok(),
+            Some((
+                CompleteStr(""),
+                Planning::default().and_closed(Timestamp::Inactive(TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 13)
+                )))
+            ))
+        );
+        assert_eq!(
+            planning(CompleteStr("DEADLINE: <2018-08-13> CLOSED: [2018-08-13]")).ok(),
+            Some((
+                CompleteStr(""),
+                Planning::default()
+                    .and_closed(Timestamp::Inactive(TimestampData::new(
+                        NaiveDate::from_ymd(2018, 08, 13)
+                    ))).and_deadline(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(
+                        2018, 08, 13
+                    ))))
+            ))
+        );
+    }
+
+    #[test]
+    fn test_level() {
+        assert_eq!(level(CompleteStr("***")).ok(), Some((CompleteStr(""), 3)));
+        assert_eq!(
+            level(CompleteStr("***** Title here")).ok(),
+            Some((CompleteStr(" Title here"), 5))
         );
     }
 
@@ -250,17 +305,11 @@ mod tests {
     fn test_priority() {
         assert_eq!(
             priority(CompleteStr("[#A]")).ok(),
-            Some((
-                CompleteStr(""),
-                Priority::A
-            ))
+            Some((CompleteStr(""), Priority::A))
         );
         assert_eq!(
             priority(CompleteStr("[#Z] Headline")).ok(),
-            Some((
-                CompleteStr(" Headline"),
-                Priority::Z
-            ))
+            Some((CompleteStr(" Headline"), Priority::Z))
         );
     }
 
@@ -268,17 +317,11 @@ mod tests {
     fn test_keyword() {
         assert_eq!(
             keyword(CompleteStr("TODO ")).ok(),
-            Some((
-                CompleteStr(" "),
-                State::Todo("TODO".into())
-            ))
+            Some((CompleteStr(" "), State::Todo("TODO".into())))
         );
         assert_eq!(
             keyword(CompleteStr("DONE Headline")).ok(),
-            Some((
-                CompleteStr(" Headline"),
-                State::Done("DONE".into())
-            ))
+            Some((CompleteStr(" Headline"), State::Done("DONE".into())))
         );
     }
 
