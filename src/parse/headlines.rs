@@ -96,6 +96,34 @@ named!(section<CompleteStr, Section, Error>,
     ))
 );
 
+// TODO
+// PLANNING = INFO*
+// INFO = KEYWORD: TIMESTAMP
+// KEYWORD = DEADLINE | SCHEDULED | CLOSED
+named!(planning<CompleteStr, Planning, Error>,
+    value!(Planning::new())
+);
+
+// TODO
+// PROPERTY_DRAWER = :PROPERTIES: \
+// CONTENTS \
+// :END:
+// CONTENTS = NODE_PROPERTY
+//
+// TODO (for later) make this recognize an indented property drawer
+named!(property_drawer<CompleteStr, PropertyDrawer, Error>,
+    value!(PropertyDrawer::new())
+);
+
+// TODO
+// :NAME: VALUE
+// :NAME+: VALUE
+// :NAME:
+// :NAME+:
+named!(node_property<CompleteStr, NodeProperty, Error>,
+    value!(NodeProperty::Key("".to_string()))
+);
+
 named!(headline<CompleteStr, Headline, Error>,
     to_failure!(do_parse!(
         level: level >>
@@ -106,8 +134,20 @@ named!(headline<CompleteStr, Headline, Error>,
         // TODO parse tags
         //to_failure!(tag!(" ")) >>
         //tags: tags >>
-        to_failure!(eof!()) >> // TODO fix this
-        (Headline::new(level, keyword, priority, title, Vec::new()))
+        to_failure!(alt!(eof!() | tag!("\n"))) >>
+        planning: opt!(planning) >>
+        to_failure!(alt!(eof!() | tag!("\n"))) >>
+        property_drawer: opt!(property_drawer) >>
+        // TODO fix this
+        to_failure!(eof!()) >>
+        (
+            Headline::new(level, title)
+                .and_opt_keyword(keyword)
+                .and_opt_priority(priority)
+                //.and_tags(tags)
+                .and_planning(planning.unwrap_or_default())
+                .and_property_drawer(property_drawer.unwrap_or_default())
+         )
     ))
 );
 
@@ -123,10 +163,7 @@ mod tests {
                 CompleteStr(""),
                 Headline::new(
                     1,
-                    None,
-                    None,
                     "Headline without keyword and priority",
-                    Vec::new()
                 )
             ))
         );
@@ -138,11 +175,9 @@ mod tests {
                 CompleteStr(""),
                 Headline::new(
                     1,
-                    Some(State::Todo("TODO".into())),
-                    Some(Priority::A),
                     "Headline with keyword and priority",
-                    Vec::new()
-                )
+                ).and_keyword(State::Todo("TODO".into()))
+                .and_priority(Priority::A)
             ))
         );
         /*assert_eq!(

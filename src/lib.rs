@@ -87,6 +87,8 @@ pub struct Headline {
     title: String,
     commented: bool,
     tags: Vec<String>,
+    planning: Planning,
+    property_drawer: PropertyDrawer,
     section: Option<Section>,
     sub_headlines: Vec<Headline>,
 }
@@ -94,21 +96,50 @@ pub struct Headline {
 impl Headline {
     pub fn new(
         level: u8,
-        keyword: Option<State>,
-        priority: Option<Priority>,
         title: impl Into<String>,
-        tags: Vec<String>,
     ) -> Self {
         let title = title.into();
         Headline {
             level,
-            keyword,
-            priority,
+            keyword: None,
+            priority: None,
             commented: title.starts_with("COMMENT"),
             title: title,
-            tags,
+            tags: Vec::new(),
+            planning: Planning::default(),
+            property_drawer: PropertyDrawer::default(),
             section: None,
             sub_headlines: Vec::new(),
+        }
+    }
+    pub fn and_keyword(self, keyword: State) -> Self {
+        self.and_opt_keyword(Some(keyword))
+    }
+    pub fn and_opt_keyword(self, keyword: Option<State>) -> Self {
+        Headline {
+            keyword,
+            ..self
+        }
+    }
+    pub fn and_priority(self, priority: Priority) -> Self {
+        self.and_opt_priority(Some(priority))
+    }
+    pub fn and_opt_priority(self, priority: Option<Priority>) -> Self {
+        Headline {
+            priority,
+            ..self
+        }
+    }
+    pub fn and_planning(self, planning: Planning) -> Self {
+        Headline {
+            planning,
+            ..self
+        }
+    }
+    pub fn and_property_drawer(self, property_drawer: PropertyDrawer) -> Self {
+        Headline {
+            property_drawer,
+            ..self
         }
     }
     pub fn and_section(self, section: Section) -> Self {
@@ -122,6 +153,32 @@ impl Headline {
             sub_headlines,
             ..self
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Default)]
+pub struct PropertyDrawer(Vec<NodeProperty>);
+
+impl PropertyDrawer {
+    pub fn new() -> Self {
+        PropertyDrawer(Vec::new())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum NodeProperty {
+    KeyValue(String, String),
+    KeyPlusValue(String, String),
+    Key(String),
+    KeyPlus(String),
+}
+
+#[derive(Debug, PartialEq, Eq, Default)]
+pub struct Planning();
+
+impl Planning {
+    pub fn new() -> Self {
+        Planning()
     }
 }
 
