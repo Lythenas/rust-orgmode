@@ -2,9 +2,19 @@
 
 A rust library for parsing [[https://orgmode.org/][org files]].
 
-*This library is currently not usable.* However you are free to try it out.
+*This library is currently not usable as not all necessary functions are implemented.*
 
-** Planned features
+** Basic features
+
+- [ ] Parsing
+      - [x] Timestamp
+      - [ ] Headlines
+      - [ ] Affiliated Keywords
+- [ ] Analyzing
+- [ ] Error correction
+- [ ] Exporting
+
+** Planned (future) features
 
 - Org-mode agenda
-- Syntax parsing (e.g. to extract tables, links or images)
+- Content syntax parsing (e.g. to extract tables, links or images)
