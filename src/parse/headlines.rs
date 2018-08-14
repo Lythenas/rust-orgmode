@@ -192,6 +192,7 @@ named!(headline<CompleteStr, Headline, Error>,
         planning: opt!(planning) >>
         to_failure!(alt!(eof!() | tag!("\n"))) >>
         property_drawer: opt!(property_drawer) >>
+        section: opt!(section) >>
         // TODO fix this
         to_failure!(eof!()) >>
         (
@@ -201,6 +202,7 @@ named!(headline<CompleteStr, Headline, Error>,
                 //.and_tags(tags)
                 .and_planning(planning.unwrap_or_default())
                 .and_property_drawer(property_drawer.unwrap_or_default())
+                .and_opt_section(section.filter(|section| !section.is_empty()))
          )
     ))
 );
@@ -208,6 +210,18 @@ named!(headline<CompleteStr, Headline, Error>,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_headline_with_section() {
+        assert_eq!(
+            headline(CompleteStr("* Headline without keywords and priority\n\nThis is a section.")).ok(),
+            Some((
+                CompleteStr(""),
+                Headline::new(1, "Headline without keywords and priority")
+                    .and_section(Section::new("This is a section."))
+            ))
+        );
+    }
 
     #[test]
     fn test_headline() {

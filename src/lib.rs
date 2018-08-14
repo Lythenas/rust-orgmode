@@ -40,27 +40,6 @@ pub use timestamp::*;
 //     }
 // }
 
-// /// Represents one *node* in the org file. A node is a headline (a line starting with one or more `*`).
-// ///
-// /// This node can contain many more nodes that are sub-headlines of this one. (It is a tree or
-// /// sub-tree).
-// #[derive(Debug, PartialEq, Eq)]
-// pub struct OrgNode {
-//     level: u8,
-//     title: String,
-//     state: State,
-//     priority: Priority,
-//     //tags: Vec<String>,
-//     scheduled: Option<Timestamp>,
-//     deadline: Option<Timestamp>,
-//     closed: Option<Timestamp>,
-//     timestamps: Vec<Timestamp>,
-//     //properties: OrgProperties,
-//     content: OrgContent,
-//     //commented: bool,
-//     nodes: Vec<OrgNode>,
-// }
-
 /// Represents a headline in an org file.
 ///
 /// `STARS KEYWORD PRIORITY TITLE TAGS`
@@ -143,8 +122,11 @@ impl Headline {
         }
     }
     pub fn and_section(self, section: Section) -> Self {
+        self.and_opt_section(Some(section))
+    }
+    pub fn and_opt_section(self, section: Option<Section>) -> Self {
         Headline {
-            section: Some(section),
+            section,
             ..self
         }
     }
@@ -226,6 +208,9 @@ pub struct Section(String);
 impl Section {
     fn new(s: impl Into<String>) -> Self {
         Section(s.into())
+    }
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 
