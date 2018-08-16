@@ -4,6 +4,7 @@ use std::convert::TryInto;
 
 use *;
 
+
 /// Parses the stars at the beginning of the line to their count.
 named!(level<CompleteStr, u8, Error>,
     to_failure!(map_res!(
@@ -45,17 +46,8 @@ named!(priority<CompleteStr, Priority, Error>,
 
 named!(title<CompleteStr, String, Error>,
     to_failure!(map!(
-        recognize!(
-            fold_many0!(
-                verify!(
-                    alt_complete!(take!(1) | eof!()),
-                    // TODO make this not consume the tags
-                    |s: CompleteStr| (*s).len() != 0 && (*s) != "\n"
-                ),
-                (),
-                |acc: (), _| acc
-            )
-        ),
+        // TODO make this not consume the tags
+        take_until_or_eof!("\n"),
         |s: CompleteStr| String::from(*s)
     ))
 );
@@ -80,25 +72,15 @@ named!(tags<CompleteStr, Vec<String>, Error>,
 /// Currently just takes all input until a new headline begins.
 named!(section<CompleteStr, Section, Error>,
     to_failure!(map!(
-        recognize!(
-            fold_many0!(
-                verify!(
-                    // TODO maybe matching \n* is not the best,
-                    // also take!(1) is no good here
-                    alt_complete!(take_until!("\n*") | take!(1) | eof!()),
-                    |s: CompleteStr| (*s).len() != 0 && !(*s).ends_with("\n*")
-                ),
-                (),
-                |acc: (), _| acc
-            )
-        ),
+        // TODO maybe matching \n* is not the best,
+        take_until_or_eof!("\n*"),
         |s: CompleteStr| Section::new(*s)
     ))
 );
 
 /// Parses a planning line. (optional line directly under the headline)
 named!(planning<CompleteStr, Planning, Error>,
-    map!(
+    map_res!(
         permutation!(
             opt!(delimited!(
                 to_failure!(tag!("DEADLINE: ")),
@@ -122,11 +104,15 @@ named!(planning<CompleteStr, Planning, Error>,
 
 fn to_planning(
     (deadline, scheduled, closed): (Option<Timestamp>, Option<Timestamp>, Option<Timestamp>),
-) -> Planning {
-    Planning::default()
-        .and_opt_deadline(deadline)
-        .and_opt_scheduled(scheduled)
-        .and_opt_closed(closed)
+) -> Result<Planning, ()> {
+    if deadline.is_none() && scheduled.is_none() && closed.is_none() {
+        Err(())
+    } else {
+        Ok(Planning::default()
+            .and_opt_deadline(deadline)
+            .and_opt_scheduled(scheduled)
+            .and_opt_closed(closed))
+    }
 }
 
 /// Parses a property drawer with node properties.
@@ -179,7 +165,7 @@ fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
 }
 
 named!(headline<CompleteStr, Headline, Error>,
-    to_failure!(do_parse!(
+    dbg!(to_failure!(do_parse!(
         level: level >>
         keyword: opt!(preceded!(to_failure!(tag!(" ")), keyword)) >>
         priority: opt!(preceded!(to_failure!(tag!(" ")), priority)) >>
@@ -188,13 +174,13 @@ named!(headline<CompleteStr, Headline, Error>,
         // TODO parse tags
         //to_failure!(tag!(" ")) >>
         //tags: tags >>
-        to_failure!(alt!(eof!() | tag!("\n"))) >>
-        planning: opt!(planning) >>
-        to_failure!(alt!(eof!() | tag!("\n"))) >>
-        property_drawer: opt!(property_drawer) >>
-        section: opt!(section) >>
+        // TODO fix: headline without planning and property_drawer needs two newlines
+        planning: opt!(preceded!(to_failure!(tag!("\n")), planning)) >>
+        property_drawer: opt!(preceded!(to_failure!(tag!("\n")), property_drawer)) >>
+        section: opt!(preceded!(to_failure!(dbg!(tag!("\n"))), section)) >>
+        to_failure!(opt!(tag!("\n"))) >>
         // TODO fix this
-        to_failure!(eof!()) >>
+        //to_failure!(eof!()) >>
         (
             Headline::new(level, title)
                 .and_opt_keyword(keyword)
@@ -203,8 +189,8 @@ named!(headline<CompleteStr, Headline, Error>,
                 .and_planning(planning.unwrap_or_default())
                 .and_property_drawer(property_drawer.unwrap_or_default())
                 .and_opt_section(section.filter(|section| !section.is_empty()))
-         )
-    ))
+        )
+    )))
 );
 
 #[cfg(test)]
@@ -214,10 +200,10 @@ mod tests {
     #[test]
     fn test_headline_with_section() {
         assert_eq!(
-            headline(CompleteStr("* Headline without keywords and priority\n\nThis is a section.")).ok(),
+            headline(CompleteStr("* Headline\nThis is a section.")).ok(),
             Some((
                 CompleteStr(""),
-                Headline::new(1, "Headline without keywords and priority")
+                Headline::new(1, "Headline")
                     .and_section(Section::new("This is a section."))
             ))
         );
