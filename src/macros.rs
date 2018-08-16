@@ -109,3 +109,54 @@ macro_rules! complete (
         complete!($i, call!($f));
     );
 );
+
+/// `take_until_or_eof!(tag) => T -> IResult<T, T>`
+/// consumes data until it finds the specified tag or everything if the
+/// input does not contain the tag.
+///
+/// The remainder still contains the tag.
+///
+/// # Example
+/// ```
+/// # #[macro_use] extern crate nom;
+/// # #[macro_use] extern crate orgmode;
+/// # fn main() {
+///  named!(x, take_until_or_eof!("foo"));
+///  let r = x(&b"abcd foo efgh"[..]);
+///  assert_eq!(r, Ok((&b"foo efgh"[..], &b"abcd "[..])));
+/// # }
+/// ```
+#[macro_export]
+macro_rules! take_until_or_eof (
+    ($i:expr, $substr:expr) => {{
+        use nom::IResult;
+        use nom::InputLength;
+        use nom::FindSubstring;
+        use nom::InputTake;
+        let input = $i;
+
+        let res: IResult<_,_> = match input.find_substring($substr) {
+            None => {
+                Ok($i.take_split(input.input_len()))
+            },
+            Some(index) => {
+                Ok($i.take_split(index))
+            },
+        };
+        res
+    }};
+);
+
+#[cfg(test)]
+mod tests {
+    use nom::types::CompleteStr;
+
+    #[test]
+    fn test_take_until_or_eof() {
+        named!(x<CompleteStr, CompleteStr>, take_until_or_eof!("\n"));
+        let r = x(CompleteStr("abc def"));
+        assert_eq!(r, Ok((CompleteStr(""), CompleteStr("abc def"))));
+        let r = x(CompleteStr("abc\ndef"));
+        assert_eq!(r, Ok((CompleteStr("\ndef"), CompleteStr("abc"))));
+    }
+}
