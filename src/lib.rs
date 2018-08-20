@@ -2,7 +2,6 @@
 #![feature(trace_macros)]
 
 extern crate chrono;
-extern crate regex;
 #[macro_use]
 extern crate nom;
 #[macro_use]
