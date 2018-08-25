@@ -107,6 +107,15 @@ impl Headline {
             ..self
         }
     }
+    pub fn and_tags(self, tags: Vec<String>) -> Self {
+        Headline {
+            tags,
+            ..self
+        }
+    }
+    pub fn and_opt_tags(self, tags: Option<Vec<String>>) -> Self {
+        self.and_tags(tags.unwrap_or(Vec::new()))
+    }
     pub fn and_planning(self, planning: Planning) -> Self {
         Headline {
             planning,

@@ -1,10 +1,13 @@
 use failure::Error;
 use nom::types::CompleteStr;
+use nom::IResult;
 use std::convert::TryInto;
 
 use *;
 
-named!(#[doc = "Parses the stars at the beginning of the line to their count."],
+named!(#[doc = "
+Parses the stars at the beginning of the line to their count.
+"],
 level<CompleteStr, u8, Error>,
     to_failure!(map_res!(
         take_while1!(|c| c == '*'),
@@ -12,8 +15,9 @@ level<CompleteStr, u8, Error>,
     ))
 );
 
-/// 
-named!(#[doc = "Parses the keyword at the beginning of the headline (after the stars)."],
+named!(#[doc = "
+Parses the keyword at the beginning of the headline (after the stars).
+"],
 keyword<CompleteStr, State, Error>,
     to_failure!(map_opt!(
         take_until!(" "),
@@ -31,7 +35,9 @@ fn to_keyword(s: CompleteStr) -> Option<State> {
     }
 }
 
-named!(#[doc = "Parses the priority of the headline."],
+named!(#[doc = "
+Parses the priority of the headline.
+"],
 priority<CompleteStr, Priority, Error>,
     to_failure!(map_res!(
         to_failure!(do_parse!(
@@ -44,16 +50,114 @@ priority<CompleteStr, Priority, Error>,
     ))
 );
 
-named!(#[doc = "Parses the title of a headline."],
+/// Check if the given char is a valid tag char (excluding the seperators `:`).
+///
+/// Valid tag chars are alpha-numeric characters, underscores, at signs, hash signs and percent signs.
+fn is_tags_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_' || c == '@' || c == '#' || c == '%'
+}
+
+/// Finds the start of the tags in a headline. Tags has to be the last thing in the headline,
+/// optionally followed by whitespace.
+///
+/// Returns `None` if there are no tags.
+fn find_tags_start(input: &CompleteStr) -> Option<usize> {
+    use nom::FindSubstring;
+    use nom::InputTake;
+    use nom::InputIter;
+
+    enum MyState {
+        InTags,
+        OnTagsBorder,
+        OutsideTags(bool),
+    }
+
+    if let Some(start) = input.find_substring(":") {
+        let mut index = 0;
+        let mut state = MyState::InTags;
+        let (start_str, _) = input.take_split(start);
+
+        for (i, c) in start_str.iter_indices() {
+            match state {
+                MyState::InTags if c == ':' => {
+                    // reached posssible end of tags
+                    state = MyState::OnTagsBorder;
+                },
+                MyState::InTags if is_tags_char(c) => {},
+                MyState::InTags => {
+                    // assumed we were in tag but really weren't
+                    state = MyState::OutsideTags(c.is_whitespace());
+                },
+                MyState::OnTagsBorder if is_tags_char(c) => {
+                    state = MyState::InTags;
+                },
+                MyState::OnTagsBorder if c == ':' => {},
+                MyState::OnTagsBorder => {
+                    state = MyState::OutsideTags(c.is_whitespace());
+                },
+                MyState::OutsideTags(_) if c == ':' => {
+                    index = i;
+                    state = MyState::InTags;
+                },
+                MyState::OutsideTags(_) => {
+                    state = MyState::OutsideTags(c.is_whitespace());
+                },
+            }
+        }
+
+        match state {
+            MyState::OutsideTags(false) => None,
+            _ => Some(start + index),
+        }
+    } else {
+        None
+    }
+}
+
+/// Parser that returns the title as a result.
+///
+/// This is manually implemented instead of with macros because it was easier.
+fn take_title(input: CompleteStr) -> IResult<CompleteStr, CompleteStr, Error> {
+    use nom::InputLength;
+    use nom::FindSubstring;
+    use nom::InputTake;
+
+    let newline_at = input.find_substring("\n").unwrap_or(input.input_len());
+    let (rest, title_and_tags) = input.take_split(newline_at);
+
+    match find_tags_start(&title_and_tags) {
+        Some(index) => {
+            let (_, title_with_whitespace) = input.take_split(index);
+
+            match title_with_whitespace.rfind(|c: char| !c.is_whitespace()) {
+                Some(last_non_ws) => Ok(input.take_split(last_non_ws + 1)),
+                None => Ok((rest, title_and_tags))
+            }
+
+        },
+        None => Ok((rest, title_and_tags))
+    }
+}
+
+named!(#[doc = "
+Parses the title of a headline.
+"],
 title<CompleteStr, String, Error>,
     to_failure!(map!(
         // TODO make this not consume the tags
-        take_until_or_eof!("\n"),
+        take_title,
         |s: CompleteStr| String::from(*s)
     ))
 );
 
-named!(#[doc = "Parses the tags of a headline."],
+named!(#[doc = "
+Parses the tags of a headline.
+
+The tags are made of words containing any alpha-numeric character, underscore,
+at sign, hash sign or percent sign, and separated with colons.
+
+E.g. `:tag:a2%:` which is two tags `tag` and `a2%`.
+"],
 tags<CompleteStr, Vec<String>, Error>,
     to_failure!(delimited!(
         tag!(":"),
@@ -71,7 +175,8 @@ tags<CompleteStr, Vec<String>, Error>,
 named!(#[doc = "
 Parses a section.
 
-Currently just takes all input until a new headline begins."],
+Currently just takes all input until a new headline begins.
+"],
 section<CompleteStr, Section, Error>,
     to_failure!(map!(
         // TODO maybe matching \n* is not the best,
@@ -80,7 +185,9 @@ section<CompleteStr, Section, Error>,
     ))
 );
 
-named!(#[doc = "Parses a planning line. (optional line directly under the headline)"],
+named!(#[doc = "
+Parses a planning line. (optional line directly under the headline)
+"],
 planning<CompleteStr, Planning, Error>,
     map_res!(
         permutation!(
@@ -121,7 +228,8 @@ fn to_planning(
 named!(#[doc = "
 Parses a property drawer with node properties.
 
-TODO (for later) make this recognize an indented property drawer"],
+TODO (for later) make this recognize an indented property drawer
+"],
 property_drawer<CompleteStr, PropertyDrawer, Error>,
     do_parse!(
         to_failure!(tag!(":PROPERTIES:\n")) >>
@@ -142,7 +250,8 @@ Can be of the following formats:
 - `:NAME:`
 - `:NAME+:`
 
-**Note:** `NAME` can't be `END`."],
+**Note:** `NAME` can't be `END`.
+"],
 node_property<CompleteStr, NodeProperty, Error>,
     to_failure!(do_parse!(
         name: verify!(
@@ -195,7 +304,8 @@ For the formats of the items see:
 - `TAGS`: [`tags`]
 - `PLANNING`: [`planning`]
 - `PROPERTY_DRAWER`: [`property_drawer`]
-- `SECTION`: [`section`]"],
+- `SECTION`: [`section`]
+"],
 pub headline<CompleteStr, Headline, Error>,
     dbg!(to_failure!(do_parse!(
         level: level >>
@@ -203,21 +313,17 @@ pub headline<CompleteStr, Headline, Error>,
         priority: opt!(preceded!(to_failure!(tag!(" ")), priority)) >>
         to_failure!(tag!(" ")) >>
         title: title >>
-        // TODO parse tags
-        //to_failure!(tag!(" ")) >>
-        //tags: tags >>
+        tags: opt!(preceded!(to_failure!(tag!(" ")), tags)) >>
         // TODO fix: headline without planning and property_drawer needs two newlines
         planning: opt!(preceded!(to_failure!(tag!("\n")), planning)) >>
         property_drawer: opt!(preceded!(to_failure!(tag!("\n")), property_drawer)) >>
         section: opt!(preceded!(to_failure!(dbg!(tag!("\n"))), section)) >>
         to_failure!(opt!(tag!("\n"))) >>
-        // TODO fix this
-        //to_failure!(eof!()) >>
         (
             Headline::new(level, title)
                 .and_opt_keyword(keyword)
                 .and_opt_priority(priority)
-                //.and_tags(tags)
+                .and_opt_tags(tags)
                 .and_planning(planning.unwrap_or_default())
                 .and_property_drawer(property_drawer.unwrap_or_default())
                 .and_opt_section(section.filter(|section| !section.is_empty()))
@@ -271,21 +377,18 @@ mod tests {
                     .and_property_drawer(PropertyDrawer::new(vec![NodeProperty::Key("test_name".to_string())]))
             ))
         );
-        /*assert_eq!(
+        assert_eq!(
             headline(CompleteStr(
                 "* TODO [#A] Headline with keyword and priority :tag1:tag2:"
             )).ok(),
             Some((
                 CompleteStr(""),
-                Headline::new(
-                    1,
-                    Some(State::Todo("TODO".into())),
-                    Some(Priority::A),
-                    "Headline with keyword and priority",
-                    vec!["tag1".into(), "tag2".into()]
-                )
+                Headline::new(1, "Headline with keyword and priority")
+                    .and_priority(Priority::A)
+                    .and_keyword(State::Todo("TODO".into()))
+                    .and_tags(vec!["tag1".into(), "tag2".into()])
             ))
-        );*/
+        );
     }
 
     #[test]
@@ -443,6 +546,62 @@ mod tests {
         assert_eq!(
             keyword(CompleteStr("DONE Headline")).ok(),
             Some((CompleteStr(" Headline"), State::Done("DONE".into())))
+        );
+    }
+
+    #[test]
+    fn test_find_tags_start() {
+        assert_eq!(
+            find_tags_start(&CompleteStr("some text")),
+            None
+        );
+        assert_eq!(
+            find_tags_start(&CompleteStr("some text :tags:yay:")),
+            Some(10)
+        );
+        assert_eq!(
+            find_tags_start(&CompleteStr("some text :tags:yay:   ")),
+            Some(10)
+        );
+        assert_eq!(
+            find_tags_start(&CompleteStr("some text :tags:yay: more text")),
+            None
+        );
+        assert_eq!(
+            find_tags_start(&CompleteStr("some text :not:tags: more :actual:tags:")),
+            Some(26)
+        );
+        assert_eq!(
+            find_tags_start(&CompleteStr("some text :not:tags: more :actual:tags:   ")),
+            Some(26)
+        );
+        assert_eq!(
+            find_tags_start(&CompleteStr("some text :not:tags: more :still:no:actual:tags: more text")),
+            None
+        );
+    }
+
+    #[test]
+    fn test_take_title() {
+        assert_eq!(
+            take_title(CompleteStr("some title")).ok(),
+            Some((CompleteStr(""), CompleteStr("some title")))
+        );
+        assert_eq!(
+            take_title(CompleteStr("some title\n")).ok(),
+            Some((CompleteStr("\n"), CompleteStr("some title")))
+        );
+        assert_eq!(
+            take_title(CompleteStr("some title :some:tags:")).ok(),
+            Some((CompleteStr(" :some:tags:"), CompleteStr("some title")))
+        );
+        assert_eq!(
+            take_title(CompleteStr("some title :some:tags: more text")).ok(),
+            Some((CompleteStr(""), CompleteStr("some title :some:tags: more text")))
+        );
+        assert_eq!(
+            take_title(CompleteStr("some title :some:tags: more text :tags:")).ok(),
+            Some((CompleteStr(" :tags:"), CompleteStr("some title :some:tags: more text")))
         );
     }
 
