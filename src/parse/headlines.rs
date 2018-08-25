@@ -196,7 +196,7 @@ For the formats of the items see:
 - `PLANNING`: [`planning`]
 - `PROPERTY_DRAWER`: [`property_drawer`]
 - `SECTION`: [`section`]"],
-headline<CompleteStr, Headline, Error>,
+pub headline<CompleteStr, Headline, Error>,
     dbg!(to_failure!(do_parse!(
         level: level >>
         keyword: opt!(preceded!(to_failure!(tag!(" ")), keyword)) >>
@@ -460,6 +460,59 @@ mod tests {
                 CompleteStr("\nThis is not part of the title anymore."),
                 String::from("This is a test title.")
             ))
+        );
+    }
+
+    #[test]
+    fn test_to_node_property() {
+        assert_eq!(
+            to_node_property("test_name", None),
+            NodeProperty::Key("test_name".to_string())
+        );
+        assert_eq!(
+            to_node_property("test_name+", None),
+            NodeProperty::KeyPlus("test_name".to_string())
+        );
+        assert_eq!(
+            to_node_property("test_name", Some("test_value")),
+            NodeProperty::KeyValue("test_name".to_string(), "test_value".to_string())
+        );
+        assert_eq!(
+            to_node_property("test_name+", Some("test_value")),
+            NodeProperty::KeyPlusValue("test_name".to_string(), "test_value".to_string())
+        );
+    }
+
+    #[test]
+    fn test_to_keyword() {
+        assert_eq!(
+            to_keyword(CompleteStr("TODO")),
+            Some(State::Todo("TODO".to_string()))
+        );
+        assert_eq!(
+            to_keyword(CompleteStr("DONE")),
+            Some(State::Done("DONE".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_to_planning() {
+        use chrono::NaiveDate;
+        assert_eq!(
+            to_planning((None, None, None)),
+            Err(())
+        );
+        assert_eq!(
+            to_planning((Some(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))), None, None)),
+            Ok(Planning::default().and_deadline(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
+        );
+        assert_eq!(
+            to_planning((None, Some(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))), None)),
+            Ok(Planning::default().and_scheduled(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
+        );
+        assert_eq!(
+            to_planning((None, None, Some(Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))),
+            Ok(Planning::default().and_closed(Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
         );
     }
 }

@@ -15,14 +15,16 @@ fn is_digit(c: char) -> bool {
     c.is_digit(10)
 }
 
-named!(parse_u32<CompleteStr, u32, Error>,
+named!(#[doc = "Parses a u32."],
+parse_u32<CompleteStr, u32, Error>,
     to_failure!(map_res!(
         take_while1!(is_digit),
         |s: CompleteStr| u32::from_str(*s)
     ))
 );
 
-named!(parse_i32<CompleteStr, i32, Error>,
+named!(#[doc = "Parses a i32."],
+parse_i32<CompleteStr, i32, Error>,
     to_failure!(map_res!(
         recognize!(do_parse!(
             opt!(alt!(tag!("-") | tag!("+"))) >>
@@ -42,9 +44,10 @@ fn to_time((hour, minute): (u32, u32)) -> Result<Time, Error> {
         .map(Time::new)
 }
 
-/// Parses a time string in the following format: `12:30` and returns
-/// a `NaiveTime`.
-named!(time<CompleteStr, Time, Error>,
+named!(#[doc = "
+Parses a time string in the following format: `12:30` and returns
+a `NaiveTime`."],
+time<CompleteStr, Time, Error>,
     to_failure!(
         map_res!(
             do_parse!(
@@ -80,11 +83,12 @@ fn to_date((year, month, day, weekday): (i32, u32, u32, Option<&str>)) -> Result
         }).map(Date::new)
 }
 
-/// Parses a date string in the format `YYYY-MM-DD DAYNAME` and returns
-/// a `NaiveDate`. The dayname is optional.
-///
-/// E.g. `2018-06-30` or `2018-06-30 Sat`.
-named!(date<CompleteStr, Date, Error>,
+named!(#[doc = "
+Parses a date string in the format `YYYY-MM-DD DAYNAME` and returns
+a `NaiveDate`. The dayname is optional.
+
+E.g. `2018-06-30` or `2018-06-30 Sat`."],
+date<CompleteStr, Date, Error>,
     to_failure!(
         map_res!(
             do_parse!(
@@ -147,8 +151,8 @@ impl From<(RepeatStrategy, u32, TimeUnit)> for Repeater {
     }
 }
 
-/// Parses a [`Repeater`].
-named!(repeater<CompleteStr, Repeater, Error>,
+named!(#[doc = "Parses a [`Repeater`]."],
+repeater<CompleteStr, Repeater, Error>,
     to_failure!(do_parse!(
         strategy: repeat_strategy >>
         time_period: time_period >>
@@ -156,8 +160,8 @@ named!(repeater<CompleteStr, Repeater, Error>,
     ))
 );
 
-/// Parses a [`RepeatStrategy`].
-named!(repeat_strategy<CompleteStr, RepeatStrategy, Error>,
+named!(#[doc = "Parses a [`RepeatStrategy`]."],
+repeat_strategy<CompleteStr, RepeatStrategy, Error>,
     to_failure!(
         map_res!(
             alt!(
@@ -191,17 +195,18 @@ fn cstr<T>(f: impl Fn(&str) -> T) -> impl Fn(CompleteStr) -> T {
     move |s| f(*s)
 }
 
+named!(#[doc = "
 /// Parses a `TimeUnit` using its `from_str`-method if there is a
-/// valid character.
-named!(time_unit<CompleteStr, TimeUnit, Error>,
+/// valid character."],
+time_unit<CompleteStr, TimeUnit, Error>,
     to_failure!(map_res!(
         alt!(tag!("y") | tag!("m") | tag!("w") | tag!("d") | tag!("h")),
         cstr(TimeUnit::from_str)
     ))
 );
 
-/// Parses a [`TimePeriod`].
-named!(time_period<CompleteStr, TimePeriod, Error>,
+named!(#[doc = "Parses a [`TimePeriod`]."],
+time_period<CompleteStr, TimePeriod, Error>,
     to_failure!(do_parse!(
         value: to_failure!(parse_u32) >>
         unit: time_unit >>
@@ -209,8 +214,8 @@ named!(time_period<CompleteStr, TimePeriod, Error>,
     ))
 );
 
-/// Parses a [`WarningStrategy`].
-named!(warning_strategy<CompleteStr, WarningStrategy, Error>,
+named!(#[doc = "Parses a [`WarningStrategy`]."],
+warning_strategy<CompleteStr, WarningStrategy, Error>,
     to_failure!(
         map_res!(
             alt!(
@@ -231,8 +236,8 @@ fn to_warning_strategy(s: &str) -> Result<WarningStrategy, Error> {
     }
 }
 
-/// Parses a [`WarningDelay`].
-named!(warning_delay<CompleteStr, WarningDelay, Error>,
+named!(#[doc = "Parses a [`WarningDelay`]."],
+warning_delay<CompleteStr, WarningDelay, Error>,
     to_failure!(do_parse!(
         warning_strategy: warning_strategy >>
         time_period: time_period >>
@@ -240,8 +245,8 @@ named!(warning_delay<CompleteStr, WarningDelay, Error>,
     ))
 );
 
-/// Parses a `(Option<Repeater>, Option<WarningDelay>)`.
-named!(repeater_and_delay<CompleteStr,
+named!(#[doc = "Parses a `(Option<Repeater>, Option<WarningDelay>)`."],
+repeater_and_delay<CompleteStr,
        (Option<Repeater>, Option<WarningDelay>), Error>,
     to_failure!(do_parse!(
         // repeater and warning delay can be flipped
@@ -252,9 +257,10 @@ named!(repeater_and_delay<CompleteStr,
     ))
 );
 
-/// Parses a [`TimestampData`]. E.g. `DATE TIME[-TIME] REPEATER-OR-DELAY`
-/// with optional second time for a time range.
-named!(inner_timestamp<CompleteStr, (TimestampData, Option<Time>), Error>,
+named!(#[doc = "
+Parses a [`TimestampData`]. E.g. `DATE TIME[-TIME] REPEATER-OR-DELAY`
+with optional second time for a time range."],
+inner_timestamp<CompleteStr, (TimestampData, Option<Time>), Error>,
     to_failure!(do_parse!(
         date: date >>
         time1: to_failure!(opt!(do_parse!(
@@ -284,15 +290,17 @@ fn to_timestamp_data(
         .and_opt_warning_delay(delay)
 }
 
-/// Parses a single timestamp.
-///
-/// Which is one of
-///
-/// * `<DATE TIME REPEATER-OR-DELAY>`
-/// * `[DATE TIME REPEATER-OR-DELAY]`
-/// * `<DATE TIME-TIME REPEATER-OR-DELAY>`
-/// * `[DATE TIME-TIME REPEATER-OR-DELAY]`
-named!(single_timestamp<CompleteStr, Timestamp, Error>,
+named!(#[doc = "
+Parses a single timestamp.
+
+Which is one of
+
+- `<DATE TIME REPEATER-OR-DELAY>`
+- `[DATE TIME REPEATER-OR-DELAY]`
+- `<DATE TIME-TIME REPEATER-OR-DELAY>`
+- `[DATE TIME-TIME REPEATER-OR-DELAY]`
+"],
+single_timestamp<CompleteStr, Timestamp, Error>,
     to_failure!(do_parse!(
         prefix: to_failure!(alt!(tag!("<") | tag!("["))) >>
         inner_timestamp: inner_timestamp >>
@@ -347,10 +355,12 @@ fn to_timestamp_range_time_range(
     }
 }
 
-/// Parses a complete timestamp in one of the accepted format.
-///
-/// See [`Timestamp`].
-named!(pub timestamp<CompleteStr, Timestamp, Error>,
+named!(#[doc = "
+Parses a complete timestamp in one of the accepted format.
+
+See [`Timestamp`].
+"],
+pub timestamp<CompleteStr, Timestamp, Error>,
     to_failure!(map_res!(
         to_failure!(do_parse!(
             first: single_timestamp >>
