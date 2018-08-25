@@ -1,7 +1,5 @@
 #![feature(try_from)]
 
-#[macro_use]
-extern crate lazy_static;
 extern crate chrono;
 extern crate regex;
 #[macro_use]
@@ -214,7 +212,7 @@ impl Section {
     }
 }
 
-/// The state of a [`OrgNode`]. Can be eighter `Todo` or `Done`. The enum variants accept an
+/// The state of a [`Headline`]. Can be eighter `Todo` or `Done`. The enum variants accept an
 /// additional string because the actual keyword signaling the state of the `OrgNode` can be
 /// anything.
 ///

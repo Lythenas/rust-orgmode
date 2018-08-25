@@ -4,17 +4,17 @@ use std::convert::TryInto;
 
 use *;
 
-
-/// Parses the stars at the beginning of the line to their count.
-named!(level<CompleteStr, u8, Error>,
+named!(#[doc = "Parses the stars at the beginning of the line to their count."],
+level<CompleteStr, u8, Error>,
     to_failure!(map_res!(
         take_while1!(|c| c == '*'),
         |s: CompleteStr| (*s).len().try_into()
     ))
 );
 
-/// Parses the keyword at the beginning of the headline (after the stars).
-named!(keyword<CompleteStr, State, Error>,
+/// 
+named!(#[doc = "Parses the keyword at the beginning of the headline (after the stars)."],
+keyword<CompleteStr, State, Error>,
     to_failure!(map_opt!(
         take_until!(" "),
         to_keyword
@@ -31,8 +31,8 @@ fn to_keyword(s: CompleteStr) -> Option<State> {
     }
 }
 
-/// Parses the priority of the headline.
-named!(priority<CompleteStr, Priority, Error>,
+named!(#[doc = "Parses the priority of the headline."],
+priority<CompleteStr, Priority, Error>,
     to_failure!(map_res!(
         to_failure!(do_parse!(
             tag!("[#") >>
@@ -44,7 +44,8 @@ named!(priority<CompleteStr, Priority, Error>,
     ))
 );
 
-named!(title<CompleteStr, String, Error>,
+named!(#[doc = "Parses the title of a headline."],
+title<CompleteStr, String, Error>,
     to_failure!(map!(
         // TODO make this not consume the tags
         take_until_or_eof!("\n"),
@@ -52,8 +53,8 @@ named!(title<CompleteStr, String, Error>,
     ))
 );
 
-/// Parses the tags of a headline.
-named!(tags<CompleteStr, Vec<String>, Error>,
+named!(#[doc = "Parses the tags of a headline."],
+tags<CompleteStr, Vec<String>, Error>,
     to_failure!(delimited!(
         tag!(":"),
         separated_list_complete!(
@@ -67,10 +68,11 @@ named!(tags<CompleteStr, Vec<String>, Error>,
     ))
 );
 
-/// Parses a section.
-///
-/// Currently just takes all input until a new headline begins.
-named!(section<CompleteStr, Section, Error>,
+named!(#[doc = "
+Parses a section.
+
+Currently just takes all input until a new headline begins."],
+section<CompleteStr, Section, Error>,
     to_failure!(map!(
         // TODO maybe matching \n* is not the best,
         take_until_or_eof!("\n*"),
@@ -78,8 +80,8 @@ named!(section<CompleteStr, Section, Error>,
     ))
 );
 
-/// Parses a planning line. (optional line directly under the headline)
-named!(planning<CompleteStr, Planning, Error>,
+named!(#[doc = "Parses a planning line. (optional line directly under the headline)"],
+planning<CompleteStr, Planning, Error>,
     map_res!(
         permutation!(
             opt!(delimited!(
@@ -102,6 +104,7 @@ named!(planning<CompleteStr, Planning, Error>,
     )
 );
 
+/// Converts a deadline, scheduled and closed timestamp (all optional) to a [`Planning`] object.
 fn to_planning(
     (deadline, scheduled, closed): (Option<Timestamp>, Option<Timestamp>, Option<Timestamp>),
 ) -> Result<Planning, ()> {
@@ -115,10 +118,11 @@ fn to_planning(
     }
 }
 
-/// Parses a property drawer with node properties.
-///
-/// TODO (for later) make this recognize an indented property drawer
-named!(property_drawer<CompleteStr, PropertyDrawer, Error>,
+named!(#[doc = "
+Parses a property drawer with node properties.
+
+TODO (for later) make this recognize an indented property drawer"],
+property_drawer<CompleteStr, PropertyDrawer, Error>,
     do_parse!(
         to_failure!(tag!(":PROPERTIES:\n")) >>
         list: opt!(separated_list!(to_failure!(tag!("\n")), node_property)) >>
@@ -128,17 +132,18 @@ named!(property_drawer<CompleteStr, PropertyDrawer, Error>,
     )
 );
 
-/// Parses a single node property of a property drawer.
-///
-/// Can be of the following formats:
-///
-/// * `:NAME: VALUE`
-/// * `:NAME+: VALUE`
-/// * `:NAME:`
-/// * `:NAME+:`
-///
-/// **Note:** `NAME` can't be `END`.
-named!(node_property<CompleteStr, NodeProperty, Error>,
+named!(#[doc = "
+Parses a single node property of a property drawer.
+
+Can be of the following formats:
+
+- `:NAME: VALUE`
+- `:NAME+: VALUE`
+- `:NAME:`
+- `:NAME+:`
+
+**Note:** `NAME` can't be `END`."],
+node_property<CompleteStr, NodeProperty, Error>,
     to_failure!(do_parse!(
         name: verify!(
             delimited!(tag!(":"), take_while!(|c| c != ':'), tag!(":")),
@@ -149,6 +154,7 @@ named!(node_property<CompleteStr, NodeProperty, Error>,
     ))
 );
 
+/// Converts a name and optional value to a [`NodeProperty`].
 fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
     match value {
         Some(value) if !value.is_empty() => if name.ends_with('+') {
@@ -164,7 +170,33 @@ fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
     }
 }
 
-named!(headline<CompleteStr, Headline, Error>,
+named!(#[doc = "
+Parses a complete headline.
+
+Has the format:
+
+```text
+STARS KEYWORD PRIORITY TITLE TAGS
+PLANNING
+PROPERTY_DRAWER
+SECTION
+```
+
+Where `KEYWORD`, `PRIORITY`, `TAGS`, `PLANNING`, `PROPERTY_DRAWER` and `SECTION` are optional.
+
+`TAGS` is not yet implemented.
+
+For the formats of the items see:
+
+- `STARS`: [`level`]
+- `KEYWORD`: [`keyword`]
+- `PRIORITY`: [`priority`]
+- `TITLE`: [`title`]
+- `TAGS`: [`tags`]
+- `PLANNING`: [`planning`]
+- `PROPERTY_DRAWER`: [`property_drawer`]
+- `SECTION`: [`section`]"],
+headline<CompleteStr, Headline, Error>,
     dbg!(to_failure!(do_parse!(
         level: level >>
         keyword: opt!(preceded!(to_failure!(tag!(" ")), keyword)) >>
@@ -227,6 +259,16 @@ mod tests {
                 Headline::new(1, "Headline with keyword and priority",)
                     .and_keyword(State::Todo("TODO".into()))
                     .and_priority(Priority::A)
+            ))
+        );
+        assert_eq!(
+            headline(CompleteStr(
+                "* Headline\n:PROPERTIES:\n:test_name:\n:END:"
+            )).ok(),
+            Some((
+                CompleteStr(""),
+                Headline::new(1, "Headline")
+                    .and_property_drawer(PropertyDrawer::new(vec![NodeProperty::Key("test_name".to_string())]))
             ))
         );
         /*assert_eq!(

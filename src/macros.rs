@@ -25,15 +25,6 @@ where
     }
 }
 
-//impl <T> From<T> for GenericError<T>
-//where
-//    T: Display + Debug + Send + Sync,
-//{
-//    fn from(e: T) -> Self {
-//        GenericError(e)
-//    }
-//}
-
 /// Translate parser result from IResult<I,O,_> to IResult<I,O,Error> with the [`Error`] type of the
 /// failure crate.
 ///
@@ -60,6 +51,8 @@ where
 ///     //assert_eq!(parser(a), Err(Err::Error(Context::Code(a, ErrorKind::Custom(ErrorStr("custom error code: 42".to_string()))))));
 /// # }
 /// ```
+///
+/// [`Error`]: failure::Error
 #[macro_export]
 macro_rules! to_failure (
     // The $i:expr is needed because nom injects the input if you use this macro inside e.g. named!
