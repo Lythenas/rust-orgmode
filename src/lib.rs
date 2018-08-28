@@ -234,6 +234,56 @@ enum_from_str!(
     Priority => A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
 );
 
+/// Represents an attribute for various other elements (currently only [`Headline`]).
+///
+/// Inlinetasks, items, planning, clocks, node properties and table rows can't have attributes.
+///
+/// The affilicated keywords are placed just above the item and follow one of the following
+/// patterns:
+///
+/// * `#+KEY: VALUE`
+/// * `#+KEY[OPTIONAL]: VALUE`
+/// * `#+ATTR_BACKEND: VALUE`
+///
+/// `KEY` is either `CAPTION`, `HEADER`, `NAME`, `PLOT` or `RESULTS`.
+///
+/// `BACKEND` is a string constituted of alpha-numeric characters, hyphens or underscores.
+///
+/// `OPTIONAL` and `VALUE` can contain any character but a new line.
+/// Only `CAPTION` and `RESULTS` keywords can have an optional value.
+///
+/// An affiliated keyword can appear more than once if `KEY` is either `CAPTION` or `HEADER`
+/// or if its pattern is `#+ATTR_BACKEND: VALUE`.
+///
+/// `CAPTION`, `AUTHOR`, `DATE` and `TITLE` keywords can contain objects in their value
+/// and their optional value, if applicable. (Objects are not implemented yet)
+#[derive(Debug, PartialEq, Eq)]
+pub struct AffiliatedKeyword {
+    kind: AffiliatedKeywordKind,
+    value: AffiliatedKeywordValue
+}
+
+/// This represents the kind of a [`AffiliatedKeyword`].
+#[derive(Debug, PartialEq, Eq)]
+pub enum AffiliatedKeywordKind {
+    /// The caption kind can have a optional value (See: [`AffiliatedKeyword`]).
+    Caption(Option<AffiliatedKeywordValue>),
+    Header,
+    Name,
+    Plot,
+    /// The results kind can have an optional value (See: [`AffiliatedKeyword`]).
+    Results(Option<AffiliatedKeywordValue>),
+    /// The attr kind has a backend that is an arbitrary string.
+    Attr(String),
+}
+
+/// This is a value of an [`AffiliatedKeyword`].
+///
+/// Currently this only wraps a string. This will contain objects in the future for
+/// caption, author, date and title (optional) value.
+#[derive(Debug, PartialEq, Eq)]
+pub struct AffiliatedKeywordValue(String);
+
 #[cfg(test)]
 mod tests {
     use super::*;
