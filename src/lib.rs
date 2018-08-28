@@ -1,4 +1,5 @@
 #![feature(try_from)]
+#![feature(trace_macros)]
 
 extern crate chrono;
 extern crate regex;
@@ -263,6 +264,14 @@ pub struct AffiliatedKeyword {
     value: AffiliatedKeywordValue
 }
 
+impl AffiliatedKeyword {
+    pub fn new(kind: AffiliatedKeywordKind, value: AffiliatedKeywordValue) -> Self {
+        AffiliatedKeyword {
+            kind, value
+        }
+    }
+}
+
 /// This represents the kind of a [`AffiliatedKeyword`].
 #[derive(Debug, PartialEq, Eq)]
 pub enum AffiliatedKeywordKind {
@@ -283,6 +292,12 @@ pub enum AffiliatedKeywordKind {
 /// caption, author, date and title (optional) value.
 #[derive(Debug, PartialEq, Eq)]
 pub struct AffiliatedKeywordValue(String);
+
+impl AffiliatedKeywordValue {
+    pub fn new(value: impl Into<String>) -> Self {
+        AffiliatedKeywordValue(value.into())
+    }
+}
 
 #[cfg(test)]
 mod tests {
