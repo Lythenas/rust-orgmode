@@ -3,7 +3,8 @@ use nom::types::CompleteStr;
 use nom::IResult;
 use std::convert::TryInto;
 
-use *;
+use {Headline, NodeProperty, PropertyDrawer, Planning, Timestamp, Section, Priority, State};
+use parse::{timestamp, affiliated_keywords};
 
 named!(#[doc = "
 Parses the stars at the beginning of the line to their count.
@@ -284,6 +285,7 @@ Parses a complete headline.
 Has the format:
 
 ```text
+AFFILIATED_KEYWORDS
 STARS KEYWORD PRIORITY TITLE TAGS
 PLANNING
 PROPERTY_DRAWER
@@ -296,6 +298,7 @@ Where `KEYWORD`, `PRIORITY`, `TAGS`, `PLANNING`, `PROPERTY_DRAWER` and `SECTION`
 
 For the formats of the items see:
 
+- `AFFILIATED_KEYWORDS`: [`affiliated_keyword`]
 - `STARS`: [`level`]
 - `KEYWORD`: [`keyword`]
 - `PRIORITY`: [`priority`]
@@ -306,19 +309,42 @@ For the formats of the items see:
 - `SECTION`: [`section`]
 "],
 pub headline<CompleteStr, Headline, Error>,
-    dbg!(to_failure!(do_parse!(
+    to_failure!(do_parse!(
+        affiliated_keywords: opt!(terminated!(
+            affiliated_keywords,
+            to_failure!(tag!("\n"))
+        )) >>
         level: level >>
-        keyword: opt!(preceded!(to_failure!(tag!(" ")), keyword)) >>
-        priority: opt!(preceded!(to_failure!(tag!(" ")), priority)) >>
+        keyword: opt!(preceded!(
+            to_failure!(tag!(" ")),
+            keyword
+        )) >>
+        priority: opt!(preceded!(
+            to_failure!(tag!(" ")),
+            priority
+        )) >>
         to_failure!(tag!(" ")) >>
         title: title >>
-        tags: opt!(preceded!(to_failure!(tag!(" ")), tags)) >>
-        planning: opt!(preceded!(to_failure!(tag!("\n")), planning)) >>
-        property_drawer: opt!(preceded!(to_failure!(tag!("\n")), property_drawer)) >>
-        section: opt!(preceded!(to_failure!(dbg!(tag!("\n"))), section)) >>
+        tags: opt!(preceded!(
+            to_failure!(tag!(" ")),
+            tags
+        )) >>
+        planning: opt!(preceded!(
+            to_failure!(tag!("\n")),
+            planning
+        )) >>
+        property_drawer: opt!(preceded!(
+            to_failure!(tag!("\n")),
+            property_drawer
+        )) >>
+        section: opt!(preceded!(
+            to_failure!(tag!("\n")),
+            section
+        )) >>
         to_failure!(opt!(tag!("\n"))) >>
         (
             Headline::new(level, title)
+                .and_affiliated_keywords(affiliated_keywords.unwrap_or_default())
                 .and_opt_keyword(keyword)
                 .and_opt_priority(priority)
                 .and_opt_tags(tags)
@@ -326,12 +352,47 @@ pub headline<CompleteStr, Headline, Error>,
                 .and_property_drawer(property_drawer.unwrap_or_default())
                 .and_opt_section(section.filter(|section| !section.is_empty()))
         )
-    )))
+    ))
 );
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use {TimestampData, AffiliatedKeyword, AffiliatedKeywordKind, AffiliatedKeywordValue};
+
+    #[test]
+    fn test_headline_with_affiliated_keywords() {
+        assert_eq!(
+            headline(CompleteStr("#+CAPTION: some caption\n* Headline")).ok(),
+            Some((
+                CompleteStr(""),
+                Headline::new(1, "Headline")
+                    .and_affiliated_keywords(vec![
+                        AffiliatedKeyword::new(
+                            AffiliatedKeywordKind::Caption(None),
+                            AffiliatedKeywordValue::new("some caption")
+                        )
+                    ])
+            ))
+        );
+        assert_eq!(
+            headline(CompleteStr("#+CAPTION: some caption\n#+ATTR_backend: value\n* Headline")).ok(),
+            Some((
+                CompleteStr(""),
+                Headline::new(1, "Headline")
+                    .and_affiliated_keywords(vec![
+                        AffiliatedKeyword::new(
+                            AffiliatedKeywordKind::Caption(None),
+                            AffiliatedKeywordValue::new("some caption")
+                        ),
+                        AffiliatedKeyword::new(
+                            AffiliatedKeywordKind::Attr("backend".to_string()),
+                            AffiliatedKeywordValue::new("value")
+                        )
+                    ])
+            ))
+        );
+    }
 
     #[test]
     fn test_headline_with_section() {

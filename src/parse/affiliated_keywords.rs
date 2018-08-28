@@ -95,7 +95,7 @@ Has one of the formats:
 * `#+KEY[OPTIONAL]: VALUE`
 * `#+ATTR_BACKEND: VALUE`
 "],
-pub affiliated_keyword<CompleteStr, AffiliatedKeyword, Error>,
+pub single_affiliated_keyword<CompleteStr, AffiliatedKeyword, Error>,
     to_failure!(do_parse!(
         to_failure!(tag!("#+")) >>
         kind: kind >>
@@ -105,6 +105,21 @@ pub affiliated_keyword<CompleteStr, AffiliatedKeyword, Error>,
             AffiliatedKeyword::new(kind, value)
         )
     ))
+);
+
+named!(#[doc="
+Parses multiple affiliated keywords.
+
+Does not check if the keywords are repeated. Normally only `CAPTION`,
+`HEADER` and `ATTR_BACKEND` keywords can be repeated.
+
+See: [`single_affiliated_keyword`]
+"],
+pub affiliated_keywords<CompleteStr, Vec<AffiliatedKeyword>, Error>,
+    separated_list!(
+        to_failure!(tag!("\n")),
+        single_affiliated_keyword
+    )
 );
 
 #[cfg(test)]
@@ -166,40 +181,40 @@ mod tests {
     }
 
     #[test]
-    fn test_affiliated_keyword() {
+    fn test_single_affiliated_keyword() {
         // `#+KEY: VALUE`
         // `#+KEY[OPTIONAL]: VALUE`
         // `#+ATTR_BACKEND: VALUE`
         assert_eq!(
-            affiliated_keyword(CompleteStr("#+HEADER: some header")).ok(),
+            single_affiliated_keyword(CompleteStr("#+HEADER: some header")).ok(),
             Some((CompleteStr(""), AffiliatedKeyword::new(
                 AffiliatedKeywordKind::Header,
                 AffiliatedKeywordValue::new("some header")
             )))
         );
         assert_eq!(
-            affiliated_keyword(CompleteStr("#+HEADER: some header\nmore")).ok(),
+            single_affiliated_keyword(CompleteStr("#+HEADER: some header\nmore")).ok(),
             Some((CompleteStr("\nmore"), AffiliatedKeyword::new(
                 AffiliatedKeywordKind::Header,
                 AffiliatedKeywordValue::new("some header")
             )))
         );
         assert_eq!(
-            affiliated_keyword(CompleteStr("#+CAPTION: some caption")).ok(),
+            single_affiliated_keyword(CompleteStr("#+CAPTION: some caption")).ok(),
             Some((CompleteStr(""), AffiliatedKeyword::new(
                 AffiliatedKeywordKind::Caption(None),
                 AffiliatedKeywordValue::new("some caption")
             )))
         );
         assert_eq!(
-            affiliated_keyword(CompleteStr("#+CAPTION[opt]: some caption")).ok(),
+            single_affiliated_keyword(CompleteStr("#+CAPTION[opt]: some caption")).ok(),
             Some((CompleteStr(""), AffiliatedKeyword::new(
                 AffiliatedKeywordKind::Caption(Some(AffiliatedKeywordValue::new("opt"))),
                 AffiliatedKeywordValue::new("some caption")
             )))
         );
         assert_eq!(
-            affiliated_keyword(CompleteStr("#+ATTR_backend: some value")).ok(),
+            single_affiliated_keyword(CompleteStr("#+ATTR_backend: some value")).ok(),
             Some((CompleteStr(""), AffiliatedKeyword::new(
                 AffiliatedKeywordKind::Attr("backend".to_string()),
                 AffiliatedKeywordValue::new("some value")

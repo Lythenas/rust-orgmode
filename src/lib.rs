@@ -61,6 +61,7 @@ pub struct Headline {
     property_drawer: PropertyDrawer,
     section: Option<Section>,
     sub_headlines: Vec<Headline>,
+    affiliated_keywords: Vec<AffiliatedKeyword>,
 }
 
 impl Headline {
@@ -80,6 +81,7 @@ impl Headline {
             property_drawer: PropertyDrawer::default(),
             section: None,
             sub_headlines: Vec::new(),
+            affiliated_keywords: Vec::new(),
         }
     }
     pub fn and_keyword(self, keyword: State) -> Self {
@@ -133,6 +135,12 @@ impl Headline {
     pub fn and_sub_headlines(self, sub_headlines: Vec<Headline>) -> Self {
         Headline {
             sub_headlines,
+            ..self
+        }
+    }
+    pub fn and_affiliated_keywords(self, affiliated_keywords: Vec<AffiliatedKeyword>) -> Self {
+        Headline {
+            affiliated_keywords,
             ..self
         }
     }

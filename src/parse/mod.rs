@@ -8,3 +8,4 @@ mod affiliated_keywords;
 mod timestamp;
 
 pub use self::timestamp::timestamp;
+pub use self::affiliated_keywords::{single_affiliated_keyword, affiliated_keywords};
