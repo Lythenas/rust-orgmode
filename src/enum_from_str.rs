@@ -2,7 +2,8 @@
 /// Automatically implements FromStr to parse it easily and Display to print it easily.
 /// Also derives Clone, Debug, PartialEq, Eq and Hash for this enum.
 macro_rules! enum_from_str {
-    ($name:ident => $( $x:ident ),+ ) => {
+    ($(#[$meta:meta])* $name:ident => $( $x:ident ),+ ) => {
+        $(#[$meta])*
         #[derive(Clone, Debug, PartialEq, Eq, Hash)]
         pub enum $name {
             $(

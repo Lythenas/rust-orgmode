@@ -22,21 +22,13 @@ use std::collections::HashMap;
 pub use parse::*;
 pub use timestamp::*;
 
-// /// Represents an org file.
-// #[derive(Debug, PartialEq, Eq)]
-// pub struct OrgFile {
-//     preface: String,
-//     properties: HashMap<String, String>,
-//     nodes: Vec<OrgNode>,
-// }
-//
-// impl FromStr for OrgFile {
-//     type Err = ();
-//
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         unimplemented!();
-//     }
-// }
+/// Represents an org file.
+#[derive(Debug, PartialEq, Eq)]
+pub struct OrgFile {
+    preface: String,
+    properties: HashMap<String, String>,
+    nodes: Vec<Headline>,
+}
 
 /// Represents a headline in an org file.
 ///
@@ -209,6 +201,11 @@ impl Planning {
     }
 }
 
+/// This represents a section in a org file. A section is the text, tables, etc. after a headline
+/// but before the next headline.
+///
+/// **Note:** Currently this is only a [`String`] but in the future it will contain more fine
+/// grained parsed elements.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Section(String);
 
@@ -232,17 +229,8 @@ pub enum State {
     Done(String),
 }
 
-pub type OrgProperties = HashMap<String, String>;
-
-/// Represents the content (section) for one headline.
-///
-/// TODO make this more detailed than just a string
-#[derive(Debug, PartialEq, Eq, Default)]
-pub struct OrgContent {
-    value: String,
-}
-
 enum_from_str!(
+    #[doc="Represents a priority of a [`Headline`]."]
     Priority => A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
 );
 

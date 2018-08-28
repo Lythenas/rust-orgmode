@@ -144,7 +144,6 @@ Parses the title of a headline.
 "],
 title<CompleteStr, String, Error>,
     to_failure!(map!(
-        // TODO make this not consume the tags
         take_title,
         |s: CompleteStr| String::from(*s)
     ))
@@ -314,7 +313,6 @@ pub headline<CompleteStr, Headline, Error>,
         to_failure!(tag!(" ")) >>
         title: title >>
         tags: opt!(preceded!(to_failure!(tag!(" ")), tags)) >>
-        // TODO fix: headline without planning and property_drawer needs two newlines
         planning: opt!(preceded!(to_failure!(tag!("\n")), planning)) >>
         property_drawer: opt!(preceded!(to_failure!(tag!("\n")), property_drawer)) >>
         section: opt!(preceded!(to_failure!(dbg!(tag!("\n"))), section)) >>
