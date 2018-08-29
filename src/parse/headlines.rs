@@ -161,7 +161,10 @@ fn tags(i: OrgInput) -> OrgResult<Vec<String>> {
 pub fn section(i: OrgInput) -> OrgResult<Section> {
     to_failure!(i, map!(
         // TODO maybe matching \n* is not the best,
-        take_until_or_eof!("\n*"),
+        preceded!(
+            not!(tag!("*")),
+            take_until_or_eof!("\n*")
+        ),
         |i: OrgInput| Section::new(*i)
     ))
 }
@@ -315,7 +318,7 @@ pub fn headline(i: OrgInput) -> OrgResult<Headline> {
             to_failure!(tag!("\n")),
             section
         )) >>
-        to_failure!(opt!(tag!("\n"))) >>
+        //to_failure!(opt!(tag!("\n"))) >>
         (
             Headline::new(level, title)
                 .and_affiliated_keywords(affiliated_keywords.unwrap_or_default())

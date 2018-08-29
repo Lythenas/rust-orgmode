@@ -191,6 +191,14 @@ impl Headline {
             ..self
         }
     }
+
+    pub fn level(&self) -> u8 {
+        self.level
+    }
+
+    pub fn sub_headlines_mut(&mut self) -> &mut Vec<Headline> {
+        &mut self.sub_headlines
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Default)]
