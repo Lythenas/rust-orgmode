@@ -1,6 +1,7 @@
 use chrono::{NaiveDate, NaiveTime};
 use failure::Error;
 use nom::types::CompleteStr;
+use parse::{OrgInput, OrgResult};
 use std::fmt;
 use std::str::{self, FromStr};
 use timestamp::{Date, *};
@@ -15,26 +16,26 @@ fn is_digit(c: char) -> bool {
     c.is_digit(10)
 }
 
-named!(#[doc = "Parses a u32."],
-parse_u32<CompleteStr, u32, Error>,
-    to_failure!(map_res!(
-        take_while1!(is_digit),
-        |s: CompleteStr| u32::from_str(*s)
-    ))
-);
+/// Parses an u32.
+fn parse_u32(i: OrgInput) -> OrgResult<u32> {
+    to_failure!(
+        i,
+        map_res!(take_while1!(is_digit), |s: CompleteStr| u32::from_str(*s))
+    )
+}
 
-named!(#[doc = "Parses a i32."],
-parse_i32<CompleteStr, i32, Error>,
-    to_failure!(map_res!(
-        recognize!(do_parse!(
-            opt!(alt!(tag!("-") | tag!("+"))) >>
-            take_while1!(is_digit) >>
-            ()
-        )),
-        |s: CompleteStr| i32::from_str_radix(*s, 10)
-            .map_err(|_| format_err!("invalid i32"))
-    ))
-);
+/// Parses an i32.
+fn parse_i32(i: OrgInput) -> OrgResult<i32> {
+    to_failure!(
+        i,
+        map_res!(
+            recognize!(do_parse!(
+                opt!(alt!(tag!("-") | tag!("+"))) >> take_while1!(is_digit) >> ()
+            )),
+            |s: CompleteStr| i32::from_str_radix(*s, 10).map_err(|_| format_err!("invalid i32"))
+        )
+    )
+}
 
 /// Converts the given `hour` and `minute` into `Time` if possible
 /// or gives an error otherwise.
@@ -44,22 +45,17 @@ fn to_time((hour, minute): (u32, u32)) -> Result<Time, Error> {
         .map(Time::new)
 }
 
-named!(#[doc = "
-Parses a time string in the following format: `12:30` and returns
-a `NaiveTime`."],
-time<CompleteStr, Time, Error>,
+/// Parses a time string in the following format: `12:30` and returns
+/// a `NaiveTime`.
+fn time(i: OrgInput) -> OrgResult<Time> {
     to_failure!(
+        i,
         map_res!(
-            do_parse!(
-                h: parse_u32 >>
-                to_failure!(tag!(":")) >>
-                m: parse_u32 >>
-                ((h, m))
-            ),
+            do_parse!(h: parse_u32 >> to_failure!(tag!(":")) >> m: parse_u32 >> ((h, m))),
             to_time
         )
     )
-);
+}
 
 /// Converts the given `year`, `month`, `day` and optional `weekday` into
 /// a `Date` if possible or gives an error otherwise.
@@ -83,37 +79,41 @@ fn to_date((year, month, day, weekday): (i32, u32, u32, Option<&str>)) -> Result
         }).map(Date::new)
 }
 
-named!(#[doc = "
-Parses a date string in the format `YYYY-MM-DD DAYNAME` and returns
-a `NaiveDate`. The dayname is optional.
-
-E.g. `2018-06-30` or `2018-06-30 Sat`."],
-date<CompleteStr, Date, Error>,
+/// Parses a date string in the format `YYYY-MM-DD DAYNAME` and returns
+/// a `NaiveDate`. The dayname is optional.
+///
+/// E.g. `2018-06-30` or `2018-06-30 Sat`."],
+fn date(i: OrgInput) -> OrgResult<Date> {
     to_failure!(
+        i,
         map_res!(
             do_parse!(
-                year: parse_i32 >>
-                to_failure!(tag!("-")) >>
-                month: parse_u32 >>
-                to_failure!(tag!("-")) >>
-                day: parse_u32 >>
-                dayname: to_failure!(opt!(complete!(
-                    do_parse!(
-                        tag!(" ") >>
-                        dayname: alt!(
-                            tag!("Mon") | tag!("Tue") | tag!("Wed")
-                            | tag!("Thu") | tag!("Fri")
-                            | tag!("Sat") | tag!("Sun")
-                        ) >>
-                        (dayname)
-                    )
-                ))) >>
-                ((year, month, day, dayname.map(|s| *s)))
+                year: parse_i32
+                    >> to_failure!(tag!("-"))
+                    >> month: parse_u32
+                    >> to_failure!(tag!("-"))
+                    >> day: parse_u32
+                    >> dayname:
+                        to_failure!(opt!(complete!(do_parse!(
+                            tag!(" ")
+                                >> dayname:
+                                    alt!(
+                                        tag!("Mon")
+                                            | tag!("Tue")
+                                            | tag!("Wed")
+                                            | tag!("Thu")
+                                            | tag!("Fri")
+                                            | tag!("Sat")
+                                            | tag!("Sun")
+                                    )
+                                >> (dayname)
+                        ))))
+                    >> ((year, month, day, dayname.map(|s| *s)))
             ),
             to_date
         )
     )
-);
+}
 
 #[derive(Debug, PartialEq, Fail)]
 enum TimestampParseError {
@@ -151,28 +151,28 @@ impl From<(RepeatStrategy, u32, TimeUnit)> for Repeater {
     }
 }
 
-named!(#[doc = "Parses a [`Repeater`]."],
-repeater<CompleteStr, Repeater, Error>,
-    to_failure!(do_parse!(
-        strategy: repeat_strategy >>
-        time_period: time_period >>
-        (Repeater::new(time_period, strategy))
-    ))
-);
-
-named!(#[doc = "Parses a [`RepeatStrategy`]."],
-repeat_strategy<CompleteStr, RepeatStrategy, Error>,
+/// Parses a [`Repeater`].
+fn repeater(i: OrgInput) -> OrgResult<Repeater> {
     to_failure!(
+        i,
+        do_parse!(
+            strategy: repeat_strategy
+                >> time_period: time_period
+                >> (Repeater::new(time_period, strategy))
+        )
+    )
+}
+
+/// Parses a [`RepeatStrategy`].
+fn repeat_strategy(i: OrgInput) -> OrgResult<RepeatStrategy> {
+    to_failure!(
+        i,
         map_res!(
-            alt!(
-                tag!("++") |
-                tag!("+") |
-                tag!(".+")
-            ),
+            alt!(tag!("++") | tag!("+") | tag!(".+")),
             cstr(self::to_repeat_strategy)
         )
     )
-);
+}
 
 /// Converts the given str to a [`RepeatStrategy`] if possible.
 fn to_repeat_strategy(s: &str) -> Result<RepeatStrategy, Error> {
@@ -195,37 +195,38 @@ fn cstr<T>(f: impl Fn(&str) -> T) -> impl Fn(CompleteStr) -> T {
     move |s| f(*s)
 }
 
-named!(#[doc = "
 /// Parses a `TimeUnit` using its `from_str`-method if there is a
-/// valid character."],
-time_unit<CompleteStr, TimeUnit, Error>,
-    to_failure!(map_res!(
-        alt!(tag!("y") | tag!("m") | tag!("w") | tag!("d") | tag!("h")),
-        cstr(TimeUnit::from_str)
-    ))
-);
-
-named!(#[doc = "Parses a [`TimePeriod`]."],
-time_period<CompleteStr, TimePeriod, Error>,
-    to_failure!(do_parse!(
-        value: to_failure!(parse_u32) >>
-        unit: time_unit >>
-        (TimePeriod::new(value, unit))
-    ))
-);
-
-named!(#[doc = "Parses a [`WarningStrategy`]."],
-warning_strategy<CompleteStr, WarningStrategy, Error>,
+/// valid character.
+fn time_unit(i: OrgInput) -> OrgResult<TimeUnit> {
     to_failure!(
+        i,
         map_res!(
-            alt!(
-                tag!("-") |
-                tag!("--")
-            ),
+            alt!(tag!("y") | tag!("m") | tag!("w") | tag!("d") | tag!("h")),
+            cstr(TimeUnit::from_str)
+        )
+    )
+}
+
+/// Parses a [`TimePeriod`].
+fn time_period(i: OrgInput) -> OrgResult<TimePeriod> {
+    to_failure!(
+        i,
+        do_parse!(
+            value: to_failure!(parse_u32) >> unit: time_unit >> (TimePeriod::new(value, unit))
+        )
+    )
+}
+
+/// Parses a [`WarningStrategy`].
+fn warning_strategy(i: OrgInput) -> OrgResult<WarningStrategy> {
+    to_failure!(
+        i,
+        map_res!(
+            alt!(tag!("-") | tag!("--")),
             cstr(self::to_warning_strategy)
         )
     )
-);
+}
 
 /// Converts the given str to a [`WarningStrategy`] if possible.
 fn to_warning_strategy(s: &str) -> Result<WarningStrategy, Error> {
@@ -236,47 +237,52 @@ fn to_warning_strategy(s: &str) -> Result<WarningStrategy, Error> {
     }
 }
 
-named!(#[doc = "Parses a [`WarningDelay`]."],
-warning_delay<CompleteStr, WarningDelay, Error>,
-    to_failure!(do_parse!(
-        warning_strategy: warning_strategy >>
-        time_period: time_period >>
-        (WarningDelay::new(time_period, warning_strategy))
-    ))
-);
+/// Parses a [`WarningDelay`].
+fn warning_delay(i: OrgInput) -> OrgResult<WarningDelay> {
+    to_failure!(
+        i,
+        do_parse!(
+            warning_strategy: warning_strategy
+                >> time_period: time_period
+                >> (WarningDelay::new(time_period, warning_strategy))
+        )
+    )
+}
 
-named!(#[doc = "Parses a `(Option<Repeater>, Option<WarningDelay>)`."],
-repeater_and_delay<CompleteStr,
-       (Option<Repeater>, Option<WarningDelay>), Error>,
-    to_failure!(do_parse!(
-        // repeater and warning delay can be flipped
-        repeater1: opt!(preceded!(to_failure!(tag!(" ")), repeater)) >>
-        warning_delay: opt!(preceded!(to_failure!(tag!(" ")), warning_delay)) >>
-        repeater2: opt!(preceded!(to_failure!(tag!(" ")), repeater)) >>
-        ((repeater1.or(repeater2), warning_delay))
-    ))
-);
+/// Parses a `(Option<Repeater>, Option<WarningDelay>)`.
+fn repeater_and_delay(i: OrgInput) -> OrgResult<(Option<Repeater>, Option<WarningDelay>)> {
+    to_failure!(
+        i,
+        do_parse!(
+            // repeater and warning delay can be flipped
+            repeater1: opt!(preceded!(to_failure!(tag!(" ")), repeater))
+                >> warning_delay: opt!(preceded!(to_failure!(tag!(" ")), warning_delay))
+                >> repeater2: opt!(preceded!(to_failure!(tag!(" ")), repeater))
+                >> ((repeater1.or(repeater2), warning_delay))
+        )
+    )
+}
 
-named!(#[doc = "
-Parses a [`TimestampData`]. E.g. `DATE TIME[-TIME] REPEATER-OR-DELAY`
-with optional second time for a time range."],
-inner_timestamp<CompleteStr, (TimestampData, Option<Time>), Error>,
-    to_failure!(do_parse!(
-        date: date >>
-        time1: to_failure!(opt!(do_parse!(
-                    to_failure!(tag!(" ")) >>
-                    time: time >>
-                    (time)
-        ))) >>
-        time2: to_failure!(opt!(do_parse!(
-            to_failure!(tag!("-")) >>
-            time: time >>
-            (time)
-        ))) >>
-        repeater_and_delay: repeater_and_delay >>
-        (to_timestamp_data(date, time1, repeater_and_delay), time2)
-    ))
-);
+/// Parses a [`TimestampData`]. E.g. `DATE TIME[-TIME] REPEATER-OR-DELAY`
+/// with optional second time for a time range.
+fn inner_timestamp(i: OrgInput) -> OrgResult<(TimestampData, Option<Time>)> {
+    to_failure!(
+        i,
+        do_parse!(
+            date: date
+                >> time1:
+                    to_failure!(opt!(do_parse!(
+                        to_failure!(tag!(" ")) >> time: time >> (time)
+                    )))
+                >> time2:
+                    to_failure!(opt!(do_parse!(
+                        to_failure!(tag!("-")) >> time: time >> (time)
+                    )))
+                >> repeater_and_delay: repeater_and_delay
+                >> (to_timestamp_data(date, time1, repeater_and_delay), time2)
+        )
+    )
+}
 
 /// Converts a date and optional time, repeater and warning delay to [`TimestampData`].
 fn to_timestamp_data(
@@ -290,27 +296,27 @@ fn to_timestamp_data(
         .and_opt_warning_delay(delay)
 }
 
-named!(#[doc = "
-Parses a single timestamp.
-
-Which is one of
-
-- `<DATE TIME REPEATER-OR-DELAY>`
-- `[DATE TIME REPEATER-OR-DELAY]`
-- `<DATE TIME-TIME REPEATER-OR-DELAY>`
-- `[DATE TIME-TIME REPEATER-OR-DELAY]`
-"],
-single_timestamp<CompleteStr, Timestamp, Error>,
-    to_failure!(do_parse!(
-        prefix: to_failure!(alt!(tag!("<") | tag!("["))) >>
-        inner_timestamp: inner_timestamp >>
-        to_failure!(switch!(value!(prefix),
+/// Parses a single timestamp.
+///
+/// Which is one of
+///
+/// - `<DATE TIME REPEATER-OR-DELAY>`
+/// - `[DATE TIME REPEATER-OR-DELAY]`
+/// - `<DATE TIME-TIME REPEATER-OR-DELAY>`
+/// - `[DATE TIME-TIME REPEATER-OR-DELAY]`
+fn single_timestamp(i: OrgInput) -> OrgResult<Timestamp> {
+    to_failure!(
+        i,
+        do_parse!(
+            prefix: to_failure!(alt!(tag!("<") | tag!("[")))
+                >> inner_timestamp: inner_timestamp
+                >> to_failure!(switch!(value!(prefix),
             CompleteStr("<") => tag!(">") |
             CompleteStr("[") => tag!("]")
-        )) >>
-        (self::to_single_timestamp(*prefix == "<", inner_timestamp))
-    ))
-);
+        )) >> (self::to_single_timestamp(*prefix == "<", inner_timestamp))
+        )
+    )
+}
 
 /// Converts timestamp data and optional time to a single (active or inactive) [`Timestamp`].
 /// This can also be a time range.
@@ -355,25 +361,25 @@ fn to_timestamp_range_time_range(
     }
 }
 
-named!(#[doc = "
-Parses a complete timestamp in one of the accepted format.
+/// Parses a complete timestamp in one of the accepted format.
 
-See [`Timestamp`].
-"],
-pub timestamp<CompleteStr, Timestamp, Error>,
-    to_failure!(map_res!(
-        to_failure!(do_parse!(
-            first: single_timestamp >>
-            second: to_failure!(opt!(do_parse!(
-                to_failure!(tag!("--")) >>
-                timestamp: single_timestamp >>
-                (timestamp)
-            ))) >>
-            ((first, second))
-        )),
-        self::to_timestamp
-    ))
-);
+/// See [`Timestamp`].
+pub fn timestamp(i: OrgInput) -> OrgResult<Timestamp> {
+    to_failure!(
+        i,
+        map_res!(
+            to_failure!(do_parse!(
+                first: single_timestamp
+                    >> second:
+                        to_failure!(opt!(do_parse!(
+                            to_failure!(tag!("--")) >> timestamp: single_timestamp >> (timestamp)
+                        )))
+                    >> ((first, second))
+            )),
+            self::to_timestamp
+        )
+    )
+}
 
 /// Converts two single timestamps (the second is optional) to complete [`Timestamp`] if possible.
 ///
