@@ -288,7 +288,6 @@ fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
 /// - `PLANNING`: [`planning`]
 /// - `PROPERTY_DRAWER`: [`property_drawer`]
 /// - `SECTION`: [`section`]
-#[allow(dead_code)]
 pub fn headline(i: OrgInput) -> OrgResult<Headline> {
     to_failure!(i, do_parse!(
         affiliated_keywords: opt!(terminated!(
