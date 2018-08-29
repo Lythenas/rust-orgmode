@@ -1,6 +1,6 @@
 use chrono::prelude::*;
-use std::str::FromStr;
 use failure::Error;
+use std::str::FromStr;
 
 /// Represents the action that is taken when you mark a task with
 /// a repeater as `DONE`.
@@ -164,10 +164,7 @@ impl TimestampData {
         self.and_opt_repeater(Some(repeater))
     }
     pub fn and_opt_repeater(self, repeater: Option<Repeater>) -> Self {
-        Self {
-            repeater,
-            ..self
-        }
+        Self { repeater, ..self }
     }
     pub fn and_warning_delay(self, warning_delay: WarningDelay) -> Self {
         self.and_opt_warning_delay(Some(warning_delay))
@@ -216,10 +213,7 @@ impl TimestampDataWithTime {
         self.and_opt_repeater(Some(repeater))
     }
     pub fn and_opt_repeater(self, repeater: Option<Repeater>) -> Self {
-        Self {
-            repeater,
-            ..self
-        }
+        Self { repeater, ..self }
     }
     pub fn and_warning_delay(self, warning_delay: WarningDelay) -> Self {
         self.and_opt_warning_delay(Some(warning_delay))

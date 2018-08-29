@@ -130,11 +130,17 @@ mod tests {
     fn test_value() {
         assert_eq!(
             value(CompleteStr("this is a value")).ok(),
-            Some((CompleteStr(""), AffiliatedKeywordValue::new("this is a value")))
+            Some((
+                CompleteStr(""),
+                AffiliatedKeywordValue::new("this is a value")
+            ))
         );
         assert_eq!(
             value(CompleteStr("this is a value\nrest")).ok(),
-            Some((CompleteStr("\nrest"), AffiliatedKeywordValue::new("this is a value")))
+            Some((
+                CompleteStr("\nrest"),
+                AffiliatedKeywordValue::new("this is a value")
+            ))
         );
     }
 
@@ -146,9 +152,10 @@ mod tests {
         );
         assert_eq!(
             kind(CompleteStr("CAPTION[something]")).ok(),
-            Some((CompleteStr(""), AffiliatedKeywordKind::Caption(
-                Some(AffiliatedKeywordValue::new("something"))
-            )))
+            Some((
+                CompleteStr(""),
+                AffiliatedKeywordKind::Caption(Some(AffiliatedKeywordValue::new("something")))
+            ))
         );
         assert_eq!(
             kind(CompleteStr("HEADER")).ok(),
@@ -168,15 +175,17 @@ mod tests {
         );
         assert_eq!(
             kind(CompleteStr("RESULTS[something]")).ok(),
-            Some((CompleteStr(""), AffiliatedKeywordKind::Results(
-                Some(AffiliatedKeywordValue::new("something"))
-            )))
+            Some((
+                CompleteStr(""),
+                AffiliatedKeywordKind::Results(Some(AffiliatedKeywordValue::new("something")))
+            ))
         );
         assert_eq!(
             kind(CompleteStr("ATTR_backend")).ok(),
-            Some((CompleteStr(""), AffiliatedKeywordKind::Attr(
-                "backend".to_string()
-            )))
+            Some((
+                CompleteStr(""),
+                AffiliatedKeywordKind::Attr("backend".to_string())
+            ))
         );
     }
 
@@ -187,39 +196,53 @@ mod tests {
         // `#+ATTR_BACKEND: VALUE`
         assert_eq!(
             single_affiliated_keyword(CompleteStr("#+HEADER: some header")).ok(),
-            Some((CompleteStr(""), AffiliatedKeyword::new(
-                AffiliatedKeywordKind::Header,
-                AffiliatedKeywordValue::new("some header")
-            )))
+            Some((
+                CompleteStr(""),
+                AffiliatedKeyword::new(
+                    AffiliatedKeywordKind::Header,
+                    AffiliatedKeywordValue::new("some header")
+                )
+            ))
         );
         assert_eq!(
             single_affiliated_keyword(CompleteStr("#+HEADER: some header\nmore")).ok(),
-            Some((CompleteStr("\nmore"), AffiliatedKeyword::new(
-                AffiliatedKeywordKind::Header,
-                AffiliatedKeywordValue::new("some header")
-            )))
+            Some((
+                CompleteStr("\nmore"),
+                AffiliatedKeyword::new(
+                    AffiliatedKeywordKind::Header,
+                    AffiliatedKeywordValue::new("some header")
+                )
+            ))
         );
         assert_eq!(
             single_affiliated_keyword(CompleteStr("#+CAPTION: some caption")).ok(),
-            Some((CompleteStr(""), AffiliatedKeyword::new(
-                AffiliatedKeywordKind::Caption(None),
-                AffiliatedKeywordValue::new("some caption")
-            )))
+            Some((
+                CompleteStr(""),
+                AffiliatedKeyword::new(
+                    AffiliatedKeywordKind::Caption(None),
+                    AffiliatedKeywordValue::new("some caption")
+                )
+            ))
         );
         assert_eq!(
             single_affiliated_keyword(CompleteStr("#+CAPTION[opt]: some caption")).ok(),
-            Some((CompleteStr(""), AffiliatedKeyword::new(
-                AffiliatedKeywordKind::Caption(Some(AffiliatedKeywordValue::new("opt"))),
-                AffiliatedKeywordValue::new("some caption")
-            )))
+            Some((
+                CompleteStr(""),
+                AffiliatedKeyword::new(
+                    AffiliatedKeywordKind::Caption(Some(AffiliatedKeywordValue::new("opt"))),
+                    AffiliatedKeywordValue::new("some caption")
+                )
+            ))
         );
         assert_eq!(
             single_affiliated_keyword(CompleteStr("#+ATTR_backend: some value")).ok(),
-            Some((CompleteStr(""), AffiliatedKeyword::new(
-                AffiliatedKeywordKind::Attr("backend".to_string()),
-                AffiliatedKeywordValue::new("some value")
-            )))
+            Some((
+                CompleteStr(""),
+                AffiliatedKeyword::new(
+                    AffiliatedKeywordKind::Attr("backend".to_string()),
+                    AffiliatedKeywordValue::new("some value")
+                )
+            ))
         );
     }
 }
-

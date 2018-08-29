@@ -1,20 +1,24 @@
-use parse::{OrgInput, OrgResult, headline, section};
-use {OrgFile, Headline};
+use parse::{headline, section, OrgInput, OrgResult};
+use {Headline, OrgFile};
 
 /// Parses a complete org file.
 ///
 /// Currently does not parse the global properties.
 pub fn file(i: OrgInput) -> OrgResult<OrgFile> {
-    to_failure!(i, do_parse!(
-        // TODO keywords/metadata at the start of the file
-        section: opt!(section) >>
-        to_failure!(opt!(tag!("\n"))) >>
-        headlines: separated_list!(
-            to_failure!(tag!("\n")),
-            headline
-        ) >>
-        (OrgFile::new(Vec::new(), section.unwrap_or_default(), fix_structure(headlines)))
-    ))
+    to_failure!(
+        i,
+        do_parse!(
+            // TODO keywords/metadata at the start of the file
+            section: opt!(section)
+                >> to_failure!(opt!(tag!("\n")))
+                >> headlines: separated_list!(to_failure!(tag!("\n")), headline)
+                >> (OrgFile::new(
+                    Vec::new(),
+                    section.unwrap_or_default(),
+                    fix_structure(headlines)
+                ))
+        )
+    )
 }
 
 /// Fixes the structure of the headlines.
@@ -30,7 +34,7 @@ fn fix_structure(flat: Vec<Headline>) -> Vec<Headline> {
     match iter.next() {
         Some(x) => {
             last.push(x);
-        },
+        }
         None => return result,
     }
 
@@ -81,12 +85,11 @@ mod tests {
                     Vec::new(),
                     Section::new(""),
                     vec![
-                        Headline::new(1, "Heading 1")
-                            .and_sub_headlines(vec![
-                                Headline::new(2, "Heading 1.1"),
-                                Headline::new(2, "Heading 1.2"),
-                                Headline::new(2, "Heading 1.3"),
-                            ]),
+                        Headline::new(1, "Heading 1").and_sub_headlines(vec![
+                            Headline::new(2, "Heading 1.1"),
+                            Headline::new(2, "Heading 1.2"),
+                            Headline::new(2, "Heading 1.3"),
+                        ]),
                         Headline::new(1, "Heading 2"),
                         Headline::new(1, "Heading 3"),
                     ]
@@ -113,15 +116,12 @@ More section content.
                     Vec::new(),
                     Section::new(""),
                     vec![
-                        Headline::new(1, "Heading 1")
-                            .and_sub_headlines(vec![
-                                Headline::new(2, "Heading 1.1"),
-                                Headline::new(2, "Heading 1.2"),
-                                Headline::new(2, "Heading 1.3")
-                                .and_section("This is section content."),
-                            ]),
-                        Headline::new(1, "Heading 2")
-                        .and_section("More section content."),
+                        Headline::new(1, "Heading 1").and_sub_headlines(vec![
+                            Headline::new(2, "Heading 1.1"),
+                            Headline::new(2, "Heading 1.2"),
+                            Headline::new(2, "Heading 1.3").and_section("This is section content."),
+                        ]),
+                        Headline::new(1, "Heading 2").and_section("More section content."),
                         Headline::new(1, "Heading 3"),
                     ]
                 )
@@ -149,15 +149,12 @@ More section content.
                     Vec::new(),
                     "Start section\n",
                     vec![
-                        Headline::new(1, "Heading 1")
-                            .and_sub_headlines(vec![
-                                Headline::new(2, "Heading 1.1"),
-                                Headline::new(2, "Heading 1.2"),
-                                Headline::new(2, "Heading 1.3")
-                                .and_section("This is section content."),
-                            ]),
-                        Headline::new(1, "Heading 2")
-                        .and_section("More section content."),
+                        Headline::new(1, "Heading 1").and_sub_headlines(vec![
+                            Headline::new(2, "Heading 1.1"),
+                            Headline::new(2, "Heading 1.2"),
+                            Headline::new(2, "Heading 1.3").and_section("This is section content."),
+                        ]),
+                        Headline::new(1, "Heading 2").and_section("More section content."),
                         Headline::new(1, "Heading 3"),
                     ]
                 )
@@ -165,4 +162,3 @@ More section content.
         );
     }
 }
-

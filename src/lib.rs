@@ -17,8 +17,8 @@ mod enum_from_str;
 mod parse;
 mod timestamp;
 
-use std::str::FromStr;
 use failure::Error;
+use std::str::FromStr;
 
 pub use parse::*;
 pub use timestamp::*;
@@ -32,9 +32,12 @@ pub struct OrgFile {
 }
 
 impl OrgFile {
-    pub fn new<T,U,V>(properties: T, preface: U, headlines: V) -> Self
+    pub fn new<T, U, V>(properties: T, preface: U, headlines: V) -> Self
     where
-    T: Into<Vec<Keyword>>, U: Into<Section>, V: Into<Vec<Headline>> {
+        T: Into<Vec<Keyword>>,
+        U: Into<Section>,
+        V: Into<Vec<Headline>>,
+    {
         OrgFile {
             preface: preface.into(),
             properties: properties.into(),
@@ -112,10 +115,7 @@ pub struct Headline {
 }
 
 impl Headline {
-    pub fn new(
-        level: u8,
-        title: impl Into<String>,
-    ) -> Self {
+    pub fn new(level: u8, title: impl Into<String>) -> Self {
         let title = title.into();
         Headline {
             level,
@@ -135,34 +135,22 @@ impl Headline {
         self.and_opt_keyword(Some(keyword))
     }
     pub fn and_opt_keyword(self, keyword: Option<State>) -> Self {
-        Headline {
-            keyword,
-            ..self
-        }
+        Headline { keyword, ..self }
     }
     pub fn and_priority(self, priority: Priority) -> Self {
         self.and_opt_priority(Some(priority))
     }
     pub fn and_opt_priority(self, priority: Option<Priority>) -> Self {
-        Headline {
-            priority,
-            ..self
-        }
+        Headline { priority, ..self }
     }
     pub fn and_tags(self, tags: Vec<String>) -> Self {
-        Headline {
-            tags,
-            ..self
-        }
+        Headline { tags, ..self }
     }
     pub fn and_opt_tags(self, tags: Option<Vec<String>>) -> Self {
         self.and_tags(tags.unwrap_or(Vec::new()))
     }
     pub fn and_planning(self, planning: Planning) -> Self {
-        Headline {
-            planning,
-            ..self
-        }
+        Headline { planning, ..self }
     }
     pub fn and_property_drawer(self, property_drawer: PropertyDrawer) -> Self {
         Headline {
@@ -174,10 +162,7 @@ impl Headline {
         self.and_opt_section(Some(section.into()))
     }
     pub fn and_opt_section(self, section: Option<Section>) -> Self {
-        Headline {
-            section,
-            ..self
-        }
+        Headline { section, ..self }
     }
     pub fn and_sub_headlines(self, sub_headlines: Vec<Headline>) -> Self {
         Headline {
@@ -240,28 +225,19 @@ impl Planning {
         self.and_opt_deadline(Some(deadline))
     }
     pub fn and_opt_deadline(self, deadline: Option<Timestamp>) -> Self {
-        Planning {
-            deadline,
-            ..self
-        }
+        Planning { deadline, ..self }
     }
     pub fn and_scheduled(self, scheduled: Timestamp) -> Self {
         self.and_opt_scheduled(Some(scheduled))
     }
     pub fn and_opt_scheduled(self, scheduled: Option<Timestamp>) -> Self {
-        Planning {
-            scheduled,
-            ..self
-        }
+        Planning { scheduled, ..self }
     }
     pub fn and_closed(self, closed: Timestamp) -> Self {
         self.and_opt_closed(Some(closed))
     }
     pub fn and_opt_closed(self, closed: Option<Timestamp>) -> Self {
-        Planning {
-            closed,
-            ..self
-        }
+        Planning { closed, ..self }
     }
 }
 
@@ -282,8 +258,10 @@ impl Section {
     }
 }
 
-impl <T> From<T> for Section
-where T: Into<String> {
+impl<T> From<T> for Section
+where
+    T: Into<String>,
+{
     fn from(s: T) -> Self {
         Section::new(s)
     }
@@ -331,14 +309,12 @@ enum_from_str!(
 #[derive(Debug, PartialEq, Eq)]
 pub struct AffiliatedKeyword {
     kind: AffiliatedKeywordKind,
-    value: AffiliatedKeywordValue
+    value: AffiliatedKeywordValue,
 }
 
 impl AffiliatedKeyword {
     pub fn new(kind: AffiliatedKeywordKind, value: AffiliatedKeywordValue) -> Self {
-        AffiliatedKeyword {
-            kind, value
-        }
+        AffiliatedKeyword { kind, value }
     }
 }
 

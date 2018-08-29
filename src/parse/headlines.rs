@@ -1,22 +1,21 @@
 use std::convert::TryInto;
 
-use {Headline, NodeProperty, PropertyDrawer, Planning, Timestamp, Section, Priority, State};
-use parse::{OrgInput, OrgResult, timestamp, affiliated_keywords};
+use parse::{affiliated_keywords, timestamp, OrgInput, OrgResult};
+use {Headline, NodeProperty, Planning, Priority, PropertyDrawer, Section, State, Timestamp};
 
 /// Parses the stars at the beginning of the line to their count.
 fn level(i: OrgInput) -> OrgResult<u8> {
-    to_failure!(i, map_res!(
-        take_while1!(|c| c == '*'),
-        |s: OrgInput| (*s).len().try_into()
-    ))
+    to_failure!(
+        i,
+        map_res!(take_while1!(|c| c == '*'), |s: OrgInput| (*s)
+            .len()
+            .try_into())
+    )
 }
 
 /// Parses the keyword at the beginning of the headline (after the stars).
 fn keyword(i: OrgInput) -> OrgResult<State> {
-    to_failure!(i, map_opt!(
-        take_until!(" "),
-        to_keyword
-    ))
+    to_failure!(i, map_opt!(take_until!(" "), to_keyword))
 }
 
 /// Converts the string to a keyword.
@@ -31,15 +30,15 @@ fn to_keyword(i: OrgInput) -> Option<State> {
 
 /// Parses the priority of the headline.
 fn priority(i: OrgInput) -> OrgResult<Priority> {
-    to_failure!(i, map_res!(
-        to_failure!(do_parse!(
-            tag!("[#") >>
-            prio: take!(1) >>
-            tag!("]") >>
-            (prio)
-        )),
-        |i: OrgInput| (*i).parse()
-    ))
+    to_failure!(
+        i,
+        map_res!(
+            to_failure!(do_parse!(
+                tag!("[#") >> prio: take!(1) >> tag!("]") >> (prio)
+            )),
+            |i: OrgInput| (*i).parse()
+        )
+    )
 }
 
 /// Check if the given char is a valid tag char (excluding the seperators `:`).
@@ -54,7 +53,7 @@ fn is_tags_char(c: char) -> bool {
 ///
 /// Returns `None` if there are no tags.
 fn find_tags_start(input: &OrgInput) -> Option<usize> {
-    use nom::{FindSubstring, InputTake, InputIter};
+    use nom::{FindSubstring, InputIter, InputTake};
 
     enum MyState {
         InTags,
@@ -72,26 +71,26 @@ fn find_tags_start(input: &OrgInput) -> Option<usize> {
                 MyState::InTags if c == ':' => {
                     // reached posssible end of tags
                     state = MyState::OnTagsBorder;
-                },
-                MyState::InTags if is_tags_char(c) => {},
+                }
+                MyState::InTags if is_tags_char(c) => {}
                 MyState::InTags => {
                     // assumed we were in tag but really weren't
                     state = MyState::OutsideTags(c.is_whitespace());
-                },
+                }
                 MyState::OnTagsBorder if is_tags_char(c) => {
                     state = MyState::InTags;
-                },
-                MyState::OnTagsBorder if c == ':' => {},
+                }
+                MyState::OnTagsBorder if c == ':' => {}
                 MyState::OnTagsBorder => {
                     state = MyState::OutsideTags(c.is_whitespace());
-                },
+                }
                 MyState::OutsideTags(_) if c == ':' => {
                     index = i;
                     state = MyState::InTags;
-                },
+                }
                 MyState::OutsideTags(_) => {
                     state = MyState::OutsideTags(c.is_whitespace());
-                },
+                }
             }
         }
 
@@ -108,7 +107,7 @@ fn find_tags_start(input: &OrgInput) -> Option<usize> {
 ///
 /// This is manually implemented instead of with macros because it was easier.
 fn take_title(input: OrgInput) -> OrgResult<OrgInput> {
-    use nom::{InputLength, FindSubstring, InputTake};
+    use nom::{FindSubstring, InputLength, InputTake};
 
     let newline_at = input.find_substring("\n").unwrap_or(input.input_len());
     let (rest, title_and_tags) = input.take_split(newline_at);
@@ -119,20 +118,16 @@ fn take_title(input: OrgInput) -> OrgResult<OrgInput> {
 
             match title_with_whitespace.rfind(|c: char| !c.is_whitespace()) {
                 Some(last_non_ws) => Ok(input.take_split(last_non_ws + 1)),
-                None => Ok((rest, title_and_tags))
+                None => Ok((rest, title_and_tags)),
             }
-
-        },
-        None => Ok((rest, title_and_tags))
+        }
+        None => Ok((rest, title_and_tags)),
     }
 }
 
 /// Parses the title of a headline.
 fn title(i: OrgInput) -> OrgResult<String> {
-    to_failure!(i, map!(
-        take_title,
-        |i: OrgInput| String::from(*i)
-    ))
+    to_failure!(i, map!(take_title, |i: OrgInput| String::from(*i)))
 }
 
 /// Parses the tags of a headline.
@@ -142,31 +137,31 @@ fn title(i: OrgInput) -> OrgResult<String> {
 ///
 /// E.g. `:tag:a2%:` which is two tags `tag` and `a2%`.
 fn tags(i: OrgInput) -> OrgResult<Vec<String>> {
-    to_failure!(i, delimited!(
-        tag!(":"),
-        separated_list_complete!(
+    to_failure!(
+        i,
+        delimited!(
             tag!(":"),
-            map!(
-                take_until!(":"),
-                |i: OrgInput| String::from(*i)
-            )
-        ),
-        tag!(":")
-    ))
+            separated_list_complete!(
+                tag!(":"),
+                map!(take_until!(":"), |i: OrgInput| String::from(*i))
+            ),
+            tag!(":")
+        )
+    )
 }
 
 /// Parses a section.
 ///
 /// Currently just takes all input until a new headline begins.
 pub fn section(i: OrgInput) -> OrgResult<Section> {
-    to_failure!(i, map!(
-        // TODO maybe matching \n* is not the best,
-        preceded!(
-            not!(tag!("*")),
-            take_until_or_eof!("\n*")
-        ),
-        |i: OrgInput| Section::new(*i)
-    ))
+    to_failure!(
+        i,
+        map!(
+            // TODO maybe matching \n* is not the best,
+            preceded!(not!(tag!("*")), take_until_or_eof!("\n*")),
+            |i: OrgInput| Section::new(*i)
+        )
+    )
 }
 
 /// Parses a planning line. (optional line directly under the headline)
@@ -201,10 +196,12 @@ fn to_planning(
     if deadline.is_none() && scheduled.is_none() && closed.is_none() {
         None
     } else {
-        Some(Planning::default()
-            .and_opt_deadline(deadline)
-            .and_opt_scheduled(scheduled)
-            .and_opt_closed(closed))
+        Some(
+            Planning::default()
+                .and_opt_deadline(deadline)
+                .and_opt_scheduled(scheduled)
+                .and_opt_closed(closed),
+        )
     }
 }
 
@@ -212,12 +209,13 @@ fn to_planning(
 ///
 /// TODO (for later) make this recognize an indented property drawer
 fn property_drawer(i: OrgInput) -> OrgResult<PropertyDrawer> {
-    do_parse!(i,
-        to_failure!(tag!(":PROPERTIES:\n")) >>
-        list: opt!(separated_list!(to_failure!(tag!("\n")), node_property)) >>
-        to_failure!(opt!(tag!("\n"))) >>
-        to_failure!(tag!(":END:")) >>
-        (PropertyDrawer::new(list.unwrap_or_default()))
+    do_parse!(
+        i,
+        to_failure!(tag!(":PROPERTIES:\n"))
+            >> list: opt!(separated_list!(to_failure!(tag!("\n")), node_property))
+            >> to_failure!(opt!(tag!("\n")))
+            >> to_failure!(tag!(":END:"))
+            >> (PropertyDrawer::new(list.unwrap_or_default()))
     )
 }
 
@@ -232,26 +230,28 @@ fn property_drawer(i: OrgInput) -> OrgResult<PropertyDrawer> {
 ///
 /// **Note:** `NAME` can't be `END`.
 fn node_property(i: OrgInput) -> OrgResult<NodeProperty> {
-    to_failure!(i, do_parse!(
-        name: verify!(
-            delimited!(tag!(":"), take_while!(|c| c != ':'), tag!(":")),
-            |name: OrgInput| *name != "END"
-        ) >>
-        value: opt!(preceded!(tag!(" "), take_while!(|c| c != '\n'))) >>
-        (to_node_property(*name, value.map(|v| *v)))
-    ))
+    to_failure!(
+        i,
+        do_parse!(
+            name: verify!(
+                delimited!(tag!(":"), take_while!(|c| c != ':'), tag!(":")),
+                |name: OrgInput| *name != "END"
+            ) >> value: opt!(preceded!(tag!(" "), take_while!(|c| c != '\n')))
+                >> (to_node_property(*name, value.map(|v| *v)))
+        )
+    )
 }
 
 /// Converts a name and optional value to a [`NodeProperty`].
 fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
     match value {
         Some(value) if !value.is_empty() => if name.ends_with('+') {
-            NodeProperty::KeyPlusValue(name[..name.len()-1].to_string(), value.to_string())
+            NodeProperty::KeyPlusValue(name[..name.len() - 1].to_string(), value.to_string())
         } else {
             NodeProperty::KeyValue(name.to_string(), value.to_string())
         },
         None | Some(_) => if name.ends_with('+') {
-            NodeProperty::KeyPlus(name[..name.len()-1].to_string())
+            NodeProperty::KeyPlus(name[..name.len() - 1].to_string())
         } else {
             NodeProperty::Key(name.to_string())
         },
@@ -286,8 +286,10 @@ fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
 /// - `PROPERTY_DRAWER`: [`property_drawer`]
 /// - `SECTION`: [`section`]
 pub fn headline(i: OrgInput) -> OrgResult<Headline> {
-    to_failure!(i, do_parse!(
-        affiliated_keywords: opt!(terminated!(
+    to_failure!(
+        i,
+        do_parse!(
+            affiliated_keywords: opt!(terminated!(
             affiliated_keywords,
             to_failure!(tag!("\n"))
         )) >>
@@ -329,14 +331,15 @@ pub fn headline(i: OrgInput) -> OrgResult<Headline> {
                 .and_property_drawer(property_drawer.unwrap_or_default())
                 .and_opt_section(section.filter(|section| !section.is_empty()))
         )
-    ))
+        )
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use {TimestampData, AffiliatedKeyword, AffiliatedKeywordKind, AffiliatedKeywordValue};
     use nom::types::CompleteStr;
+    use {AffiliatedKeyword, AffiliatedKeywordKind, AffiliatedKeywordValue, TimestampData};
 
     #[test]
     fn test_headline_with_affiliated_keywords() {
@@ -344,30 +347,28 @@ mod tests {
             headline(CompleteStr("#+CAPTION: some caption\n* Headline")).ok(),
             Some((
                 CompleteStr(""),
-                Headline::new(1, "Headline")
-                    .and_affiliated_keywords(vec![
-                        AffiliatedKeyword::new(
-                            AffiliatedKeywordKind::Caption(None),
-                            AffiliatedKeywordValue::new("some caption")
-                        )
-                    ])
+                Headline::new(1, "Headline").and_affiliated_keywords(vec![AffiliatedKeyword::new(
+                    AffiliatedKeywordKind::Caption(None),
+                    AffiliatedKeywordValue::new("some caption")
+                )])
             ))
         );
         assert_eq!(
-            headline(CompleteStr("#+CAPTION: some caption\n#+ATTR_backend: value\n* Headline")).ok(),
+            headline(CompleteStr(
+                "#+CAPTION: some caption\n#+ATTR_backend: value\n* Headline"
+            )).ok(),
             Some((
                 CompleteStr(""),
-                Headline::new(1, "Headline")
-                    .and_affiliated_keywords(vec![
-                        AffiliatedKeyword::new(
-                            AffiliatedKeywordKind::Caption(None),
-                            AffiliatedKeywordValue::new("some caption")
-                        ),
-                        AffiliatedKeyword::new(
-                            AffiliatedKeywordKind::Attr("backend".to_string()),
-                            AffiliatedKeywordValue::new("value")
-                        )
-                    ])
+                Headline::new(1, "Headline").and_affiliated_keywords(vec![
+                    AffiliatedKeyword::new(
+                        AffiliatedKeywordKind::Caption(None),
+                        AffiliatedKeywordValue::new("some caption")
+                    ),
+                    AffiliatedKeyword::new(
+                        AffiliatedKeywordKind::Attr("backend".to_string()),
+                        AffiliatedKeywordValue::new("value")
+                    )
+                ])
             ))
         );
     }
@@ -378,8 +379,7 @@ mod tests {
             headline(CompleteStr("* Headline\nThis is a section.")).ok(),
             Some((
                 CompleteStr(""),
-                Headline::new(1, "Headline")
-                    .and_section(Section::new("This is a section."))
+                Headline::new(1, "Headline").and_section(Section::new("This is a section."))
             ))
         );
     }
@@ -405,13 +405,12 @@ mod tests {
             ))
         );
         assert_eq!(
-            headline(CompleteStr(
-                "* Headline\n:PROPERTIES:\n:test_name:\n:END:"
-            )).ok(),
+            headline(CompleteStr("* Headline\n:PROPERTIES:\n:test_name:\n:END:")).ok(),
             Some((
                 CompleteStr(""),
-                Headline::new(1, "Headline")
-                    .and_property_drawer(PropertyDrawer::new(vec![NodeProperty::Key("test_name".to_string())]))
+                Headline::new(1, "Headline").and_property_drawer(PropertyDrawer::new(vec![
+                    NodeProperty::Key("test_name".to_string())
+                ]))
             ))
         );
         assert_eq!(
@@ -432,10 +431,7 @@ mod tests {
     fn test_property_drawer() {
         assert_eq!(
             property_drawer(CompleteStr(":PROPERTIES:\n:END:")).ok(),
-            Some((
-                CompleteStr(""),
-                PropertyDrawer::empty()
-            ))
+            Some((CompleteStr(""), PropertyDrawer::empty()))
         );
         assert_eq!(
             property_drawer(CompleteStr(":PROPERTIES:\n:test_name:\n:END:")).ok(),
@@ -471,10 +467,7 @@ mod tests {
         );
         assert_eq!(
             node_property(CompleteStr(":some_name:")).ok(),
-            Some((
-                CompleteStr(""),
-                NodeProperty::Key("some_name".to_string())
-            ))
+            Some((CompleteStr(""), NodeProperty::Key("some_name".to_string())))
         );
     }
 
@@ -588,10 +581,7 @@ mod tests {
 
     #[test]
     fn test_find_tags_start() {
-        assert_eq!(
-            find_tags_start(&CompleteStr("some text")),
-            None
-        );
+        assert_eq!(find_tags_start(&CompleteStr("some text")), None);
         assert_eq!(
             find_tags_start(&CompleteStr("some text :tags:yay:")),
             Some(10)
@@ -613,7 +603,9 @@ mod tests {
             Some(26)
         );
         assert_eq!(
-            find_tags_start(&CompleteStr("some text :not:tags: more :still:no:actual:tags: more text")),
+            find_tags_start(&CompleteStr(
+                "some text :not:tags: more :still:no:actual:tags: more text"
+            )),
             None
         );
     }
@@ -634,11 +626,17 @@ mod tests {
         );
         assert_eq!(
             take_title(CompleteStr("some title :some:tags: more text")).ok(),
-            Some((CompleteStr(""), CompleteStr("some title :some:tags: more text")))
+            Some((
+                CompleteStr(""),
+                CompleteStr("some title :some:tags: more text")
+            ))
         );
         assert_eq!(
             take_title(CompleteStr("some title :some:tags: more text :tags:")).ok(),
-            Some((CompleteStr(" :tags:"), CompleteStr("some title :some:tags: more text")))
+            Some((
+                CompleteStr(" :tags:"),
+                CompleteStr("some title :some:tags: more text")
+            ))
         );
     }
 
@@ -694,21 +692,48 @@ mod tests {
     #[test]
     fn test_to_planning() {
         use chrono::NaiveDate;
+        assert_eq!(to_planning((None, None, None)), None);
         assert_eq!(
-            to_planning((None, None, None)),
-            None
+            to_planning((
+                Some(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(
+                    2018, 08, 25
+                )))),
+                None,
+                None
+            )),
+            Some(
+                Planning::default().and_deadline(Timestamp::Active(TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 25)
+                )))
+            )
         );
         assert_eq!(
-            to_planning((Some(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))), None, None)),
-            Some(Planning::default().and_deadline(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
+            to_planning((
+                None,
+                Some(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(
+                    2018, 08, 25
+                )))),
+                None
+            )),
+            Some(
+                Planning::default().and_scheduled(Timestamp::Active(TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 25)
+                )))
+            )
         );
         assert_eq!(
-            to_planning((None, Some(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))), None)),
-            Some(Planning::default().and_scheduled(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
-        );
-        assert_eq!(
-            to_planning((None, None, Some(Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))),
-            Some(Planning::default().and_closed(Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
+            to_planning((
+                None,
+                None,
+                Some(Timestamp::Inactive(TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 25)
+                )))
+            )),
+            Some(
+                Planning::default().and_closed(Timestamp::Inactive(TimestampData::new(
+                    NaiveDate::from_ymd(2018, 08, 25)
+                )))
+            )
         );
     }
 }
