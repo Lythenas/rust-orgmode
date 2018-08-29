@@ -94,4 +94,75 @@ mod tests {
             ))
         );
     }
+
+    #[test]
+    fn test_simple_file_with_sections() {
+        let input = "* Heading 1
+** Heading 1.1
+** Heading 1.2
+** Heading 1.3
+This is section content.
+* Heading 2
+More section content.
+* Heading 3";
+        assert_eq!(
+            file(CompleteStr(input)).ok(),
+            Some((
+                CompleteStr(""),
+                OrgFile::new(
+                    Vec::new(),
+                    Section::new(""),
+                    vec![
+                        Headline::new(1, "Heading 1")
+                            .and_sub_headlines(vec![
+                                Headline::new(2, "Heading 1.1"),
+                                Headline::new(2, "Heading 1.2"),
+                                Headline::new(2, "Heading 1.3")
+                                .and_section("This is section content."),
+                            ]),
+                        Headline::new(1, "Heading 2")
+                        .and_section("More section content."),
+                        Headline::new(1, "Heading 3"),
+                    ]
+                )
+            ))
+        );
+    }
+
+    #[test]
+    fn test_simple_file_with_start_section() {
+        let input = "Start section
+
+* Heading 1
+** Heading 1.1
+** Heading 1.2
+** Heading 1.3
+This is section content.
+* Heading 2
+More section content.
+* Heading 3";
+        assert_eq!(
+            file(CompleteStr(input)).ok(),
+            Some((
+                CompleteStr(""),
+                OrgFile::new(
+                    Vec::new(),
+                    "Start section\n",
+                    vec![
+                        Headline::new(1, "Heading 1")
+                            .and_sub_headlines(vec![
+                                Headline::new(2, "Heading 1.1"),
+                                Headline::new(2, "Heading 1.2"),
+                                Headline::new(2, "Heading 1.3")
+                                .and_section("This is section content."),
+                            ]),
+                        Headline::new(1, "Heading 2")
+                        .and_section("More section content."),
+                        Headline::new(1, "Heading 3"),
+                    ]
+                )
+            ))
+        );
+    }
 }
+

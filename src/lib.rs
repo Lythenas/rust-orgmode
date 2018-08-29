@@ -170,8 +170,8 @@ impl Headline {
             ..self
         }
     }
-    pub fn and_section(self, section: Section) -> Self {
-        self.and_opt_section(Some(section))
+    pub fn and_section(self, section: impl Into<Section>) -> Self {
+        self.and_opt_section(Some(section.into()))
     }
     pub fn and_opt_section(self, section: Option<Section>) -> Self {
         Headline {
@@ -279,6 +279,13 @@ impl Section {
     }
     fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+}
+
+impl <T> From<T> for Section
+where T: Into<String> {
+    fn from(s: T) -> Self {
+        Section::new(s)
     }
 }
 
