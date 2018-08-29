@@ -17,17 +17,65 @@ mod enum_from_str;
 mod parse;
 mod timestamp;
 
-use std::collections::HashMap;
+use std::str::FromStr;
+use failure::Error;
 
 pub use parse::*;
 pub use timestamp::*;
 
 /// Represents an org file.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub struct OrgFile {
-    preface: String,
-    properties: HashMap<String, String>,
-    nodes: Vec<Headline>,
+    properties: Vec<Keyword>,
+    preface: Section,
+    headlines: Vec<Headline>,
+}
+
+impl OrgFile {
+    pub fn new<T,U,V>(properties: T, preface: U, headlines: V) -> Self
+    where
+    T: Into<Vec<Keyword>>, U: Into<Section>, V: Into<Vec<Headline>> {
+        OrgFile {
+            preface: preface.into(),
+            properties: properties.into(),
+            headlines: headlines.into(),
+        }
+    }
+}
+
+impl FromStr for OrgFile {
+    type Err = OrgParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use nom::types::CompleteStr;
+        use nom::ErrorKind;
+        ::parse::file(CompleteStr(s))
+            .or_else(|err| {
+                match err.into_error_kind() {
+                    // TODO convert to useful error
+                    ErrorKind::Custom(e) => Err(OrgParseError::Custom(e)),
+                    _ => unimplemented!(),
+                }
+            }).and_then(|(s, ts)| {
+                if s == CompleteStr("") {
+                    Ok(ts)
+                } else {
+                    Err(OrgParseError::TooMuchInput(s.to_string()))
+                }
+            })
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Default)]
+pub struct Keyword {
+    key: String,
+    value: String,
+}
+
+#[derive(Debug)]
+pub enum OrgParseError {
+    TooMuchInput(String),
+    Custom(Error),
 }
 
 /// Represents a headline in an org file.
@@ -214,7 +262,7 @@ impl Planning {
 ///
 /// **Note:** Currently this is only a [`String`] but in the future it will contain more fine
 /// grained parsed elements.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub struct Section(String);
 
 impl Section {

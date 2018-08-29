@@ -1,13 +1,7 @@
-use failure::Error;
-use nom::types::CompleteStr;
-use nom::IResult;
 use std::convert::TryInto;
 
 use {Headline, NodeProperty, PropertyDrawer, Planning, Timestamp, Section, Priority, State};
-use parse::{timestamp, affiliated_keywords};
-
-type OrgInput<'a> = CompleteStr<'a>;
-type OrgResult<'a, T> = IResult<OrgInput<'a>, T, Error>;
+use parse::{OrgInput, OrgResult, timestamp, affiliated_keywords};
 
 /// Parses the stars at the beginning of the line to their count.
 fn level(i: OrgInput) -> OrgResult<u8> {
@@ -164,7 +158,7 @@ fn tags(i: OrgInput) -> OrgResult<Vec<String>> {
 /// Parses a section.
 ///
 /// Currently just takes all input until a new headline begins.
-fn section(i: OrgInput) -> OrgResult<Section> {
+pub fn section(i: OrgInput) -> OrgResult<Section> {
     to_failure!(i, map!(
         // TODO maybe matching \n* is not the best,
         take_until_or_eof!("\n*"),
@@ -339,6 +333,7 @@ pub fn headline(i: OrgInput) -> OrgResult<Headline> {
 mod tests {
     use super::*;
     use {TimestampData, AffiliatedKeyword, AffiliatedKeywordKind, AffiliatedKeywordValue};
+    use nom::types::CompleteStr;
 
     #[test]
     fn test_headline_with_affiliated_keywords() {

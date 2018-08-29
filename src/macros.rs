@@ -59,6 +59,7 @@ macro_rules! to_failure (
     ($i:expr, $submac:ident!( $($args:tt)* )) => (
         {
             use $crate::macros::GenericError;
+            use failure::Error;
             fix_error!($i, Error, fix_error!(GenericError<_>, $submac!( $($args)* )))
         }
     );
