@@ -1,130 +1,107 @@
-use failure::Error;
-use nom::types::CompleteStr;
-
+use parse::{OrgInput, OrgResult};
 use {AffiliatedKeyword, AffiliatedKeywordKind, AffiliatedKeywordValue};
 
-//trace_macros!(true);
-
-named!(#[doc="
-Parses an affiliated keyword kind.
-
-Has one of the formats:
-
-* `KEY`
-* `KEY[OPTIONAL]`
-* `ATTR_BACKEND`
-
-`KEY` is either `CAPTION`, `HEADER`, `NAME`, `PLOT` or `RESULTS`.
-
-`OPTIONAL` is only allowed when `KEY` is `CAPTION` or `RESULTS`.
-
-`BACKEND` is a alpha-numeric string with hyphens and underscores.
-"],
-kind<CompleteStr, AffiliatedKeywordKind, Error>,
-    to_failure!(alt!(
-        do_parse!(
-            to_failure!(tag!("CAPTION")) >>
-            optional: opt!(delimited!(
-                to_failure!(tag!("[")),
-                optional,
-                to_failure!(tag!("]"))
-            )) >>
-            (AffiliatedKeywordKind::Caption(optional))
-        ) |
-        do_parse!(
-            to_failure!(tag!("RESULTS")) >>
-            optional: opt!(delimited!(
-                to_failure!(tag!("[")),
-                optional,
-                to_failure!(tag!("]"))
-            )) >>
-            (AffiliatedKeywordKind::Results(optional))
-        ) |
-        to_failure!(do_parse!(
-            tag!("HEADER") >>
-            (AffiliatedKeywordKind::Header)
-        )) |
-        to_failure!(do_parse!(
-            tag!("NAME") >>
-            (AffiliatedKeywordKind::Name)
-        )) |
-        to_failure!(do_parse!(
-            tag!("PLOT") >>
-            (AffiliatedKeywordKind::Plot)
-        )) |
-        to_failure!(do_parse!(
-            tag!("ATTR_") >>
-            backend: take_until_or_eof!(":") >>
-            (AffiliatedKeywordKind::Attr(backend.to_string()))
-        ))
-    ))
-);
-
-trace_macros!(false);
-
-named!(#[doc="
-Parses an affiliate keyword value.
-
-Value can contain any char except newline.
-"],
-value<CompleteStr, AffiliatedKeywordValue, Error>,
-    to_failure!(do_parse!(
-        value: take_until_or_eof!("\n") >>
-        (AffiliatedKeywordValue::new(*value))
-    ))
-);
-
-named!(#[doc="
-Parses an affiliate keyword optional value.
-
-Value can contain any char except newline.
-"],
-optional<CompleteStr, AffiliatedKeywordValue, Error>,
-    to_failure!(do_parse!(
-        value: take_until_or_eof!("]") >>
-        (AffiliatedKeywordValue::new(*value))
-    ))
-);
-
-named!(#[doc="
-Parses an affiliated keyword.
-
-Has one of the formats:
-
-* `#+KEY: VALUE`
-* `#+KEY[OPTIONAL]: VALUE`
-* `#+ATTR_BACKEND: VALUE`
-"],
-pub single_affiliated_keyword<CompleteStr, AffiliatedKeyword, Error>,
-    to_failure!(do_parse!(
-        to_failure!(tag!("#+")) >>
-        kind: kind >>
-        to_failure!(tag!(": ")) >>
-        value: value >>
-        (
-            AffiliatedKeyword::new(kind, value)
+/// Parses an affiliated keyword kind.
+///
+/// Has one of the formats:
+///
+/// * `KEY`
+/// * `KEY[OPTIONAL]`
+/// * `ATTR_BACKEND`
+///
+/// `KEY` is either `CAPTION`, `HEADER`, `NAME`, `PLOT` or `RESULTS`.
+///
+/// `OPTIONAL` is only allowed when `KEY` is `CAPTION` or `RESULTS`.
+///
+/// `BACKEND` is a alpha-numeric string with hyphens and underscores.
+fn kind(i: OrgInput) -> OrgResult<AffiliatedKeywordKind> {
+    to_failure!(
+        i,
+        alt!(
+            do_parse!(
+                to_failure!(tag!("CAPTION"))
+                    >> optional:
+                        opt!(delimited!(
+                            to_failure!(tag!("[")),
+                            optional,
+                            to_failure!(tag!("]"))
+                        ))
+                    >> (AffiliatedKeywordKind::Caption(optional))
+            ) | do_parse!(
+                to_failure!(tag!("RESULTS"))
+                    >> optional:
+                        opt!(delimited!(
+                            to_failure!(tag!("[")),
+                            optional,
+                            to_failure!(tag!("]"))
+                        ))
+                    >> (AffiliatedKeywordKind::Results(optional))
+            ) | to_failure!(do_parse!(tag!("HEADER") >> (AffiliatedKeywordKind::Header)))
+                | to_failure!(do_parse!(tag!("NAME") >> (AffiliatedKeywordKind::Name)))
+                | to_failure!(do_parse!(tag!("PLOT") >> (AffiliatedKeywordKind::Plot)))
+                | to_failure!(do_parse!(
+                    tag!("ATTR_")
+                        >> backend: take_until_or_eof!(":")
+                        >> (AffiliatedKeywordKind::Attr(backend.to_string()))
+                ))
         )
-    ))
-);
-
-named!(#[doc="
-Parses multiple affiliated keywords.
-
-Does not check if the keywords are repeated. Normally only `CAPTION`,
-`HEADER` and `ATTR_BACKEND` keywords can be repeated.
-
-See: [`single_affiliated_keyword`]
-"],
-pub affiliated_keywords<CompleteStr, Vec<AffiliatedKeyword>, Error>,
-    separated_list!(
-        to_failure!(tag!("\n")),
-        single_affiliated_keyword
     )
-);
+}
+
+/// Parses an affiliate keyword value.
+///
+/// Value can contain any char except newline.
+fn value(i: OrgInput) -> OrgResult<AffiliatedKeywordValue> {
+    to_failure!(
+        i,
+        do_parse!(value: take_until_or_eof!("\n") >> (AffiliatedKeywordValue::new(*value)))
+    )
+}
+
+/// Parses an affiliate keyword optional value.
+///
+/// Value can contain any char except newline.
+fn optional(i: OrgInput) -> OrgResult<AffiliatedKeywordValue> {
+    to_failure!(
+        i,
+        do_parse!(value: take_until_or_eof!("]") >> (AffiliatedKeywordValue::new(*value)))
+    )
+}
+
+/// Parses an affiliated keyword.
+///
+/// Has one of the formats:
+///
+/// * `#+KEY: VALUE`
+/// * `#+KEY[OPTIONAL]: VALUE`
+/// * `#+ATTR_BACKEND: VALUE`
+pub fn single_affiliated_keyword(i: OrgInput) -> OrgResult<AffiliatedKeyword> {
+    to_failure!(
+        i,
+        do_parse!(
+            to_failure!(tag!("#+"))
+                >> kind: kind
+                >> to_failure!(tag!(": "))
+                >> value: value
+                >> (AffiliatedKeyword::new(kind, value))
+        )
+    )
+}
+
+/// Parses multiple affiliated keywords.
+///
+/// Does not check if the keywords are repeated. Normally only `CAPTION`,
+/// `HEADER` and `ATTR_BACKEND` keywords can be repeated.
+///
+/// See: [`single_affiliated_keyword`]
+pub fn affiliated_keywords(i: OrgInput) -> OrgResult<Vec<AffiliatedKeyword>> {
+    separated_list!(i, to_failure!(tag!("\n")), single_affiliated_keyword)
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nom::types::CompleteStr;
 
     #[test]
     fn test_value() {
