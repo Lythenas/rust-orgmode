@@ -6,50 +6,47 @@ use std::convert::TryInto;
 use {Headline, NodeProperty, PropertyDrawer, Planning, Timestamp, Section, Priority, State};
 use parse::{timestamp, affiliated_keywords};
 
-named!(#[doc = "
-Parses the stars at the beginning of the line to their count.
-"],
-level<CompleteStr, u8, Error>,
-    to_failure!(map_res!(
-        take_while1!(|c| c == '*'),
-        |s: CompleteStr| (*s).len().try_into()
-    ))
-);
+type OrgInput<'a> = CompleteStr<'a>;
+type OrgResult<'a, T> = IResult<OrgInput<'a>, T, Error>;
 
-named!(#[doc = "
-Parses the keyword at the beginning of the headline (after the stars).
-"],
-keyword<CompleteStr, State, Error>,
-    to_failure!(map_opt!(
+/// Parses the stars at the beginning of the line to their count.
+fn level(i: OrgInput) -> OrgResult<u8> {
+    to_failure!(i, map_res!(
+        take_while1!(|c| c == '*'),
+        |s: OrgInput| (*s).len().try_into()
+    ))
+}
+
+/// Parses the keyword at the beginning of the headline (after the stars).
+fn keyword(i: OrgInput) -> OrgResult<State> {
+    to_failure!(i, map_opt!(
         take_until!(" "),
         to_keyword
     ))
-);
+}
 
 /// Converts the string to a keyword.
-fn to_keyword(s: CompleteStr) -> Option<State> {
+fn to_keyword(i: OrgInput) -> Option<State> {
     // TODO make this more dynamic
-    match *s {
-        "TODO" => Some(State::Todo(String::from(*s))),
-        "DONE" => Some(State::Done(String::from(*s))),
+    match *i {
+        "TODO" => Some(State::Todo(String::from(*i))),
+        "DONE" => Some(State::Done(String::from(*i))),
         _ => None,
     }
 }
 
-named!(#[doc = "
-Parses the priority of the headline.
-"],
-priority<CompleteStr, Priority, Error>,
-    to_failure!(map_res!(
+/// Parses the priority of the headline.
+fn priority(i: OrgInput) -> OrgResult<Priority> {
+    to_failure!(i, map_res!(
         to_failure!(do_parse!(
             tag!("[#") >>
             prio: take!(1) >>
             tag!("]") >>
             (prio)
         )),
-        |s: CompleteStr| (*s).parse()
+        |i: OrgInput| (*i).parse()
     ))
-);
+}
 
 /// Check if the given char is a valid tag char (excluding the seperators `:`).
 ///
@@ -62,10 +59,8 @@ fn is_tags_char(c: char) -> bool {
 /// optionally followed by whitespace.
 ///
 /// Returns `None` if there are no tags.
-fn find_tags_start(input: &CompleteStr) -> Option<usize> {
-    use nom::FindSubstring;
-    use nom::InputTake;
-    use nom::InputIter;
+fn find_tags_start(input: &OrgInput) -> Option<usize> {
+    use nom::{FindSubstring, InputTake, InputIter};
 
     enum MyState {
         InTags,
@@ -118,10 +113,8 @@ fn find_tags_start(input: &CompleteStr) -> Option<usize> {
 /// Parser that returns the title as a result.
 ///
 /// This is manually implemented instead of with macros because it was easier.
-fn take_title(input: CompleteStr) -> IResult<CompleteStr, CompleteStr, Error> {
-    use nom::InputLength;
-    use nom::FindSubstring;
-    use nom::InputTake;
+fn take_title(input: OrgInput) -> OrgResult<OrgInput> {
+    use nom::{InputLength, FindSubstring, InputTake};
 
     let newline_at = input.find_substring("\n").unwrap_or(input.input_len());
     let (rest, title_and_tags) = input.take_split(newline_at);
@@ -140,56 +133,49 @@ fn take_title(input: CompleteStr) -> IResult<CompleteStr, CompleteStr, Error> {
     }
 }
 
-named!(#[doc = "
-Parses the title of a headline.
-"],
-title<CompleteStr, String, Error>,
-    to_failure!(map!(
+/// Parses the title of a headline.
+fn title(i: OrgInput) -> OrgResult<String> {
+    to_failure!(i, map!(
         take_title,
-        |s: CompleteStr| String::from(*s)
+        |i: OrgInput| String::from(*i)
     ))
-);
+}
 
-named!(#[doc = "
-Parses the tags of a headline.
-
-The tags are made of words containing any alpha-numeric character, underscore,
-at sign, hash sign or percent sign, and separated with colons.
-
-E.g. `:tag:a2%:` which is two tags `tag` and `a2%`.
-"],
-tags<CompleteStr, Vec<String>, Error>,
-    to_failure!(delimited!(
+/// Parses the tags of a headline.
+///
+/// The tags are made of words containing any alpha-numeric character, underscore,
+/// at sign, hash sign or percent sign, and separated with colons.
+///
+/// E.g. `:tag:a2%:` which is two tags `tag` and `a2%`.
+fn tags(i: OrgInput) -> OrgResult<Vec<String>> {
+    to_failure!(i, delimited!(
         tag!(":"),
         separated_list_complete!(
             tag!(":"),
             map!(
                 take_until!(":"),
-                |s: CompleteStr| String::from(*s)
+                |i: OrgInput| String::from(*i)
             )
         ),
         tag!(":")
     ))
-);
+}
 
-named!(#[doc = "
-Parses a section.
-
-Currently just takes all input until a new headline begins.
-"],
-section<CompleteStr, Section, Error>,
-    to_failure!(map!(
+/// Parses a section.
+///
+/// Currently just takes all input until a new headline begins.
+fn section(i: OrgInput) -> OrgResult<Section> {
+    to_failure!(i, map!(
         // TODO maybe matching \n* is not the best,
         take_until_or_eof!("\n*"),
-        |s: CompleteStr| Section::new(*s)
+        |i: OrgInput| Section::new(*i)
     ))
-);
+}
 
-named!(#[doc = "
-Parses a planning line. (optional line directly under the headline)
-"],
-planning<CompleteStr, Planning, Error>,
-    map_res!(
+/// Parses a planning line. (optional line directly under the headline)
+fn planning(i: OrgInput) -> OrgResult<Planning> {
+    map_opt!(
+        i,
         permutation!(
             opt!(delimited!(
                 to_failure!(tag!("DEADLINE: ")),
@@ -209,59 +195,55 @@ planning<CompleteStr, Planning, Error>,
         ),
         to_planning
     )
-);
+}
 
 /// Converts a deadline, scheduled and closed timestamp (all optional) to a [`Planning`] object.
 fn to_planning(
     (deadline, scheduled, closed): (Option<Timestamp>, Option<Timestamp>, Option<Timestamp>),
-) -> Result<Planning, ()> {
+) -> Option<Planning> {
     if deadline.is_none() && scheduled.is_none() && closed.is_none() {
-        Err(())
+        None
     } else {
-        Ok(Planning::default()
+        Some(Planning::default()
             .and_opt_deadline(deadline)
             .and_opt_scheduled(scheduled)
             .and_opt_closed(closed))
     }
 }
 
-named!(#[doc = "
-Parses a property drawer with node properties.
-
-TODO (for later) make this recognize an indented property drawer
-"],
-property_drawer<CompleteStr, PropertyDrawer, Error>,
-    do_parse!(
+/// Parses a property drawer with node properties.
+///
+/// TODO (for later) make this recognize an indented property drawer
+fn property_drawer(i: OrgInput) -> OrgResult<PropertyDrawer> {
+    do_parse!(i,
         to_failure!(tag!(":PROPERTIES:\n")) >>
         list: opt!(separated_list!(to_failure!(tag!("\n")), node_property)) >>
         to_failure!(opt!(tag!("\n"))) >>
         to_failure!(tag!(":END:")) >>
         (PropertyDrawer::new(list.unwrap_or_default()))
     )
-);
+}
 
-named!(#[doc = "
-Parses a single node property of a property drawer.
-
-Can be of the following formats:
-
-- `:NAME: VALUE`
-- `:NAME+: VALUE`
-- `:NAME:`
-- `:NAME+:`
-
-**Note:** `NAME` can't be `END`.
-"],
-node_property<CompleteStr, NodeProperty, Error>,
-    to_failure!(do_parse!(
+/// Parses a single node property of a property drawer.
+///
+/// Can be of the following formats:
+///
+/// - `:NAME: VALUE`
+/// - `:NAME+: VALUE`
+/// - `:NAME:`
+/// - `:NAME+:`
+///
+/// **Note:** `NAME` can't be `END`.
+fn node_property(i: OrgInput) -> OrgResult<NodeProperty> {
+    to_failure!(i, do_parse!(
         name: verify!(
             delimited!(tag!(":"), take_while!(|c| c != ':'), tag!(":")),
-            |name: CompleteStr| *name != "END"
+            |name: OrgInput| *name != "END"
         ) >>
         value: opt!(preceded!(tag!(" "), take_while!(|c| c != '\n'))) >>
         (to_node_property(*name, value.map(|v| *v)))
     ))
-);
+}
 
 /// Converts a name and optional value to a [`NodeProperty`].
 fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
@@ -279,37 +261,35 @@ fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
     }
 }
 
-named!(#[doc = "
-Parses a complete headline.
-
-Has the format:
-
-```text
-AFFILIATED_KEYWORDS
-STARS KEYWORD PRIORITY TITLE TAGS
-PLANNING
-PROPERTY_DRAWER
-SECTION
-```
-
-Where `KEYWORD`, `PRIORITY`, `TAGS`, `PLANNING`, `PROPERTY_DRAWER` and `SECTION` are optional.
-
-`TAGS` is not yet implemented.
-
-For the formats of the items see:
-
-- `AFFILIATED_KEYWORDS`: [`affiliated_keyword`]
-- `STARS`: [`level`]
-- `KEYWORD`: [`keyword`]
-- `PRIORITY`: [`priority`]
-- `TITLE`: [`title`]
-- `TAGS`: [`tags`]
-- `PLANNING`: [`planning`]
-- `PROPERTY_DRAWER`: [`property_drawer`]
-- `SECTION`: [`section`]
-"],
-pub headline<CompleteStr, Headline, Error>,
-    to_failure!(do_parse!(
+/// Parses a complete headline.
+///
+/// Has the format:
+///
+/// ```text
+/// AFFILIATED_KEYWORDS
+/// STARS KEYWORD PRIORITY TITLE TAGS
+/// PLANNING
+/// PROPERTY_DRAWER
+/// SECTION
+/// ```
+///
+/// Where `KEYWORD`, `PRIORITY`, `TAGS`, `PLANNING`, `PROPERTY_DRAWER` and `SECTION` are optional.
+///
+/// `TAGS` is not yet implemented.
+///
+/// For the formats of the items see:
+///
+/// - `AFFILIATED_KEYWORDS`: [`affiliated_keywords`]
+/// - `STARS`: [`level`]
+/// - `KEYWORD`: [`keyword`]
+/// - `PRIORITY`: [`priority`]
+/// - `TITLE`: [`title`]
+/// - `TAGS`: [`tags`]
+/// - `PLANNING`: [`planning`]
+/// - `PROPERTY_DRAWER`: [`property_drawer`]
+/// - `SECTION`: [`section`]
+pub fn headline(i: OrgInput) -> OrgResult<Headline> {
+    to_failure!(i, do_parse!(
         affiliated_keywords: opt!(terminated!(
             affiliated_keywords,
             to_failure!(tag!("\n"))
@@ -353,7 +333,7 @@ pub headline<CompleteStr, Headline, Error>,
                 .and_opt_section(section.filter(|section| !section.is_empty()))
         )
     ))
-);
+}
 
 #[cfg(test)]
 mod tests {
@@ -718,19 +698,19 @@ mod tests {
         use chrono::NaiveDate;
         assert_eq!(
             to_planning((None, None, None)),
-            Err(())
+            None
         );
         assert_eq!(
             to_planning((Some(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))), None, None)),
-            Ok(Planning::default().and_deadline(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
+            Some(Planning::default().and_deadline(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
         );
         assert_eq!(
             to_planning((None, Some(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))), None)),
-            Ok(Planning::default().and_scheduled(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
+            Some(Planning::default().and_scheduled(Timestamp::Active(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
         );
         assert_eq!(
             to_planning((None, None, Some(Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))),
-            Ok(Planning::default().and_closed(Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
+            Some(Planning::default().and_closed(Timestamp::Inactive(TimestampData::new(NaiveDate::from_ymd(2018, 08, 25)))))
         );
     }
 }
