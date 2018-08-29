@@ -290,47 +290,47 @@ pub fn headline(i: OrgInput) -> OrgResult<Headline> {
         i,
         do_parse!(
             affiliated_keywords: opt!(terminated!(
-            affiliated_keywords,
-            to_failure!(tag!("\n"))
-        )) >>
-        level: level >>
-        keyword: opt!(preceded!(
-            to_failure!(tag!(" ")),
-            keyword
-        )) >>
-        priority: opt!(preceded!(
-            to_failure!(tag!(" ")),
-            priority
-        )) >>
-        to_failure!(tag!(" ")) >>
-        title: title >>
-        tags: opt!(preceded!(
-            to_failure!(tag!(" ")),
-            tags
-        )) >>
-        planning: opt!(preceded!(
-            to_failure!(tag!("\n")),
-            planning
-        )) >>
-        property_drawer: opt!(preceded!(
-            to_failure!(tag!("\n")),
-            property_drawer
-        )) >>
-        section: opt!(preceded!(
-            to_failure!(tag!("\n")),
-            section
-        )) >>
-        //to_failure!(opt!(tag!("\n"))) >>
-        (
-            Headline::new(level, title)
-                .and_affiliated_keywords(affiliated_keywords.unwrap_or_default())
-                .and_opt_keyword(keyword)
-                .and_opt_priority(priority)
-                .and_opt_tags(tags)
-                .and_planning(planning.unwrap_or_default())
-                .and_property_drawer(property_drawer.unwrap_or_default())
-                .and_opt_section(section.filter(|section| !section.is_empty()))
-        )
+                affiliated_keywords,
+                to_failure!(tag!("\n"))
+            )) >>
+            level: level >>
+            keyword: opt!(preceded!(
+                to_failure!(tag!(" ")),
+                keyword
+            )) >>
+            priority: opt!(preceded!(
+                to_failure!(tag!(" ")),
+                priority
+            )) >>
+            to_failure!(tag!(" ")) >>
+            title: title >>
+            tags: opt!(preceded!(
+                to_failure!(tag!(" ")),
+                tags
+            )) >>
+            planning: opt!(preceded!(
+                to_failure!(tag!("\n")),
+                planning
+            )) >>
+            property_drawer: opt!(preceded!(
+                to_failure!(tag!("\n")),
+                property_drawer
+            )) >>
+            section: opt!(preceded!(
+                to_failure!(tag!("\n")),
+                section
+            )) >>
+            //to_failure!(opt!(tag!("\n"))) >>
+            (
+                Headline::new(level, title)
+                    .and_affiliated_keywords(affiliated_keywords.unwrap_or_default())
+                    .and_opt_keyword(keyword)
+                    .and_opt_priority(priority)
+                    .and_opt_tags(tags)
+                    .and_planning(planning.unwrap_or_default())
+                    .and_property_drawer(property_drawer.unwrap_or_default())
+                    .and_opt_section(section.filter(|section| !section.is_empty()))
+            )
         )
     )
 }
