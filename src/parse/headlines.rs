@@ -342,6 +342,38 @@ mod tests {
     use {AffiliatedKeyword, AffiliatedKeywordKind, AffiliatedKeywordValue, TimestampData};
 
     #[test]
+    fn test_headline_with_planning() {
+        use chrono::{NaiveDate, NaiveTime};
+        use TimestampData;
+
+        assert_eq!(
+            headline(CompleteStr("* Headline\nSCHEDULED: <2018-06-30 12:55>")).ok(),
+            Some((
+                CompleteStr(""),
+                Headline::new(1, "Headline").and_planning(
+                    Planning::new().and_scheduled(Timestamp::Active(
+                        TimestampData::new(NaiveDate::from_ymd(2018, 06, 30))
+                            .and_time(NaiveTime::from_hms(12, 55, 0))
+                    ))
+                )
+            ))
+        );
+    }
+
+    #[test]
+    fn test_headline_with_property_drawer() {
+        assert_eq!(
+            headline(CompleteStr("* Headline\n:PROPERTIES:\n:test_name:\n:END:")).ok(),
+            Some((
+                CompleteStr(""),
+                Headline::new(1, "Headline").and_property_drawer(PropertyDrawer::new(vec![
+                    NodeProperty::Key("test_name".to_string())
+                ]))
+            ))
+        );
+    }
+
+    #[test]
     fn test_headline_with_affiliated_keywords() {
         assert_eq!(
             headline(CompleteStr("#+CAPTION: some caption\n* Headline")).ok(),
@@ -405,15 +437,6 @@ mod tests {
             ))
         );
         assert_eq!(
-            headline(CompleteStr("* Headline\n:PROPERTIES:\n:test_name:\n:END:")).ok(),
-            Some((
-                CompleteStr(""),
-                Headline::new(1, "Headline").and_property_drawer(PropertyDrawer::new(vec![
-                    NodeProperty::Key("test_name".to_string())
-                ]))
-            ))
-        );
-        assert_eq!(
             headline(CompleteStr(
                 "* TODO [#A] Headline with keyword and priority :tag1:tag2:"
             )).ok(),
@@ -423,6 +446,17 @@ mod tests {
                     .and_priority(Priority::A)
                     .and_keyword(State::Todo("TODO".into()))
                     .and_tags(vec!["tag1".into(), "tag2".into()])
+            ))
+        );
+    }
+
+    #[test]
+    fn test_two_headlines() {
+        assert_eq!(
+            headline(CompleteStr("* Headline\nSection after\n* Next headline")).ok(),
+            Some((
+                CompleteStr("\n* Next headline"),
+                Headline::new(1, "Headline").and_section("Section after")
             ))
         );
     }
