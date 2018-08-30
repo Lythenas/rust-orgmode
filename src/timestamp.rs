@@ -259,9 +259,11 @@ impl From<NaiveTime> for Time {
 }
 
 /// Represents a timestamp in an org file. The variants are the same
-/// mentioned in [https://orgmode.org/worg/dev/org-syntax.html#Timestamp].
+/// mentioned in the [Org Syntax][org].
 ///
 /// The diary variant is not implemented.
+///
+/// [org]: https://orgmode.org/worg/dev/org-syntax.html#Timestamp
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Timestamp {
     //Diary,

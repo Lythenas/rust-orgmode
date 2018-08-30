@@ -20,7 +20,6 @@ mod timestamp;
 use failure::Error;
 use std::str::FromStr;
 
-pub use parse::*;
 pub use timestamp::*;
 
 /// Represents an org file.
@@ -69,6 +68,9 @@ impl FromStr for OrgFile {
     }
 }
 
+/// Represents a keyword in an org file.
+///
+/// TODO if keyword belongs to document properties it's value can contain objects.
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct Keyword {
     key: String,
@@ -186,11 +188,12 @@ impl Headline {
     }
 }
 
+/// Property drawer contains properties for a [`Headline`].
 #[derive(Debug, PartialEq, Eq, Default)]
-pub struct PropertyDrawer(Vec<NodeProperty>);
+pub struct PropertyDrawer(Vec<Property>);
 
 impl PropertyDrawer {
-    pub fn new(vec: Vec<NodeProperty>) -> Self {
+    pub fn new(vec: Vec<Property>) -> Self {
         PropertyDrawer(vec)
     }
     pub fn empty() -> Self {
@@ -198,14 +201,18 @@ impl PropertyDrawer {
     }
 }
 
+/// A property of a [`PropertyDrawer`].
 #[derive(Debug, PartialEq, Eq)]
-pub enum NodeProperty {
+pub enum Property {
     KeyValue(String, String),
     KeyPlusValue(String, String),
     Key(String),
     KeyPlus(String),
 }
 
+/// Planning information for a headline.
+///
+/// Contains the deadline, scheduled and closed [`Timestamp`]s.
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct Planning {
     deadline: Option<Timestamp>,
@@ -241,8 +248,9 @@ impl Planning {
     }
 }
 
-/// This represents a section in a org file. A section is the text, tables, etc. after a headline
-/// but before the next headline.
+/// This represents a section in a org file.
+///
+/// A section is the text, tables, etc. after a headline but before the next headline.
 ///
 /// **Note:** Currently this is only a [`String`] but in the future it will contain more fine
 /// grained parsed elements.
@@ -267,14 +275,18 @@ where
     }
 }
 
-/// The state of a [`Headline`]. Can be eighter `Todo` or `Done`. The enum variants accept an
-/// additional string because the actual keyword signaling the state of the `OrgNode` can be
-/// anything.
+/// The state of a [`Headline`].
 ///
-/// `TODO` and `NEXT` will be parsed as `State::Todo` and `DONE` will be parsed as `State::Done`.
+/// The enum variants accept an additional string because the actual keyword
+/// signaling the state of the [`Headline`] can be configured (defaults are
+/// listed below).
+///
+/// **Note**: Currently only the default keywords are accepted.
 #[derive(Debug, PartialEq, Eq)]
 pub enum State {
+    /// Default keywords: `TODO` and `NEXT`
     Todo(String),
+    /// Default keyword: `DONE`
     Done(String),
 }
 

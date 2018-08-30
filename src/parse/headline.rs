@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 
 use parse::{affiliated_keywords, timestamp, OrgInput, OrgResult};
-use {Headline, NodeProperty, Planning, Priority, PropertyDrawer, Section, State, Timestamp};
+use {Headline, Property, Planning, Priority, PropertyDrawer, Section, State, Timestamp};
 
 /// Parses the stars at the beginning of the line to their count.
 fn level(i: OrgInput) -> OrgResult<u8> {
@@ -229,7 +229,7 @@ fn property_drawer(i: OrgInput) -> OrgResult<PropertyDrawer> {
 /// - `:NAME+:`
 ///
 /// **Note:** `NAME` can't be `END`.
-fn node_property(i: OrgInput) -> OrgResult<NodeProperty> {
+fn node_property(i: OrgInput) -> OrgResult<Property> {
     to_failure!(
         i,
         do_parse!(
@@ -242,18 +242,18 @@ fn node_property(i: OrgInput) -> OrgResult<NodeProperty> {
     )
 }
 
-/// Converts a name and optional value to a [`NodeProperty`].
-fn to_node_property(name: &str, value: Option<&str>) -> NodeProperty {
+/// Converts a name and optional value to a [`Property`].
+fn to_node_property(name: &str, value: Option<&str>) -> Property {
     match value {
         Some(value) if !value.is_empty() => if name.ends_with('+') {
-            NodeProperty::KeyPlusValue(name[..name.len() - 1].to_string(), value.to_string())
+            Property::KeyPlusValue(name[..name.len() - 1].to_string(), value.to_string())
         } else {
-            NodeProperty::KeyValue(name.to_string(), value.to_string())
+            Property::KeyValue(name.to_string(), value.to_string())
         },
         None | Some(_) => if name.ends_with('+') {
-            NodeProperty::KeyPlus(name[..name.len() - 1].to_string())
+            Property::KeyPlus(name[..name.len() - 1].to_string())
         } else {
-            NodeProperty::Key(name.to_string())
+            Property::Key(name.to_string())
         },
     }
 }
@@ -367,7 +367,7 @@ mod tests {
             Some((
                 CompleteStr(""),
                 Headline::new(1, "Headline").and_property_drawer(PropertyDrawer::new(vec![
-                    NodeProperty::Key("test_name".to_string())
+                    Property::Key("test_name".to_string())
                 ]))
             ))
         );
@@ -471,7 +471,7 @@ mod tests {
             property_drawer(CompleteStr(":PROPERTIES:\n:test_name:\n:END:")).ok(),
             Some((
                 CompleteStr(""),
-                PropertyDrawer::new(vec![NodeProperty::Key("test_name".to_string())])
+                PropertyDrawer::new(vec![Property::Key("test_name".to_string())])
             ))
         );
     }
@@ -482,26 +482,26 @@ mod tests {
             node_property(CompleteStr(":some_name: some value")).ok(),
             Some((
                 CompleteStr(""),
-                NodeProperty::KeyValue("some_name".to_string(), "some value".to_string())
+                Property::KeyValue("some_name".to_string(), "some value".to_string())
             ))
         );
         assert_eq!(
             node_property(CompleteStr(":some_name+: some value")).ok(),
             Some((
                 CompleteStr(""),
-                NodeProperty::KeyPlusValue("some_name".to_string(), "some value".to_string())
+                Property::KeyPlusValue("some_name".to_string(), "some value".to_string())
             ))
         );
         assert_eq!(
             node_property(CompleteStr(":some_name+:")).ok(),
             Some((
                 CompleteStr(""),
-                NodeProperty::KeyPlus("some_name".to_string())
+                Property::KeyPlus("some_name".to_string())
             ))
         );
         assert_eq!(
             node_property(CompleteStr(":some_name:")).ok(),
-            Some((CompleteStr(""), NodeProperty::Key("some_name".to_string())))
+            Some((CompleteStr(""), Property::Key("some_name".to_string())))
         );
     }
 
@@ -695,19 +695,19 @@ mod tests {
     fn test_to_node_property() {
         assert_eq!(
             to_node_property("test_name", None),
-            NodeProperty::Key("test_name".to_string())
+            Property::Key("test_name".to_string())
         );
         assert_eq!(
             to_node_property("test_name+", None),
-            NodeProperty::KeyPlus("test_name".to_string())
+            Property::KeyPlus("test_name".to_string())
         );
         assert_eq!(
             to_node_property("test_name", Some("test_value")),
-            NodeProperty::KeyValue("test_name".to_string(), "test_value".to_string())
+            Property::KeyValue("test_name".to_string(), "test_value".to_string())
         );
         assert_eq!(
             to_node_property("test_name+", Some("test_value")),
-            NodeProperty::KeyPlusValue("test_name".to_string(), "test_value".to_string())
+            Property::KeyPlusValue("test_name".to_string(), "test_value".to_string())
         );
     }
 

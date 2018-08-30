@@ -1,3 +1,5 @@
+//! Contains all the parsers for org files and parts of it.
+
 use failure::Error;
 use nom::types::CompleteStr;
 use nom::IResult;
