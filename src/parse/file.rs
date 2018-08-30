@@ -1,3 +1,4 @@
+use parse::elements::keywords;
 use parse::{headline, section, OrgInput, OrgResult};
 use {Headline, OrgFile};
 
@@ -8,12 +9,15 @@ pub fn file(i: OrgInput) -> OrgResult<OrgFile> {
     to_failure!(
         i,
         do_parse!(
-            // TODO keywords/metadata at the start of the file
-            section: opt!(section)
+            // TODO (low priority) save the emacs settings
+            to_failure!(opt!(preceded!(tag!("# "), take_until_and_consume!("\n")))) >>
+            keywords: keywords
+                >> to_failure!(opt!(tag!("\n")))
+                >> section: opt!(section)
                 >> to_failure!(opt!(tag!("\n")))
                 >> headlines: separated_list!(to_failure!(tag!("\n")), headline)
                 >> (OrgFile::new(
-                    Vec::new(),
+                    keywords,
                     section.unwrap_or_default(),
                     fix_structure(headlines)
                 ))
@@ -77,6 +81,67 @@ mod tests {
 ** Heading 1.3
 * Heading 2
 * Heading 3";
+        assert_eq!(
+            file(CompleteStr(input)).ok(),
+            Some((
+                CompleteStr(""),
+                OrgFile::new(
+                    Vec::new(),
+                    Section::new(""),
+                    vec![
+                        Headline::new(1, "Heading 1").and_sub_headlines(vec![
+                            Headline::new(2, "Heading 1.1"),
+                            Headline::new(2, "Heading 1.2"),
+                            Headline::new(2, "Heading 1.3"),
+                        ]),
+                        Headline::new(1, "Heading 2"),
+                        Headline::new(1, "Heading 3"),
+                    ]
+                )
+            ))
+        );
+    }
+
+    #[test]
+    fn test_simple_file_with_keywords() {
+        use Keyword;
+        let input = "#+TITLE: Simple file
+* Heading 1
+** Heading 1.1
+** Heading 1.2
+** Heading 1.3
+* Heading 2
+* Heading 3";
+        assert_eq!(
+            file(CompleteStr(input)).ok(),
+            Some((
+                CompleteStr(""),
+                OrgFile::new(
+                    vec![Keyword::new("TITLE", "Simple file")],
+                    Section::new(""),
+                    vec![
+                        Headline::new(1, "Heading 1").and_sub_headlines(vec![
+                            Headline::new(2, "Heading 1.1"),
+                            Headline::new(2, "Heading 1.2"),
+                            Headline::new(2, "Heading 1.3"),
+                        ]),
+                        Headline::new(1, "Heading 2"),
+                        Headline::new(1, "Heading 3"),
+                    ]
+                )
+            ))
+        );
+    }
+
+    #[test]
+    fn test_simple_file_with_emacs_settings() {
+        let input = r#"# -*- foo: "bar"; baz: "ham" -*-
+* Heading 1
+** Heading 1.1
+** Heading 1.2
+** Heading 1.3
+* Heading 2
+* Heading 3"#;
         assert_eq!(
             file(CompleteStr(input)).ok(),
             Some((

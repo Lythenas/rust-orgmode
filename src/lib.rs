@@ -77,6 +77,15 @@ pub struct Keyword {
     value: String,
 }
 
+impl Keyword {
+    pub fn new(key: impl Into<String>, value: impl Into<String>) -> Self {
+        Keyword {
+            key: key.into(),
+            value: value.into(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum OrgParseError {
     TooMuchInput(String),

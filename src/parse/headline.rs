@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 
 use parse::{affiliated_keywords, timestamp, OrgInput, OrgResult};
-use {Headline, Property, Planning, Priority, PropertyDrawer, Section, State, Timestamp};
+use {Headline, Planning, Priority, Property, PropertyDrawer, Section, State, Timestamp};
 
 /// Parses the stars at the beginning of the line to their count.
 fn level(i: OrgInput) -> OrgResult<u8> {
@@ -494,10 +494,7 @@ mod tests {
         );
         assert_eq!(
             node_property(CompleteStr(":some_name+:")).ok(),
-            Some((
-                CompleteStr(""),
-                Property::KeyPlus("some_name".to_string())
-            ))
+            Some((CompleteStr(""), Property::KeyPlus("some_name".to_string())))
         );
         assert_eq!(
             node_property(CompleteStr(":some_name:")).ok(),

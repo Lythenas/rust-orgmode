@@ -9,7 +9,7 @@ mod affiliated_keywords;
 mod file;
 mod headline;
 //mod greater_elements;
-//mod elements;
+mod elements;
 //mod objects;
 
 mod timestamp;
