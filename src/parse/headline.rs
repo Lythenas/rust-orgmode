@@ -5,8 +5,7 @@ use {Headline, Planning, Priority, Property, PropertyDrawer, Section, State, Tim
 fn level(i: OrgInput) -> OrgResult<usize> {
     to_failure!(
         i,
-        map!(take_while1!(|c| c == '*'), |s: OrgInput| (*s)
-            .len())
+        map!(take_while1!(|c| c == '*'), |s: OrgInput| (*s).len())
     )
 }
 
@@ -273,7 +272,7 @@ fn to_node_property(name: &str, value: Option<&str>) -> Property {
 ///
 /// For the formats of the items see:
 ///
-/// - `AFFILIATED_KEYWORDS`: [`affiliated_keywords`]
+/// - `AFFILIATED_KEYWORDS`: [`affiliated_keywords()`]
 /// - `STARS`: [`level`]
 /// - `KEYWORD`: [`keyword`]
 /// - `PRIORITY`: [`priority`]

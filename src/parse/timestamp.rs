@@ -4,7 +4,10 @@ use nom::types::CompleteStr;
 use parse::{OrgInput, OrgResult};
 use std::fmt;
 use std::str::{self, FromStr};
-use timestamp::{Date, *};
+use {
+    Date, RepeatStrategy, Repeater, Time, TimePeriod, TimeUnit, Timestamp, TimestampData,
+    TimestampDataWithTime, TimestampRange, WarningDelay, WarningStrategy,
+};
 
 // TODO add better error returns to the parsers.
 // e.g. with return_error! or add_return_error!.
@@ -526,6 +529,7 @@ mod tests {
 
     mod timestamp {
         use super::*;
+        use AsTimePeriod;
 
         #[test]
         fn date_only() {

@@ -10,8 +10,8 @@ pub fn file(i: OrgInput) -> OrgResult<OrgFile> {
         i,
         do_parse!(
             // TODO (low priority) save the emacs settings
-            to_failure!(opt!(preceded!(tag!("# "), take_until_and_consume!("\n")))) >>
-            keywords: keywords
+            to_failure!(opt!(preceded!(tag!("# "), take_until_and_consume!("\n"))))
+                >> keywords: keywords
                 >> to_failure!(opt!(tag!("\n")))
                 >> section: opt!(section)
                 >> to_failure!(opt!(tag!("\n")))
