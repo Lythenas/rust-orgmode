@@ -1,5 +1,7 @@
 # Orgmode
 
+[![Build Status](https://travis-ci.org/Lythenas/rust-orgmode.svg?branch=master)](https://travis-ci.org/Lythenas/rust-orgmode)
+
 A rust library for parsing [org files](https://orgmode.org/).
 
 **This library is currently not usable as not all necessary functions are implemented.**
