@@ -1,15 +1,12 @@
-use std::convert::TryInto;
-
 use parse::{affiliated_keywords, timestamp, OrgInput, OrgResult};
 use {Headline, Planning, Priority, Property, PropertyDrawer, Section, State, Timestamp};
 
 /// Parses the stars at the beginning of the line to their count.
-fn level(i: OrgInput) -> OrgResult<u8> {
+fn level(i: OrgInput) -> OrgResult<usize> {
     to_failure!(
         i,
-        map_res!(take_while1!(|c| c == '*'), |s: OrgInput| (*s)
-            .len()
-            .try_into())
+        map!(take_while1!(|c| c == '*'), |s: OrgInput| (*s)
+            .len())
     )
 }
 

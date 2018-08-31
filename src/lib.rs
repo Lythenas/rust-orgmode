@@ -1,6 +1,3 @@
-#![feature(try_from)]
-#![feature(trace_macros)]
-
 extern crate chrono;
 #[macro_use]
 extern crate nom;
@@ -112,7 +109,7 @@ pub enum OrgParseError {
 /// that are (at least?) one level deeper.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Headline {
-    level: u8,
+    level: usize,
     keyword: Option<State>,
     priority: Option<Priority>,
     title: String,
@@ -126,7 +123,7 @@ pub struct Headline {
 }
 
 impl Headline {
-    pub fn new(level: u8, title: impl Into<String>) -> Self {
+    pub fn new(level: usize, title: impl Into<String>) -> Self {
         let title = title.into();
         Headline {
             level,
@@ -188,7 +185,7 @@ impl Headline {
         }
     }
 
-    pub fn level(&self) -> u8 {
+    pub fn level(&self) -> usize {
         self.level
     }
 
