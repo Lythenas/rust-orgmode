@@ -1,5 +1,5 @@
 This is a summary of
-[[https://orgmode.org/worg/exporters/org-element-docstrings.html]].
+[[https://orgmode.org/worg/exporters/org-element-docstrings.html]] and [[https://orgmode.org/worg/dev/org-syntax.html]].
 
 * Shared behavior
 
@@ -19,13 +19,17 @@ Greater elements and elements accepting affiliated keywords have:
 
 - ~post-affiliated~ :: refers to the position after all such keywords
 
+* Syntax
+
+Except where mentioned capitalization of the syntax is ignored.
+
 * Elements
 
 Elements describe the structure of an org file.
 
 Most elements can contain objects and/or plain text.
 
-Most elements start and end at the beginning of a line. Exceptions are:
+Except the following all elements start and end at the beginning of a line:
 
 - Clock
 - Headline
@@ -37,18 +41,6 @@ Most elements start and end at the beginning of a line. Exceptions are:
 - Section
 - Table row
 
-The following elements are blocks:
-
-- Center block (~CENTER~)
-- Comment block (~COMMENT~)
-- Example block (~EXAMPLE~)
-- Quote block (~QUOTE~)
-- Src block (~SRC~)
-- Verse block (~VERSE~)
-- Special block
-- Export block
-- Dynamic block
-
 Elements accept a fixed set of keywords as attributes. These are called
 affiliated keywords (not to be confused with regular keywords which are
 actual elements).
@@ -56,25 +48,292 @@ actual elements).
 Some elements have special properties whose value can hold objects
 themselves. These values are called *secondary strings*.
 
+** Blocks
+
+- Center block (~CENTER~)
+- Comment block (~COMMENT~)
+- Dynamic block
+- Example block (~EXAMPLE~)
+- Export block (~EXPORT~)
+- Quote block (~QUOTE~)
+- Special block
+- Src block (~SRC~)
+- Verse block (~VERSE~)
+
+*** Syntax
+
+Except for dynamic blocks they follow this syntax:
+
+#+BLOCK_SRC org
+  #+BEGIN_NAME PARAMETERS
+  CONTENTS
+  #+END_NAME
+#+END_SRC
+
+~NAME~ can contain any non-whitespace character. Name determines the type of
+the block. If name is none of the above mentioned it is a special block.
+
+~PARAMETER~ can contain any character other than new line and can be omitted.
+
+~CONTENTS~ can contain any elements except a line ~#+END_NAME~ on its own.
+Lines beginning with stars must be quoted by a comma.
+
 ** Babel call
 ** Center block
+
+*** Syntax
+
+See syntax for blocks.
+
+*** Properties
+
+- begin
+- end
+- hiddenp
+- contents-begin
+- contents-end
+- post-blank
+- post-affiliated
+- and all affiliated keywords
+
 ** Clock
 ** Comment
 ** Comment block
 ** Diary sexp
 ** Drawer
+
+*** Syntax
+
+#+BEGIN_SRC org
+  :NAME:
+  CONTENTS
+  :END:
+#+END_SRC
+
+~NAME~ can contain word-constituent characters, hyphens and underscores.
+
+~CONTENTS~ can contain any element but another drawer.
+
+*** Properties
+
+- drawer-name
+- begin
+- end
+- hiddenp
+- contents-begin
+- contents-end
+- post-blank
+- post-affiliated
+- and all affiliated keywords
+
 ** Dynamic block
+
+*** Syntax
+
+#+BEGIN_SRC org
+  #+BEGIN: NAME PARAMETERS
+  CONTENTS
+  #+END:
+#+END_SRC
+
+~NAME~ cannot contain any whitespace characters.
+
+~PARAMETERS~ can contain any character and can be omitted.
+
+The ~:~ after ~END~ should be present but it is still parsed if it is
+missing.
+
+*** Properties
+
+- block-name
+- begin
+- end
+- hiddenp
+- contents-begin
+- contents-end
+- arguments
+- post-blank
+- post-affiliated
+- and all affiliated keywords
+
 ** Example block
 ** Export block
 ** Fixed width
 ** Footnote definition
+
+*** Syntax
+
+#+BEGIN_SRC org
+  [LABEL] CONTENTS
+#+END_SRC
+
+~LABEL~ is either a number or follows the pattern ~fn:WORD~, where ~WORD~ can
+contain any word-constituent character, hyphens and underscore characters.
+
+~CONTENTS~ can contain any element except another footnote definition. It
+ends at the next footnote definition, headline, two consecutive empty lines
+or the end of buffer.
+
+*** Properties
+
+- label
+- begin
+- end
+- contents-begin
+- contents-end
+- pre-blank: blank lines after ~[LABEL]~
+- post-blank
+- post-affiliated
+- and all affiliated keywords
+
 ** Headline
+
 Can contain the standard set of objects without line breaks in its /title/.
+
+*** Syntax
+
+#+BEGIN_SRC
+  STARS KEYWORD PRIORITY TITLE TAGS
+#+END_SRC
+
+~STARS~ is a string starting at column 0, containing at least one asterisk.
+This is used to define the level of the headline. This is the only required
+part of a headline. If other syntax follows there has to be a single space
+(or tab) after the stars.
+
+~KEYWORD~ is a todo keyword. Case is significant. If other syntax follows there has to be a single
+space (or tab) after keyword.
+
+~PRIORITY~ is a priority cookie of the form: ~[#A]~ where ~A~ can be any
+letter. Capital letters are recommended.
+
+~TITLE~ can be made of any character but a new line. If the first word in
+~TITLE~ is ~COMMENT~, the headline will be considered as /commented/. Case is
+significant. If ~TITLE~ is ~org-footnote-section~, it will be considered as a
+footnote section. Case is significant.
+
+~TAGS~ is made of words containing any alpha-numeric character, underscore,
+at sign, hash sign or percent sign. Tags are separated and surrounded by
+~:~s. If ~TAGS~ contains the ~ARCHIVE~ tag, it will be considered /archived/.
+Case is significant. There can be an arbitrary amount of whitespace (except
+newlines) between title and tags. But tags are usually right aligned at a
+specified column.
+
+*** Properties
+
+- raw-value
+- title
+- alt-title
+- begin
+- end
+- pre-blank: blank lines before the content starts
+- post-blank
+- hiddenp
+- contents-begin
+- contents-end
+- level
+- priority
+- tags
+- todo-keyword
+- todo-type
+- scheduled
+- deadline
+- closed
+- quotedp
+- archivedp
+- commentedp
+- footnote-section-p
+- and all properties (names in upper case) of the property drawer
+- post-affiliated
+
 ** Horizontal rule
 ** Inlinetask
+
 Can contain the standard set of objects without line breaks in its /title/.
+
+*** Syntax
+
+Same syntax as /headline/ but starts with at least /org-inlinetask-min-level/
+asterisks.
+
+Inline tasks can be ended with a line of /org-inlinetask-min-kevek/
+asterisk characters (should be starting at column 0 but this is not strictly
+required), followed by a sapce and the ~END~ string.
+
+*** Properties
+
+- raw-value
+- title
+- begin
+- end
+- pre-blank: blank lines before the content starts
+- post-blank
+- hiddenp
+- contents-begin
+- contents-end
+- level
+- priority
+- tags
+- todo-keyword
+- todo-type
+- scheduled
+- deadline
+- closed
+- post-blank
+- and all properties (names in upper case) of the property drawer
+- post-affiliated
+
 ** Item
+
 Can contain the standard set of objects without line breaks in its /tag/.
+
+*** Syntax
+
+#+BEGIN_SRC org
+  BULLET COUNTER-SET CHECKBOX TAG
+#+END_SRC
+
+Only ~BULLET~ is required. ~BULLET~ is either an asterisk, a hyphen, a plus
+sign (for unordered lists) or follows the pattern ~COUNTER.~ or ~COUNTER)~
+(for ordered lists). ~BULLET~ is always followed by a whitespace character
+(or line ending).
+
+~COUNTER~ is a number or a single letter.
+
+~COUNTER-SET~ follows the pattern ~[@COUNTER]~.
+
+~CHECKBOX~ is either a single whitespace character, a ~X~ or a hyphen. It is
+enclosed in squeare brackets.
+
+~TAG~ follows the pattern ~TAG-TEXT ::~ where ~TAG-TEXT~ can contain any
+character except a new line.
+
+An item ends before the next item, the first line that is less or equally
+indented than its starting line, or two consecutive empty lines. Indentation
+of lines within other greater elements including inlinetask boundaries are ignored.
+
+A *plain list* is a set of consecutive items of the same indentation. It can
+only directly contain items.
+
+If the first item in a plain list has a ~COUNTER~ in its ~BULLET~ the plain
+list will be an *ordered plain list*. If it contains a tag, it will be a
+*descriptive list*. Otherwise it will be an *unordered list*.
+
+*** Properties
+
+- bullet
+- begin
+- end
+- contents-begin
+- contents-end
+- checkbox: either off (space), on (X) or trans (-)
+- counter
+- tag
+- structure
+- hiddenp
+- post-blank
+- post-affiliated
+
 ** Keyword
 Can contain the standard set of objects
 ** Latex environment
@@ -82,8 +341,28 @@ Can contain the standard set of objects
 ** Paragraph
 Can contain the standard set of objects
 ** Plain list
+
+*** Syntax
+
+See /item/.
+
+*** Properties
+
+- type
+- begin
+- end
+- contents-begin
+- contents-end
+- structure
+- post-blank
+- post-affiliated
+- and all affiliated keywords
+
 ** Planning
 ** Property drawer
+
+
+
 ** Quote block
 ** Quote section
 ** Section
@@ -111,6 +390,9 @@ Elements containing other elements are called greater elements. These are:
 - Quote block
 - Section
 - Special block
+
+With the exception of headline and item greater elements can not contain
+greater elements of the same type.
 
 
 * Objects
