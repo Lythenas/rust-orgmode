@@ -1,0 +1,278 @@
+This is a summary of
+[[https://orgmode.org/worg/exporters/org-element-docstrings.html]].
+
+* Shared behavior
+
+Each greater element, element and object has a fixed set of properties
+attached to it. The following are shared by all types:
+
+- ~begin~ and ~end~ :: refer to the beginning and ending position of the element
+  or object
+- ~post-blank~ :: number of blank lines or whitespaces at the end
+- ~parent~ :: refers to the element or object containing it
+
+Greater elements, elements and objects containing objects also have:
+
+- ~content-begin~ and ~content-end~ :: used to delimit content
+
+Greater elements and elements accepting affiliated keywords have:
+
+- ~post-affiliated~ :: refers to the position after all such keywords
+
+* Elements
+
+Elements describe the structure of an org file.
+
+Most elements can contain objects and/or plain text.
+
+Most elements start and end at the beginning of a line. Exceptions are:
+
+- Clock
+- Headline
+- Inlinetask
+- Item
+- Planning
+- Node property
+- Quote section
+- Section
+- Table row
+
+The following elements are blocks:
+
+- Center block (~CENTER~)
+- Comment block (~COMMENT~)
+- Example block (~EXAMPLE~)
+- Quote block (~QUOTE~)
+- Src block (~SRC~)
+- Verse block (~VERSE~)
+- Special block
+- Export block
+- Dynamic block
+
+Elements accept a fixed set of keywords as attributes. These are called
+affiliated keywords (not to be confused with regular keywords which are
+actual elements).
+
+Some elements have special properties whose value can hold objects
+themselves. These values are called *secondary strings*.
+
+** Babel call
+** Center block
+** Clock
+** Comment
+** Comment block
+** Diary sexp
+** Drawer
+** Dynamic block
+** Example block
+** Export block
+** Fixed width
+** Footnote definition
+** Headline
+Can contain the standard set of objects without line breaks in its /title/.
+** Horizontal rule
+** Inlinetask
+Can contain the standard set of objects without line breaks in its /title/.
+** Item
+Can contain the standard set of objects without line breaks in its /tag/.
+** Keyword
+Can contain the standard set of objects
+** Latex environment
+** Node property
+** Paragraph
+Can contain the standard set of objects
+** Plain list
+** Planning
+** Property drawer
+** Quote block
+** Quote section
+** Section
+** Special block
+** Src block
+** Table
+** Table row
+Can contain tabe cells
+** Verse block
+Can contain the standard set of objects
+
+* Greater elements
+
+Elements containing other elements are called greater elements. These are:
+
+- Center block
+- Drawer
+- Dynamic block
+- Footnote definition
+- Headline
+- Inlinetask
+- Item
+- Plain list
+- Property drawer
+- Quote block
+- Section
+- Special block
+
+
+* Objects
+
+Objects are related to the org file content. Objects belong to either an
+element or a secondary string.
+
+Some objects can recursively contain other objects. For later reference the
+following standard set of objects is defined here:
+
+- Export snippet
+- Footnote reference
+- Inline babel call
+- Inline src block
+- Latex or entity
+- Line break
+- Link
+- Macro
+- Radio target
+- Statistics cookie
+- Sub/Superscript
+- Target
+- Text markup
+- Timestamp
+
+** Bold
+Recursive, can contain the standard set
+** Code
+** Entity
+** Export snippet
+** Footnote reference
+Can contain the standard set in its inline definition
+** Inline babel call
+** Inline src block
+** Italic
+Recursive, can contain the standard set
+** Latex fragment
+** Line break
+** Link
+Recursive, can contain: export snippet, inline babel call, inline src block,
+latex fragment, entity, macro, plain link, statistics cookie, sub/superscript,
+text markup
+** Macro
+** Radio target
+Recursive, can contain: latex fragment, entity, sub/superscript
+** Statistics cookie
+** Strike through
+Recursive, can contain the standard set
+** Subscript
+Recursive, can contain the standard set
+** Superscript
+Recursive, can contain the standard set
+** Table cell
+Recursive, can contain: export snippet, footnote reference, latex fragment,
+entity, link, macro, radio target, sub/superscript, target, text markup,
+timestamp
+** Target
+** Text markup
+** Timestamp
+** Underline
+Recursive, can contain the standard set
+** Verbatim
+
+* Affiliated keywords
+
+Affiliated keywords (not to be confused with actual keywords) are no actual
+elements or objects. But they are attributes of the element or object they
+precede.
+
+They follow the following patterns:
+
+- ~#+KEY: VALUE~
+- ~#+KEY[OPTIONAL]: VALUE~
+- ~#+ATTR_BACKEND: VALUE~
+
+The following affiliated keywords are recognized:
+
+- ~CAPTION~
+- ~HEADER~
+  + ~HEADERS~ will be renamed to ~HEADER~
+- ~NAME~
+  + ~LABEL~ will be renamed to ~NAME~
+  + ~SRCNAME~ will be renamed to ~NAME~
+  + ~TBLNAME~ will be renamed to ~NAME~
+  + ~DATA~ will be renamed to ~NAME~
+  + ~RESNAME~ will be renamed to ~NAME~
+- ~PLOT~
+- ~RESULTS~
+  + ~RESULT~ will be renamed to ~RESULTS~
+- ~SOURCE~
+- and ~ATTR_~ followed by any string consisting of alpha-numeric characters,
+  hyphens and underscores
+
+The nested keywords above are deprecate and you should use the mentioned
+replacement.
+
+Only ~CAPTION~ and ~RESULTS~ can have a secondary value.
+
+Only ~CAPTION~, ~HEADER~ and ~ATTR_something~ keywords can occur more than
+once in an element. Their value will then be a list of strings.
+
+Only ~CAPTION~s (secondary) value can have objects in it. The value
+of ~CAPTION~ will be stored in a *secondary string*.
+
+* Document properties
+
+The syntax is the same as *affiliated keywords* but they apply to the whole
+document. Their values can contain *objects* and are stored as *secondary
+strings*.
+
+Document properties are:
+
+- ~AUTHOR~
+- ~DATE~
+- ~TITLE~
+
+* Secondary string
+
+This is simply a list of strings and objects. It is used where properties or
+attributes can contain actual objects instead of just text.
+
+
+
+export-snippet footnote-reference inline-babel-call inline-src-block
+latex-or-entity line-break link macro plain-link radio-target
+statistics-cookie sub/superscript table-cell target
+text-markup timestamp
+
+
+-----
+
+
+
+
+
+
+* File
+** Category (defaults to filename)
+** Meta (keywords)
+** Preface (section)
+** Entries
+
+* Entry
+** Attributes (affiliated keywords)
+** Headline
+*** Todo Keyword
+*** Priority
+*** Title
+*** Tags
+*** Planning information
+*** Properties
+** Section
+
+* Tree
+
+Entries organized in a tree
+
+* Todo Keyword
+
+Either:
+
+- TODO (Active)
+- DONE (Inactive)
+
+Can be configured with e.g.: ~#+SEQ_TODO: INVOICE(i) MAIL(m) WAITING(w) FOLLOWUP(f) | RECEIVED(r)~
