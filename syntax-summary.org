@@ -75,8 +75,9 @@ the block. If name is none of the above mentioned it is a /special block/.
 
 ~PARAMETER~ can contain any character other than new line and can be omitted.
 
-~CONTENTS~ can contain any elements except a line ~#+END_NAME~ on its own.
-Lines beginning with stars must be quoted by a comma.
+~CONTENTS~ can contain anything except a line ~#+END_NAME~ on its own.
+Lines beginning with stars must be quoted by a comma. ~CONTENTS~ will not be
+parsed except for /verse block/.
 
 ** Babel call
 
@@ -747,13 +748,144 @@ See /blocks/.
 ** Src block
 
 *** Syntax
+
+See /blocks/.
+
+~PARAMETERS~ follow the following pattern: ~LANGUAGE SWITCHES ARGUMENTS~.
+
+~LANGUAGE~ cannot contain any whitespace character.
+
+~SWITCHES~ can be the following:
+
+- continued number-lines :: ~+n AMOUNT~
+  space is optional, ~AMOUNT~ is a number
+- new number-lines :: ~-n AMOUNT~
+- preserve-indent :: ~-i>~
+- retain-labels :: ~-r>~
+- not use-labels :: ~-k>~
+- label-fmt :: ~-l "FMT"~ where ~FMT~ is anything but ~"~ and newline.
+
+~ARGUMENTS~ can contain any character but a newline.
+
 *** Properties
 
+- language
+- switches
+- parameters
+- begin
+- end
+- number-lines
+- retain-labels
+- use-labels
+- label-fmt
+- preserve-indent
+- value
+- post-blank
+- post-affiliated
+- and all affiliated keywords
+
 ** Table
+
+Only *org tables* can only contain /table rows/. *table.el* tables don't have
+vontent but use the value property to store raw table as a string.
+
+*** Syntax
+
+Tables start with a line starting with a vertical bar or the string ~+-~
+followed by plus or minus signs only. Tables can be indented.
+
+Org tables start with a line starting with ~|~ (vertical bar) and end at the
+first line not starting with a vertical bar.
+
+Org tables can be immediately followed by ~#+TBLFM: FORMULAS~ lines, where
+~FORMULAS~ can contain any character.
+
+Example table:
+
+#+BEGIN_SRC org
+  | col1 | col2 | col3 |
+  |------+------+------+
+  |  200 |  300 |  500 |
+  #+TBLFM: $3=$1+$2
+#+END_SRC
+
+Table.el tables start with the string ~+-~ followed by plus or minus signs
+only and end at the first line not starting with either a vertical line or a
+plus sign.
+
+Example table:
+
+#+BEGIN_SRC org
+  +------+------+------+
+  | col1 | col2 | col3 |
+  +------+------+------+
+  |  200 |  300 |  500 |
+  +------+------+------+
+#+END_SRC
+
+For more see: [[http://table.sourceforge.net/]].
+
+*** Properties
+
+- begin
+- end
+- tblfm
+- type
+- contents-begin
+- contents-end
+- value
+- post-blank
+- post-affiliated
+- and all affiliated keywords
+
 ** Table row
-Can contain tabe cells
+
+Can contain table cells.
+
+*** Syntax
+
+There are two types of table rows:
+
+- standard type :: vertical bar and any number of /table cells/.
+  #+BEGIN_SRC org
+    | cell1 | cell2 |
+  #+END_SRC
+- rule type :: vertical bar followed by hyphens.
+  #+BEGIN_SRC org
+    |---------------|
+  #+END_SRC
+
+A table rule has no content (content-begin = content-end).
+
+*** Properties
+
+- begin
+- end
+- contents-begin
+- contents-end
+- type: either ~rule~ or ~standard~
+- post-blank
+- post-affiliated = begin
+
 ** Verse block
+
 Can contain the standard set of objects
+
+*** Syntax
+
+See /blocks/.
+
+~CONTENTS~ will be parsed as objects.
+
+*** Properties
+
+- begin
+- end
+- contents-begin
+- contents-end
+- post-blank
+- post-affiliated
+- and all affiliated keywords
 
 * Greater elements
 
@@ -796,20 +928,104 @@ following standard set of objects is defined here:
 - Statistics cookie
 - Sub/Superscript
 - Target
-- Text markup
+- Text markup (bold, italic, underline, strike through, code, verbatim)
 - Timestamp
 
-** Bold
-Recursive, can contain the standard set
-** Code
-** Entity
+** TODO Entity
+
+*** Syntax
+
+#+BEGIN_SRC org
+  \NAME POST
+#+END_SRC
+
+~NAME~ has a valid association in either *org-entities* or
+*org-entities-user*. It has to conform to the following regular expression:
+~(_ +)|(there4|frac[13][24]|[a-zA-Z]+)~
+
+~POST~ is the end of line, the string ~{}~ or a non-alphabetical character.
+It isn't separated from ~NAME~ by a whitespace.
+
+TODO this is a huge list of all the characters that usually need to be (or
+should be) excaped in html or latex. (See:
+[[https://code.orgmode.org/bzg/org-mode/src/master/lisp/org-entities.el#L49]])
+
+There can also be user defined entities. Figure out how to handle that.
+
+*** Properties
+
+- name
+- latex
+- latex-math-p
+- html
+- ascii
+- altin1
+- utf-8
+- begin
+- end
+- use-brackets-p: true if ~POST~ is ~{}~
+- post-blank
+
+latex, latex-math-p, html, ascii, latin1 and utf-8 is defined in
+*org-entities* or *org-entities-user*.
+
 ** Export snippet
+
+*** Syntax
+
+#+BEGIN_SRC org
+  @@BACKEND:VALUE@@
+#+END_SRC
+
+~BACKEND~ can contain any alpha-numeric character and hyphens.
+
+~VALUE~ can contain anything but the ~@@~ string.
+
+*** Properties
+
+- back-end
+- value
+- begin
+- end
+- post-blank
+
 ** Footnote reference
+
 Can contain the standard set in its inline definition
-** Inline babel call
+
+*** Syntax
+
+#+BEGIN_SRC org
+  [fn:LABEL]
+  [fn:LABEL:DEFINITION]
+  [fn::DEFINITION]
+#+END_SRC
+
+~LABEL~ can contain any word constituent character, hyphens and underscores.
+
+~DEFINITION~ can contain any character. Opening and closing square brackets
+must be balanced in it. It can contain the standard set of objects, even
+other footnote references.
+
+If the reference follows the second pattern it is called an
+*inline footnote*. If it follows the third one (~LABEL~ omitted) it is an
+*anonymous footnote*.
+
+*** Properties
+
+- label
+- type: standard if it follows the first pattern, inline otherwise
+- begin
+- end
+- contents-begin
+- contents-end
+- post-blank
+
+** NEXT Inline babel call
+
+
+
 ** Inline src block
-** Italic
-Recursive, can contain the standard set
 ** Latex fragment
 ** Line break
 ** Link
@@ -820,8 +1036,6 @@ text markup
 ** Radio target
 Recursive, can contain: latex fragment, entity, sub/superscript
 ** Statistics cookie
-** Strike through
-Recursive, can contain the standard set
 ** Subscript
 Recursive, can contain the standard set
 ** Superscript
@@ -832,10 +1046,47 @@ entity, link, macro, radio target, sub/superscript, target, text markup,
 timestamp
 ** Target
 ** Text markup
-** Timestamp
-** Underline
+
+Is one of bold, italic, underline, strike through, code or verbatim.
+
 Recursive, can contain the standard set
-** Verbatim
+
+*** Syntax
+
+#+BEGIN_SRC org
+  PRE MARKER BORDER BODY BORDER MARKER POST
+#+END_SRC
+
+Nothing is separated by whitespace.
+
+~PRE~ is one of ~-~, whitespace, ~(~, ~'~, ~"~, ~{~ and beginning of line.
+
+~BORDER~ is anything but whitespace, ~,~, ~'~ and ~"~.
+
+~MARKER~ is one of ~*~ (bold), ~=~ (verbatim), ~/~ (italic), ~+~
+(strike through), ~_~ (underline) and "~~~" (code).
+
+~BODY~ can contain any character but may not span over more than 3 lines.
+
+~POST~ is one of ~-~, whitespace, ~.~, ~,~, ~:~, ~!~, ~?~, ~;~, ~'~, ~"~, ~)~,
+~}~, ~[~ and end of line.
+
+~BORDER BODY BORDER~ can contain the standard set of objects when the markup
+is bold, italic, strike through or underline, only the content of verbatim
+and code is not parsed.
+
+*** Properties
+
+- begin
+- end
+- contents-begin
+- contents-end
+- post-blank
+
+Verbatim and code don't have contents-begin and contents-end because they
+don't contain parsed content.
+
+** Timestamp
 
 * Affiliated keywords
 
@@ -931,11 +1182,4 @@ text-markup timestamp
 
 Entries organized in a tree
 
-* Todo Keyword
 
-Either:
-
-- TODO (Active)
-- DONE (Inactive)
-
-Can be configured with e.g.: ~#+SEQ_TODO: INVOICE(i) MAIL(m) WAITING(w) FOLLOWUP(f) | RECEIVED(r)~
