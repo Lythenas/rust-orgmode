@@ -2,6 +2,9 @@ This is a summary of
 [[https://orgmode.org/worg/exporters/org-element-docstrings.html]] and [[https://orgmode.org/worg/dev/org-syntax.html]].
 
 * Shared behavior
+:PROPERTIES:
+:CUSTOM_ID: shared-behavior
+:END:
 
 Each greater element, element and object has a fixed set of properties
 attached to it. The following are shared by all types:
@@ -40,8 +43,7 @@ Except the following all elements start and end at the beginning of a line:
 - Planning
 - Node property
 - Quote section
-- Section
-- Table row
+- Section Table row
 
 Elements accept a fixed set of keywords as attributes. These are called
 affiliated keywords (not to be confused with regular keywords which are
@@ -51,6 +53,9 @@ Some elements have special properties whose value can hold objects
 themselves. These values are called *secondary strings*.
 
 ** Blocks
+:PROPERTIES:
+:CUSTOM_ID: blocks
+:END:
 
 - Center block (~CENTER~)
 - Comment block (~COMMENT~)
@@ -73,15 +78,18 @@ Except for dynamic blocks they follow this syntax:
 #+END_SRC
 
 ~NAME~ can contain any non-whitespace character. Name determines the type of
-the block. If name is none of the above mentioned it is a /special block/.
+the block. If name is none of the above mentioned it is a [[#special-block][special block]].
 
 ~PARAMETER~ can contain any character other than new line and can be omitted.
 
 ~CONTENTS~ can contain anything except a line ~#+END_NAME~ on its own.
 Lines beginning with stars must be quoted by a comma. ~CONTENTS~ will not be
-parsed except for /verse block/.
+parsed except for [[#verse-block][verse block]].
 
 ** Babel call
+:PROPERTIES:
+:CUSTOM_ID: babel-call
+:END:
 
 *** Syntax
 
@@ -91,7 +99,7 @@ This is a guess of the syntax and meaning based on the parse code.
   #+CALL: FUNCTION[INSIDE-HEADER](ARGUMENTS) END-HEADER
 #+END_SRC
 
-~FUNCTION~ is the name of a /source block/ to execute.
+~FUNCTION~ is the name of a [[#src-block][source block]] to execute.
 
 ~INSIDE-HEADER~ can contain everything but ~]~ and a newline.
 
@@ -113,6 +121,9 @@ This is a guess of the syntax and meaning based on the parse code.
 - and all affiliated keywords
 
 ** Center block
+:PROPERTIES:
+:CUSTOM_ID: center-block
+:END:
 
 *** Syntax
 
@@ -130,6 +141,9 @@ See syntax for blocks.
 - and all affiliated keywords
 
 ** Clock
+:PROPERTIES:
+:CUSTOM_ID: clock
+:END:
 
 *** Syntax
 
@@ -139,7 +153,7 @@ See syntax for blocks.
 
 ~TIMESTAMP~ and ~DURATION~ are optional.
 
-~TIMESTAMP~ is a /timestamp/ object.
+~TIMESTAMP~ is a [[#timestamp][timestamp]] object.
 
 ~DURATION~ follows the pattern: ~=> HH:MM~. ~HH~ is a number containing any
 number of digits. ~MM~ is a two digit number.
@@ -156,6 +170,9 @@ number of digits. ~MM~ is a two digit number.
 - post-affiliated = begin
 
 ** Comment
+:PROPERTIES:
+:CUSTOM_ID: comment
+:END:
 
 *** Syntax
 
@@ -182,10 +199,13 @@ Consecutive comment lines are accumulated into one comment (without leading
 - and all affiliated keywords
 
 ** Comment block
+:PROPERTIES:
+:CUSTOM_ID: comment-block
+:END:
 
 *** Syntax
 
-See /blocks/.
+See [[#blocks][blocks]].
 
 *** Properties
 
@@ -197,6 +217,9 @@ See /blocks/.
 - and any affiliated keywords
 
 ** Diary sexp
+:PROPERTIES:
+:CUSTOM_ID: diary-sexp
+:END:
 
 *** Syntax
 
@@ -217,6 +240,9 @@ start at column 0.
 - and any affiliated keywords
 
 ** Drawer
+:PROPERTIES:
+:CUSTOM_ID: drawer
+:END:
 
 *** Syntax
 
@@ -243,6 +269,9 @@ start at column 0.
 - and all affiliated keywords
 
 ** Dynamic block
+:PROPERTIES:
+:CUSTOM_ID: dynamic-block
+:END:
 
 *** Syntax
 
@@ -273,10 +302,13 @@ missing.
 - and all affiliated keywords
 
 ** Example block
+:PROPERTIES:
+:CUSTOM_ID: example-block
+:END:
 
 *** Syntax
 
-See /blocks/.
+See [[#blocks][blocks]].
 
 ~PARAMETERS~ can contain the following flags:
 
@@ -303,10 +335,13 @@ See /blocks/.
 - and any affiliated keywords
 
 ** Export block
+:PROPERTIES:
+:CUSTOM_ID: export-block
+:END:
 
 *** Syntax
 
-See /blocks/.
+See [[#blocks][blocks]].
 
 Where the ~PARAMETERS~ string is the backend (case is ignored).
 
@@ -321,6 +356,9 @@ Where the ~PARAMETERS~ string is the backend (case is ignored).
 - and all affiliated keywords
 
 ** Fixed width
+:PROPERTIES:
+:CUSTOM_ID: fixed-width
+:END:
 
 *** Syntax
 
@@ -338,6 +376,9 @@ optional whitespace.
 - and all affiliated keywords
 
 ** Footnote definition
+:PROPERTIES:
+:CUSTOM_ID: footnote-definition
+:END:
 
 *** Syntax
 
@@ -365,6 +406,9 @@ or the end of buffer.
 - and all affiliated keywords
 
 ** Headline
+:PROPERTIES:
+:CUSTOM_ID: headline
+:END:
 
 Can contain the standard set of objects without line breaks in its /title/.
 
@@ -425,6 +469,9 @@ specified column.
 - post-affiliated
 
 ** Horizontal rule
+:PROPERTIES:
+:CUSTOM_ID: horizontal-rule
+:END:
 
 *** Syntax
 
@@ -439,15 +486,18 @@ A line of at least 5 consecutive hyphens (~-----~). Can be indented.
 - and all affiliated keywords
 
 ** Inlinetask
+:PROPERTIES:
+:CUSTOM_ID: inlinetask
+:END:
 
 Can contain the standard set of objects without line breaks in its /title/.
 
 *** Syntax
 
-Same syntax as /headline/ but starts with at least /org-inlinetask-min-level/
-asterisks.
+Same syntax as [[#headline][headline]] but starts with at least
+*org-inlinetask-min-level* asterisks.
 
-Inline tasks can be ended with a line of /org-inlinetask-min-kevek/
+Inline tasks can be ended with a line of *org-inlinetask-min-levek*
 asterisk characters (should be starting at column 0 but this is not strictly
 required), followed by a sapce and the ~END~ string.
 
@@ -475,6 +525,9 @@ required), followed by a sapce and the ~END~ string.
 - post-affiliated
 
 ** Item
+:PROPERTIES:
+:CUSTOM_ID: item
+:END:
 
 Can contain the standard set of objects without line breaks in its /tag/.
 
@@ -526,13 +579,16 @@ list will be an *ordered plain list*. If it contains a tag, it will be a
 - post-affiliated
 
 ** Keyword
+:PROPERTIES:
+:CUSTOM_ID: keyword
+:END:
 
 Can contain the standard set of objects
 
 *** Syntax
 
-Similar to /affiliated keywords/. Orphaned affiliated keywords are considered
-a regular keyword.
+Similar to [[#affiliated-keywords][affiliated keywords]]. Orphaned affiliated keywords
+are considered a regular keyword.
 
 #+BEGIN_SRC org
   #+KEY: VALUE
@@ -543,7 +599,7 @@ a regular keyword.
 
 ~VALUE~ can contain any character except a newline.
 
-If ~KEY~ is a /document property/, ~VALUE~ can contain objects.
+If ~KEY~ is a [[#document-properties][document property]], ~VALUE~ can contain objects.
 
 *** Properties
 
@@ -556,6 +612,9 @@ If ~KEY~ is a /document property/, ~VALUE~ can contain objects.
 - and all affiliated keywords
 
 ** Latex environment
+:PROPERTIES:
+:CUSTOM_ID: latex-environment
+:END:
 
 *** Syntax
 
@@ -580,6 +639,9 @@ characters. Usually the asterisk is only at the end.
 - and all affiliated keywords
 
 ** Node property
+:PROPERTIES:
+:CUSTOM_ID: node-property
+:END:
 
 *** Syntax
 
@@ -607,6 +669,9 @@ sign. It cannot be an empty string.
 - post-affiliated
 
 ** Paragraph
+:PROPERTIES:
+:CUSTOM_ID: paragraph
+:END:
 
 Can contain the standard set of objects
 
@@ -626,10 +691,13 @@ but all inner elements must be closed first.
 - and all affiliated keywords
 
 ** Plain list
+:PROPERTIES:
+:CUSTOM_ID: plain-list
+:END:
 
 *** Syntax
 
-See /item/.
+See [[#item][item]].
 
 *** Properties
 
@@ -644,6 +712,9 @@ See /item/.
 - and all affiliated keywords
 
 ** Planning
+:PROPERTIES:
+:CUSTOM_ID: planning
+:END:
 
 *** Syntax
 
@@ -656,7 +727,7 @@ Planning can immediately follow a headline. No blank line is allowed.
 ~KEYWORD~ is one of ~DEADLINE~, ~SCHEDULED~ or ~CLOSED~. Planning can be
 repeated but one keyword can only be used once.
 
-~TIMESTAMP~ is a /timestamp/.
+~TIMESTAMP~ is a [[#timestamp][timestamp]].
 
 *** Properties
 
@@ -669,11 +740,14 @@ repeated but one keyword can only be used once.
 - post-affiliated = begin
 
 ** Property drawer
+:PROPERTIES:
+:CUSTOM_ID: property-drawer
+:END:
 
 *** Syntax
 
 Property drawers can be directly below headlines (after planning if
-existent). Its syntax is similar to /drawers/.
+existent). Its syntax is similar to [[#drawer][drawers]].
 
 #+BEGIN_SRC org
   :PROPERTIES:
@@ -681,7 +755,7 @@ existent). Its syntax is similar to /drawers/.
   :END:
 #+END_SRC
 
-~CONTENTS~ consists of zero or more /node properties/.
+~CONTENTS~ consists of zero or more [[#node-property][node properties]].
 
 *** Properties
 
@@ -694,10 +768,13 @@ existent). Its syntax is similar to /drawers/.
 - post-affiliated
 
 ** Quote block
+:PROPERTIES:
+:CUSTOM_ID: quote-block
+:END:
 
 *** Syntax
 
-See /blocks/.
+See [[#blocks][blocks]].
 
 *** Properties
 
@@ -710,8 +787,15 @@ See /blocks/.
 - post-affiliated
 - and all affiliated keywords
 
-** Quote section
+** TODO Quote section
+:PROPERTIES:
+:CUSTOM_ID: quote-section
+:END:
+
 ** Section
+:PROPERTIES:
+:CUSTOM_ID: section
+:END:
 
 *** Syntax
 
@@ -730,10 +814,13 @@ A section ends at the beginning of the next headline or the end of the file.
 - post-blank
 
 ** Special block
+:PROPERTIES:
+:CUSTOM_ID: special-block
+:END:
 
 *** Syntax
 
-See /blocks/.
+See [[#blocks][blocks]].
 
 *** Properties
 
@@ -748,10 +835,13 @@ See /blocks/.
 - and all affiliated keywords
 
 ** Src block
+:PROPERTIES:
+:CUSTOM_ID: src-block
+:END:
 
 *** Syntax
 
-See /blocks/.
+See [[#blocks][blocks]].
 
 ~PARAMETERS~ follow the following pattern: ~LANGUAGE SWITCHES ARGUMENTS~.
 
@@ -787,9 +877,13 @@ See /blocks/.
 - and all affiliated keywords
 
 ** Table
+:PROPERTIES:
+:CUSTOM_ID: table
+:END:
 
-Only *org tables* can only contain /table rows/. *table.el* tables don't have
-vontent but use the value property to store raw table as a string.
+Only *org tables* can only contain [[#table-row][table rows]]. *table.el*
+tables don't have vontent but use the value property to store raw table as
+a string.
 
 *** Syntax
 
@@ -806,7 +900,7 @@ Example table:
 
 #+BEGIN_SRC org
   | col1 | col2 | col3 |
-  |------+------+------+
+  |------+------+------|
   |  200 |  300 |  500 |
   #+TBLFM: $3=$1+$2
 #+END_SRC
@@ -841,6 +935,9 @@ For more see: [[http://table.sourceforge.net/]].
 - and all affiliated keywords
 
 ** Table row
+:PROPERTIES:
+:CUSTOM_ID: table-row
+:END:
 
 Can contain table cells.
 
@@ -848,7 +945,8 @@ Can contain table cells.
 
 There are two types of table rows:
 
-- standard type :: vertical bar and any number of /table cells/.
+- standard type :: vertical bar and any number of
+  [[#table-cell][table cells]].
   #+BEGIN_SRC org
     | cell1 | cell2 |
   #+END_SRC
@@ -870,12 +968,15 @@ A table rule has no content (content-begin = content-end).
 - post-affiliated = begin
 
 ** Verse block
+:PROPERTIES:
+:CUSTOM_ID: verse-block
+:END:
 
 Can contain the standard set of objects
 
 *** Syntax
 
-See /blocks/.
+See [[#blocks][blocks]].
 
 ~CONTENTS~ will be parsed as objects.
 
@@ -934,6 +1035,9 @@ following standard set of objects is defined here:
 - Timestamp
 
 ** TODO Entity
+:PROPERTIES:
+:CUSTOM_ID: entity
+:END:
 
 *** Syntax
 
@@ -972,6 +1076,9 @@ latex, latex-math-p, html, ascii, latin1 and utf-8 is defined in
 *org-entities* or *org-entities-user*.
 
 ** Export snippet
+:PROPERTIES:
+:CUSTOM_ID: export-snippet
+:END:
 
 *** Syntax
 
@@ -992,8 +1099,11 @@ latex, latex-math-p, html, ascii, latin1 and utf-8 is defined in
 - post-blank
 
 ** Footnote reference
+:PROPERTIES:
+:CUSTOM_ID: footnote-reference
+:END:
 
-Can contain the standard set in its inline definition
+Can contain the standard set in its /inline definition/.
 
 *** Syntax
 
@@ -1024,6 +1134,9 @@ If the reference follows the second pattern it is called an
 - post-blank
 
 ** Inline babel call
+:PROPERTIES:
+:CUSTOM_ID: inline-babel-call
+:END:
 
 *** Syntax
 
@@ -1052,6 +1165,9 @@ Both ~HEADER~s are optional.
 - post-blank
 
 ** Inline src block
+:PROPERTIES:
+:CUSTOM_ID: inline-src-block
+:END:
 
 *** Syntax
 
@@ -1074,6 +1190,9 @@ Both ~HEADER~s are optional.
 - post-blank
 
 ** Latex fragment
+:PROPERTIES:
+:CUSTOM_ID: latex-fragment
+:END:
 
 *** Syntax
 
@@ -1088,7 +1207,7 @@ Both ~HEADER~s are optional.
 
 ~NAME~ contains alphabetical characters only (can end with an asterisk) and
 must not have an association in either *org-entities* or *org-entities-user*.
-Otherwise it will be parsed as an /entity/.
+Otherwise it will be parsed as an [[#entity][entity]].
 
 ~BRACKETS~ is optional and is not separated from NAME with white spaces. It
 may contain any number of the following patterns:
@@ -1128,6 +1247,9 @@ lines.
 - post-blank
 
 ** Line break
+:PROPERTIES:
+:CUSTOM_ID: line-break
+:END:
 
 *** Syntax
 
@@ -1144,6 +1266,9 @@ lines.
 - post-blank = 0
 
 ** Link
+:PROPERTIES:
+:CUSTOM_ID: link
+:END:
 
 Recursive, can contain: export snippet, inline babel call, inline src block,
 latex fragment, entity, macro, plain link, statistics cookie, sub/superscript,
@@ -1158,7 +1283,7 @@ text markup
 
 ~PRE1~ and ~POST1~ when they exist are non alphanumeric characters.
 
-~RADIO~ is a string matched by some /radio target/.
+~RADIO~ is a string matched by some [[#radio-target][radio target]].
 
 ~PROTOCOL~ is a string among *org-link-types*.
 
@@ -1172,7 +1297,8 @@ non-punctuation character followed by ~/~.
 
 ~DESCRIPTION~ must be enclosed within suqare brachets. It can contain any
 character but square brackets. It can contain any object found in a paragraph
-except a /footnote reference/, a /radio target/ and a /line break/. It cannot
+except a [[#footnote-reference][footnote reference]], a
+[[#radio-target][radio target]] and a [[#line-break][line break]]. It cannot
 contain another link unless it is a plain or angle link.
 
 ~DESCRIPTION~ is optional.
@@ -1212,6 +1338,9 @@ single space.
 - post-blank
 
 ** Macro
+:PROPERTIES:
+:CUSTOM_ID: macro
+:END:
 
 *** Syntax
 
@@ -1239,6 +1368,9 @@ single space.
 - post-blank
 
 ** Radio target
+:PROPERTIES:
+:CUSTOM_ID: radio-target
+:END:
 
 Recursive, can contain: latex fragment, entity, sub/superscript
 
@@ -1248,7 +1380,7 @@ Recursive, can contain: latex fragment, entity, sub/superscript
   <TARGET>
 #+END_SRC
 
-~TARGET~ follows the same syntax as a /target/ but it can also contain
+~TARGET~ follows the same syntax as a [[#target][target]] but it can also contain
 objects.
 
 *** Properties
@@ -1261,6 +1393,9 @@ objects.
 - value
 
 ** Statistics cookie
+:PROPERTIES:
+:CUSTOM_ID: statistics-cookie
+:END:
 
 *** Syntax
 
@@ -1279,6 +1414,9 @@ objects.
 - post-blank
 
 ** Sub/Superscript
+:PROPERTIES:
+:CUSTOM_ID: sub-superscript
+:END:
 
 Recursive, can contain the standard set.
 
@@ -1317,6 +1455,9 @@ There is no whitespace between ~SIGN~, ~CHARS~ and ~FINAL~.
 - post-blank
 
 ** Table cell
+:PROPERTIES:
+:CUSTOM_ID: table-cell
+:END:
 
 Recursive, can contain: export snippet, footnote reference, latex fragment,
 entity, link, macro, radio target, sub/superscript, target, text markup,
@@ -1345,6 +1486,9 @@ row (but doesn't have to).
 - post-blank = 0
 
 ** Target
+:PROPERTIES:
+:CUSTOM_ID: target
+:END:
 
 *** Syntax
 
@@ -1363,6 +1507,9 @@ start or end with a whitespace character. It cannot contain any objects.
 - post-blank
 
 ** Text markup
+:PROPERTIES:
+:CUSTOM_ID: text-markup
+:END:
 
 Is one of bold, italic, underline, strike through, code or verbatim.
 
@@ -1404,6 +1551,9 @@ Verbatim and code don't have contents-begin and contents-end because they
 don't contain parsed content.
 
 ** Timestamp
+:PROPERTIES:
+:CUSTOM_ID: timestamp
+:END:
 
 *** Syntax
 
@@ -1475,6 +1625,9 @@ repeater-unit and warning-unit are one of the following: hour, day, week,
 month, year.
 
 * Affiliated keywords
+:PROPERTIES:
+:CUSTOM_ID: affiliated-keywords
+:END:
 
 Affiliated keywords (not to be confused with actual keywords) are no actual
 elements or objects. But they are attributes of the element or object they
@@ -1516,6 +1669,9 @@ Only ~CAPTION~s (secondary) value can have objects in it. The value
 of ~CAPTION~ will be stored in a *secondary string*.
 
 * Document properties
+:PROPERTIES:
+:CUSTOM_ID: document-properties
+:END:
 
 The syntax is the same as *affiliated keywords* but they apply to the whole
 document. Their values can contain *objects* and are stored as *secondary
@@ -1528,6 +1684,9 @@ Document properties are:
 - ~TITLE~
 
 * Secondary string
+:PROPERTIES:
+:CUSTOM_ID: secondary-string
+:END:
 
 This is simply a list of strings and objects. It is used where properties or
 attributes can contain actual objects instead of just text.
@@ -1543,6 +1702,6 @@ granularities:
 - element :: parse everything except objects and plain text
 - objects (default) :: parse everything
 
-When parsing smaller chunks (/secondary strings/) restrictions can be used to
-only parse elements of a specific type.
+When parsing smaller chunks ([[#secondary-strings][secondary strings]]) restrictions
+can be used to only parse elements of a specific type.
 
