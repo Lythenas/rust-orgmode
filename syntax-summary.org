@@ -1142,22 +1142,224 @@ lines.
 - post-blank = 0
 
 ** Link
+
 Recursive, can contain: export snippet, inline babel call, inline src block,
 latex fragment, entity, macro, plain link, statistics cookie, sub/superscript,
 text markup
+
+*** Syntax
+
+- radio link :: ~PRE1 RADIO POST1~
+- angle link :: ~<PROTOCOL:PATH>~
+- plain link :: ~PRE2 PROTOCOL:PATH2 POST2~
+- bracket link :: ~[[PATH3]DESCRIPTION]~
+
+~PRE1~ and ~POST1~ when they exist are non alphanumeric characters.
+
+~RADIO~ is a string matched by some /radio target/.
+
+~PROTOCOL~ is a string among *org-link-types*.
+
+~PATH~ can contain any character but ~]~, ~<~, ~>~ and newline.
+
+~PRE2~ and ~POST2~ when they exist are non word constituent characters.
+
+~PATH2~ can contain any non-whitespace character except ~(~, ~)~, ~<~ and
+~>~. It must end with a word-constituent character or any non-whitespace
+non-punctuation character followed by ~/~.
+
+~DESCRIPTION~ must be enclosed within suqare brachets. It can contain any
+character but square brackets. It can contain any object found in a paragraph
+except a /footnote reference/, a /radio target/ and a /line break/. It cannot
+contain another link unless it is a plain or angle link.
+
+~DESCRIPTION~ is optional.
+
+~PATH3~ is built according to the following patterns:
+
+- file type :: ~FILENAME~
+- protocol type :: ~PROTOCOL:PATH4~
+- protocol type :: ~PROTOCOL://PATH4~
+- id type :: ~id:ID~
+- custom-id type :: ~#CUSTOM-ID~
+- coderef type :: ~(CODEREF)~
+- fuzzy type :: ~FIZZY~
+
+~FILENAME~ is a file name (absolute or relative).
+
+~ID~ is constituted of hexadecimal numbers separated with hyphens.
+
+~PATH4~, ~CUSTOM-ID~, ~CODEREF~ and ~FUZZY~ can contain any character besides
+square brackets.
+
+Spaces, tabs and newlines (also indentation) in the link are replace with a
+single space.
+
+*** Properties
+
+- type: one of radio, file, coderef, custom-id, fuzzy
+- path
+- format: one of plain, bracket, angle, radio
+- raw-link
+- application
+- search-option
+- begin
+- end
+- contents-begin
+- contents-end
+- post-blank
+
 ** Macro
+
+*** Syntax
+
+#+BEGIN_SRC org
+  {{{NAME(ARGUMENTS)}}}
+#+END_SRC
+
+~NAME~ must start with a letter and can be followed by any number of
+alpha-numeric characters, hyphens and underscores.
+
+~ARGUMENTS~ can contain anything but the string ~}}}~. Values within
+~ARGUMENTS~ are separated by commas. Non-separating commas have to be escaped
+with a backslash character.
+
+Multiple whitespace and newline characters in ~ARGUMENTS~ are replaced by a
+single space.
+
+*** Properties
+
+- key
+- value
+- args
+- begin
+- end
+- post-blank
+
 ** Radio target
+
 Recursive, can contain: latex fragment, entity, sub/superscript
+
+*** Syntax
+
+#+BEGIN_SRC org
+  <TARGET>
+#+END_SRC
+
+~TARGET~ follows the same syntax as a /target/ but it can also contain
+objects.
+
+*** Properties
+
+- begin
+- end
+- contents-begin
+- contents-end
+- post-blank
+- value
+
 ** Statistics cookie
-** Subscript
-Recursive, can contain the standard set
-** Superscript
-Recursive, can contain the standard set
+
+*** Syntax
+
+#+BEGIN_SRC org
+  [PERCENT%]
+  [NUM1/NUM2]
+#+END_SRC
+
+~PERCENT~, ~NUM1~ and ~NUM2~ are numbers or the empty string.
+
+*** Properties
+
+- begin
+- end
+- value
+- post-blank
+
+** Sub/Superscript
+
+Recursive, can contain the standard set.
+
+*** Syntax
+
+- subscript :: ~CHAR_SCRIPT~
+- superscript :: ~CHAR^SCRIPT~
+
+~CHAR~ is any non-whitespace character.
+
+~SCRIPT~ can be ~*~ or any expression enclosed in parenthesis or curly
+brackets. It can contain balanced paranthesis and curly brackets.
+
+~SCRIPT~ can also follow the pattern:
+
+#+BEGIN_SRC org
+  SIGN CHARS FINAL
+#+END_SRC
+
+~SIGN~ is either a plus sign, a minus sign or an empty string.
+
+~CHARS~ is any number of alpha-numeric characters, commas, backslashes and
+dots or an empty string.
+
+~FINAL~ is an alpha-numeric character.
+
+There is no whitespace between ~SIGN~, ~CHARS~ and ~FINAL~.
+
+*** Properties
+
+- begin
+- end
+- use-brackets-p
+- contents-begin
+- contents-end
+- post-blank
+
 ** Table cell
+
 Recursive, can contain: export snippet, footnote reference, latex fragment,
 entity, link, macro, radio target, sub/superscript, target, text markup,
 timestamp
+
+*** Syntax
+
+#+BEGIN_SRC org
+  CONTENTS SPACES |
+#+END_SRC
+
+~CONTENTS~ can contain any character except a vertical bar.
+
+~SPACES~ contains any number of space and tab characters (including zero).
+Usually used to align the table properly.
+
+The final bar may be replaced with a newline character for the last cell in
+row (but doesn't have to).
+
+*** Properties
+
+- begin
+- end
+- contents-begin
+- contents-end
+- post-blank = 0
+
 ** Target
+
+*** Syntax
+
+#+BEGIN_SRC org
+  <<CONTENTS>>
+#+END_SRC
+
+~CONTENTS~ can contain any character except ~<~, ~>~ and newline. It cannot
+start or end with a whitespace character. It cannot contain any objects.
+
+*** Properties
+
+- begin
+- end
+- value
+- post-blank
+
 ** Text markup
 
 Is one of bold, italic, underline, strike through, code or verbatim.
@@ -1200,6 +1402,75 @@ Verbatim and code don't have contents-begin and contents-end because they
 don't contain parsed content.
 
 ** Timestamp
+
+*** Syntax
+
+- diary type :: ~<%%(SEXP)>~
+- active type :: ~<DATE TIME REPEATER-OR-DELAY>~
+- inactive type :: ~[DATE TIME REPEATER-OR-DELAY]~
+- active range type :: ~<DATE TIME REPEATER-OR-DELAY>--<DATE TIME REPEATER-OR-DELAY>~
+- active range type :: ~<DATE TIME-TIME REPEATER-OR-DELAY>~
+- inactive range type :: ~[DATE TIME REPEATER-OR-DELAY]--[DATE TIME REPEATER-OR-DELAY]~
+- inactive range type :: ~[DATE TIME-TIME REPEATER-OR-DELAY]~
+
+~SEXP~ can contain any character except ~>~ and newline.
+
+~DATE~ follows the pattern: ~YYYY-MM-DD DAYNAME~. ~Y~, ~M~ and ~D~ are
+digits. ~DAYNAME~ is optional and can contain any non whitespace character besides ~+~, ~-~,
+~]~, ~>~, a digit and newline.
+
+~TIME~ follows the pattern ~H:MM~. ~H~ can be one or two digit long and can
+start with 0.
+
+~REPEATER-OR-DELAY~ follows the pattern:
+
+#+BEGIN_SRC org
+  MARK VALUE UNIT
+#+END_SRC
+
+~MARK~ is ~+~ (mumulate type), ~++~ (catch-up type) or ~.+~ (restart type)
+for a repeater and ~-~ (all type) or ~--~ (first type) for warning delays.
+
+~VALUE~ is a number.
+
+~UNIT~ is a character among ~h~ (hour), ~d~ (day), ~w~ (week), ~m~ (month)
+and ~y~ (year).
+
+~MARK~, ~VALUE~ and ~UNIT~ are not separated by whitespace characters.
+
+There can be two ~REPEATER-OR-DELAY~ in the timestamp. One as a repeater and
+one as a warning delay.
+
+*** Properties
+
+- type: one of diary, active-range, active, inactive-range, inactive
+- raw-value
+- timestamp-start
+  - year-start
+  - month-start
+  - day-start
+  - hour-start
+  - minute-start
+- timestamp-end
+  - year-end
+  - month-end
+  - day-end
+  - hour-end
+  - minute-end
+- repeater
+  - repeater-type: one of catch-up, restart, cumulate
+  - repeater-value
+  - repeater-unit
+- warning
+  - warning-type: one of first, all
+  - warning-value
+  - warning-unit
+- begin
+- end
+- post-blank
+
+repeater-unit and warning-unit are one of the following: hour, day, week,
+month, year.
 
 * Affiliated keywords
 
