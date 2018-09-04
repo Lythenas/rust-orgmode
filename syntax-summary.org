@@ -1021,13 +1021,126 @@ If the reference follows the second pattern it is called an
 - contents-end
 - post-blank
 
-** NEXT Inline babel call
+** Inline babel call
 
+*** Syntax
 
+#+BEGIN_SRC org
+  call_NAME(ARGUMENTS)
+  call_NAME[HEADER](ARGUMENTS)[HEADER]
+#+END_SRC
+
+~NAME~ can contain any character besides ~(~, ~[~, whitespace and newline.
+
+~HEADER~ can contain any character besides ~]~ and newline.
+
+~ARGUMENTS~ can contain any character besides ~)~ and newline.
+
+Both ~HEADER~s are optional.
+
+*** Properties
+
+- call
+- inside-header
+- arguments
+- end-header
+- begin
+- end
+- value
+- post-blank
 
 ** Inline src block
+
+*** Syntax
+
+#+BEGIN_SRC org
+  src_LANG{BODY}
+  src_LANG[OPTIONS]{BODY}
+#+END_SRC
+
+~LANG~ can contain any non-whitespace character.
+
+~OPTIONS~ and ~BODY~ can contain any character but a newline.
+
+*** Properties
+
+- language
+- value
+- parameters
+- begin
+- end
+- post-blank
+
 ** Latex fragment
+
+*** Syntax
+
+#+BEGIN_SRC org
+  \NAME BRACKETS
+  \(CONTENTS\)
+  \[CONTENTS\]
+  $$CONTENTS$$
+  PRE$CHAR$POST
+  PRE$BORDER1 BODY BORDER2$POST
+#+END_SRC
+
+~NAME~ contains alphabetical characters only (can end with an asterisk) and
+must not have an association in either *org-entities* or *org-entities-user*.
+Otherwise it will be parsed as an /entity/.
+
+~BRACKETS~ is optional and is not separated from NAME with white spaces. It
+may contain any number of the following patterns:
+
+#+BEGIN_SRC org
+  [CONTENTS1]
+  {CONTENTS2}
+#+END_SRC
+
+~CONTENTS1~ can contain any character except ~{~, ~}~, ~[~, ~]~ and newline.
+
+~CONTENTS2~ can contain any character except ~{~, ~}~ and newline.
+
+~CONTENTS~ can contain any character but cannot contain ~\)~ in the second
+template or ~\]~ in the third one.
+
+~PRE~ is either the beginning of line or a character different from ~$~.
+
+~CHAR~ is a non-whitespace character different from ~.~, ~,~, ~?~, ~;~, ~'~
+or ~"~.
+
+~POST~ is any punctuation (including parantheses and quotes) or space
+character or the end of line.
+
+~BORDER1~ is a non-whitespace character different from ~.~, ~,~, ~;~ and ~$~.
+
+~BODY~ can contain any character except ~$~ and may not span over more than 3
+lines.
+
+~BORDER2~ is a non-whitespace character idfferent from ~.~, ~,~ and ~$~.
+
+*** Properties
+
+- value
+- begin
+- end
+- post-blank
+
 ** Line break
+
+*** Syntax
+
+#+BEGIN_SRC org
+  \\SPACE
+#+END_SRC
+
+~SPACE~ is zero or more whitespace characters followed by the end of line.
+
+*** Properties
+
+- begin
+- end
+- post-blank = 0
+
 ** Link
 Recursive, can contain: export snippet, inline babel call, inline src block,
 latex fragment, entity, macro, plain link, statistics cookie, sub/superscript,
