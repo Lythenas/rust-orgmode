@@ -66,7 +66,7 @@ themselves. These values are called *secondary strings*.
 
 Except for dynamic blocks they follow this syntax:
 
-#+BLOCK_SRC org
+#+BEGIN_SRC org
   #+BEGIN_NAME PARAMETERS
   CONTENTS
   #+END_NAME
@@ -1185,7 +1185,7 @@ contain another link unless it is a plain or angle link.
 - id type :: ~id:ID~
 - custom-id type :: ~#CUSTOM-ID~
 - coderef type :: ~(CODEREF)~
-- fuzzy type :: ~FIZZY~
+- fuzzy type :: ~FUZZY~
 
 ~FILENAME~ is a file name (absolute or relative).
 
