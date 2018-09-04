@@ -14,6 +14,8 @@ attached to it. The following are shared by all types:
 Greater elements, elements and objects containing objects also have:
 
 - ~content-begin~ and ~content-end~ :: used to delimit content
+- ~content~ :: list of elements, objects and raw strings contained in the
+  element or object
 
 Greater elements and elements accepting affiliated keywords have:
 
@@ -1529,4 +1531,18 @@ Document properties are:
 
 This is simply a list of strings and objects. It is used where properties or
 attributes can contain actual objects instead of just text.
+
+* Parsing
+
+Parsing complete files or smaller chunks can be done with different
+granularities:
+
+- headline :: only parse headlines
+- greater-element :: no recursion into greater elements except headlines and
+  section
+- element :: parse everything except objects and plain text
+- objects (default) :: parse everything
+
+When parsing smaller chunks (/secondary strings/) restrictions can be used to
+only parse elements of a specific type.
 
