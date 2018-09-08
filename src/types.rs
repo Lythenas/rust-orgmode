@@ -1,7 +1,24 @@
+//! This module contains all types and traits needed to represent an org file.
+//!
+//! The *elements* of a org file are separated into three categories:
+//!
+//! - [`Object`]s represent the content of the file.
+//! - [`Element`]s represent the structure of the file.
+//! - [`GreaterElement`] is a kind of `Element` that can contain other elements.
+//!
+//! # Implementation of shared behavior
+//!
+//! There is some shared behavior between elements an objects. This is organized into the
+//! traits: [`SharedBehavior`], [`ContainsObjects`] and [`HasAffiliatedKeywords`]. Those traits
+//! rely on specific data being stored in the elements/objects. To simplify this the data is
+//! stored in helper traits and these helper traits are then stored in elements/objects. The
+//! element/object structs only need to implement a getter method for the helper struct and the
+//! trait will give them getter methods for the data in those helper structs.
 
-
-/// All greater elements, elements and objects have the following set of properties attached to
-/// them:
+/// All greater elements, elements and objects share some shared behavior.
+///
+/// This trait adds getters for the needed properties to the elements/objects. The following
+/// properties are needed:
 ///
 /// - **span**: Marks where in the document this element is located. Used for error/warning messages
 /// - **post blank**: Blank lines and whitespace at the end of the element.
@@ -11,6 +28,12 @@
 /// structs only need to implement `shared_behavior_data()` and this trait will provide the
 /// getters for the fields of the `SharedBehaviorData` struct.
 pub trait SharedBehavior {
+    /// Returns a reference to the data of the shared behavior.
+    ///
+    /// You should most likely not use this method. It is just a proxy for the other methods on
+    /// this trait.
+    ///
+    /// Wenn implementing this method you should simply return the field that stores this data.
     fn shared_behavior_data(&self) -> &SharedBehaviorData;
 
     fn span(&self) -> &Span {
@@ -45,7 +68,7 @@ pub struct Span {
 
 impl Span {
     pub fn new(start: u64, end: u64) -> Self {
-        Span { start, end, }
+        Span { start, end }
     }
 
     pub fn start(&self) -> u64 {
@@ -72,7 +95,13 @@ pub struct Parent;
 /// The actual data is stored in the convenience struct [`ContentData`]. The implementing structs
 /// only need to implement `content_data()` and this trait will provide the getters for the fields
 /// of the `ContentData` struct.
-pub trait ContainsObjects : SharedBehavior {
+pub trait ContainsObjects: SharedBehavior {
+    /// Returns a reference to the data needed to contain objects.
+    ///
+    /// You should most likely not use this method. It is just a proxy for the other methods on
+    /// this trait.
+    ///
+    /// Wenn implementing this method you should simply return the field that stores this data.
     fn content_data(&self) -> &ContentData;
 
     fn content_span(&self) -> &Span {
@@ -104,7 +133,13 @@ pub struct ObjectId;
 /// The actual data is stored in the convenience struct [`AffiliatedKeywordsData`]. The
 /// implementing structs only need to implement `affiliated_keywords_data()` and this trait will
 /// provide the getters for the fields of the `AffiliatedKeywordsData` struct.
-pub trait HasAffiliatedKeywords : Element {
+pub trait HasAffiliatedKeywords: Element {
+    /// Returns a reference to the data needed to have affiliated keywords.
+    ///
+    /// You should most likely not use this method. It is just a proxy for the other methods on
+    /// this trait.
+    ///
+    /// Wenn implementing this method you should simply return the field that stores this data.
     fn affiliated_keywords_data(&self) -> &AffiliatedKeywordsData;
 
     fn affiliated_keywords(&self) -> &AffiliatedKeywords {
@@ -129,9 +164,3 @@ pub struct AffiliatedKeywords;
 pub trait Object: SharedBehavior {}
 pub trait Element: Object {}
 pub trait GreaterElement: Element {}
-
-
-
-
-
-
