@@ -42,7 +42,6 @@ Except the following all elements start and end at the beginning of a line:
 - Item
 - Planning
 - Node property
-- Quote section
 - Section Table row
 
 Elements accept a fixed set of keywords as attributes. These are called
@@ -51,6 +50,10 @@ actual elements).
 
 Some elements have special properties whose value can hold objects
 themselves. These values are called *secondary strings*.
+
+The following items are obsolete and won't be parsed:
+
+- Quote section
 
 ** Blocks
 :PROPERTIES:
@@ -787,11 +790,6 @@ See [[#blocks][blocks]].
 - post-affiliated
 - and all affiliated keywords
 
-** TODO Quote section
-:PROPERTIES:
-:CUSTOM_ID: quote-section
-:END:
-
 ** Section
 :PROPERTIES:
 :CUSTOM_ID: section
@@ -1052,11 +1050,9 @@ following standard set of objects is defined here:
 ~POST~ is the end of line, the string ~{}~ or a non-alphabetical character.
 It isn't separated from ~NAME~ by a whitespace.
 
-TODO this is a huge list of all the characters that usually need to be (or
-should be) excaped in html or latex. (See:
-[[https://code.orgmode.org/bzg/org-mode/src/master/lisp/org-entities.el#L49]])
+There is a huge list of accepted entities. See [[https://orgmode.org/worg/org-symbols.org]]
 
-There can also be user defined entities. Figure out how to handle that.
+There can also be user defined entities which are configured in emacs.
 
 *** Properties
 
@@ -1643,22 +1639,24 @@ The following affiliated keywords are recognized:
 
 - ~CAPTION~
 - ~HEADER~
-  + ~HEADERS~ will be renamed to ~HEADER~
 - ~NAME~
-  + ~LABEL~ will be renamed to ~NAME~
-  + ~SRCNAME~ will be renamed to ~NAME~
-  + ~TBLNAME~ will be renamed to ~NAME~
-  + ~DATA~ will be renamed to ~NAME~
-  + ~RESNAME~ will be renamed to ~NAME~
 - ~PLOT~
 - ~RESULTS~
-  + ~RESULT~ will be renamed to ~RESULTS~
 - ~SOURCE~
 - and ~ATTR_~ followed by any string consisting of alpha-numeric characters,
   hyphens and underscores
 
-The nested keywords above are deprecate and you should use the mentioned
-replacement.
+Some keywords have been deprecated. They will be recognized but
+they will be renamed as follows:
+
+- ~HEADERS = HEADER~
+- ~LABEL = NAME~
+- ~SRCNAME = NAME~
+- ~TBLNAME = NAME~
+- ~DATA = NAME~
+- ~RESNAME = NAME~
+- ~SOURCE = NAME~
+- ~RESULT = RESULTS~
 
 Only ~CAPTION~ and ~RESULTS~ can have a secondary value.
 
