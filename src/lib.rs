@@ -21,6 +21,7 @@ extern crate failure;
 extern crate failure_derive;
 extern crate itertools;
 
+pub mod types;
 #[macro_use]
 pub mod macros;
 #[macro_use]
