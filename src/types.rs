@@ -234,9 +234,146 @@ pub trait Object: SharedBehavior {}
 /// Marker trait for the elements in an org file.
 ///
 /// Elements represent the structure of the org file.
+///
+/// Elements are:
+///
+/// - all elements listen in [`GreaterElement`]
+/// - [`BabelCall`]
+/// - [`Clock`]
+/// - [`Comment`]
+/// - [`CommentBlock`]
+/// - [`DiarySexp`]
+/// - [`ExampleBlock`]
+/// - [`ExportBlock`]
+/// - [`FixedWidth`]
+/// - [`HorizontalRule`]
+/// - [`Keyword`]
+/// - [`LatexEnvironment`]
+/// - [`NodeProperty`]
+/// - [`Paragraph`]
+/// - [`Planning`]
+/// - [`SrcBlock`]
+/// - [`TableRow`]
+/// - [`VerseBlock`]
 pub trait Element: SharedBehavior {}
 
 /// Marker trait for the greater elements in an org file.
 ///
-/// Greater elements are elements which can contain other (greater) elements.
+/// Greater elements are elements which can contain other (greater) elements. Usually they can't
+/// contain themselfes.
+///
+/// Greater elements are:
+///
+/// - [`CenterBlock`]
+/// - [`Drawer`]
+/// - [`DynamicBlock`]
+/// - [`FootnoteDefinition`]
+/// - [`Headline`]
+/// - [`Inlinetask`]
+/// - [`Item`]
+/// - [`PlainList`]
+/// - [`PropertyDrawer`]
+/// - [`QuoteBlock`]
+/// - [`Section`]
+/// - [`SpecialBlock`]
+/// - [`Table`]
 pub trait GreaterElement: Element + ContainsObjects {}
+
+use self::elements::*;
+
+/// Contains all elements.
+///
+/// TODO maybe separate in elements and greater elements.
+pub mod elements {
+    use super::*;
+
+    // TODO make a procedural macro to derive all this
+
+    /// A babel call element.
+    ///
+    /// Used to execute [`SrcBlock`]s and put their results into the org file.
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// #+CALL: FUNCTION[INSIDE-HEADER](ARGUMENTS) END-HEADER
+    /// ```
+    ///
+    /// `FUNCTION` is the name of a [`SrcBlock`] to execute. `INSIDE-HEADER`, `ARGUEMENTS` and
+    /// `END-HEADER` can contain everything except a newline (and their respective closing char).
+    pub struct BabelCall {
+        shared_behavior_data: SharedBehaviorData,
+        content_data: ContentData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+
+        /// The code block to call
+        call: String,
+        inside_header: String,
+        arguments: String,
+        end_header: String,
+        // raw_value: String,
+    }
+
+    impl BabelCall {
+        pub fn call(&self) -> &str {
+            &self.call
+        }
+        pub fn inside_header(&self) -> &str {
+            &self.inside_header
+        }
+        pub fn arguments(&self) -> &str {
+            &self.arguments
+        }
+        pub fn end_header(&self) -> &str {
+            &self.end_header
+        }
+    }
+
+    impl SharedBehavior for BabelCall {
+        fn shared_behavior_data(&self) -> &SharedBehaviorData {
+            &self.shared_behavior_data
+        }
+    }
+    impl ContainsObjects for BabelCall {
+        fn content_data(&self) -> &ContentData {
+            &self.content_data
+        }
+    }
+    impl Element for BabelCall {}
+    impl GreaterElement for BabelCall {}
+    impl HasAffiliatedKeywords for BabelCall {
+        fn affiliated_keywords_data(&self) -> &AffiliatedKeywordsData {
+            &self.affiliated_keywords_data
+        }
+    }
+
+    pub struct CenterBlock;
+    pub struct Clock;
+    pub struct Comment;
+    pub struct CommentBlock;
+    pub struct DiarySexp;
+    pub struct Drawer;
+    pub struct DynamicBlock;
+    pub struct ExampleBlock;
+    pub struct ExportBlock;
+    pub struct FixedWidth;
+    pub struct FootnoteDefinition;
+    pub struct Headline;
+    pub struct HorizontalRule;
+    pub struct Inlinetask;
+    pub struct Item;
+    pub struct Keyword;
+    pub struct LatexEnvironment;
+    pub struct NodeProperty;
+    pub struct Paragraph;
+    pub struct PlainList;
+    pub struct Planning;
+    pub struct PropertyDrawer;
+    pub struct QuoteBlock;
+    pub struct Section;
+    pub struct SpecialBlock;
+    pub struct SrcBlock;
+    pub struct Table;
+    pub struct TableRow;
+    pub struct VerseBlock;
+}
