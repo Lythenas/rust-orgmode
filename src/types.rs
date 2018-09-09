@@ -15,6 +15,8 @@
 //! element/object structs only need to implement a getter method for the helper struct and the
 //! trait will give them getter methods for the data in those helper structs.
 
+use std::collections::HashMap;
+
 /// All greater elements, elements and objects share some shared behavior.
 ///
 /// This trait adds getters for the needed properties to the elements/objects. The following
@@ -142,7 +144,7 @@ pub trait HasAffiliatedKeywords: Element {
     /// Wenn implementing this method you should simply return the field that stores this data.
     fn affiliated_keywords_data(&self) -> &AffiliatedKeywordsData;
 
-    fn affiliated_keywords(&self) -> &[AffiliatedKeyword] {
+    fn affiliated_keywords(&self) -> &AffiliatedKeywords {
         &self.affiliated_keywords_data().affiliated_keywords
     }
 
@@ -155,10 +157,12 @@ pub trait HasAffiliatedKeywords: Element {
 ///
 /// See [`HasAffiliatedKeywords`].
 pub struct AffiliatedKeywordsData {
-    affiliated_keywords: Vec<AffiliatedKeyword>,
+    affiliated_keywords: AffiliatedKeywords,
     span: Span,
 }
 
+/// Contains all affiliated keywords for one element/object.
+///
 /// An affiliated keyword represents an attribute of an element.
 ///
 /// Not all elements can have affiliated keywords. See the specific element.
@@ -168,58 +172,47 @@ pub struct AffiliatedKeywordsData {
 /// - `#+KEY: VALUE`
 /// - `#+KEY[OPTIONAL]: VALUE`
 /// - `#+ATTR_BACKEND: VALUE`
-///
-/// Where `KEY` represents one of the variants of [`AffiliatedKeywordKey`]. Only
-/// [`AffiliatedKeywordKey::Caption`] and [`AffiliatedKeywordKey::Results`] can have an optional
-/// value.
-///
-/// In the `ATTR_BACKEND` variation only `BACKEND` can vary. This key is represented as
-/// [`AffiliatedKeywordKey::Attr`].
-///
-/// TODO figure out how to handle multiple occurences of `CAPTION`, `HEADER` and `ATTR_*` which
-/// should be stored as a list of strings.
-///
-/// TODO `CAPTION`s optional value is a secondary string and contain objects.
-pub struct AffiliatedKeyword {
-    pub span: Span,
-    pub key: AffiliatedKeywordKey,
-    pub value: String,
-}
-
-impl AffiliatedKeyword {
-    pub fn new(span: Span, key: AffiliatedKeywordKey, value: String) -> Self {
-        AffiliatedKeyword { span, key, value }
-    }
-}
-
-/// The key of an [`AffiliatedKeyword`].
-///
-/// See the variants on how they are parsed.
-pub enum AffiliatedKeywordKey {
-    /// Parsed from: `#+ATTR_BACKEND: VALUE`.
-    Attr(String),
+pub struct AffiliatedKeywords {
     /// Parsed from: `#+CAPTION[OPTIONAL]: VALUE`.
     ///
-    /// Where `OPTIONAL` (and the brackets) are optional.
-    Caption(Option<String>),
+    /// Where `OPTIONAL` (and the brackets) are optional and both `OPTIONAL` and `VALUE` are
+    /// secondary strings (can contain objects).
+    ///
+    /// The caption key can occur more than once.
+    pub caption: Vec<SpannedValue<(Option<SecondaryString>, SecondaryString)>>,
     /// Parsed from: `#+HEADER: VALUE`.
     ///
+    /// The header key can occur more than once.
+    ///
     /// The deprecated `HEADERS` key will also be parsed to this variant.
-    Header,
+    pub header: Vec<SpannedValue<String>>,
     /// Parsed from: `#+NAME: VALUE`.
     ///
     /// The deprecated `LABEL`, `SRCNAME`, `TBLNAME`, `DATA`, `RESNAME` and `SOURCE` keys will also
     /// be parsed to this variant.
-    Name,
+    pub name: Option<SpannedValue<String>>,
     /// Parsed from: `#+PLOT: VALUE`.
-    Plot,
+    pub plot: Option<SpannedValue<String>>,
     /// Parsed from: `#+RESULTS[OPTIONAL]: VALUE`.
     ///
-    /// Where `OPTIONAL` (and the brackets) are optional.
+    /// Where `OPTIONAL` (and the brackets) are optional and both `OPTIONAL` and `VALUE` are
+    /// secondary strings (can contain objects).
     ///
-    /// The deprecated `HEADER` key will also be parsed to this variant.
-    Results(Option<String>),
+    /// The deprecated `RESULT` key will also be parsed to this variant.
+    pub results: Option<SpannedValue<(Option<String>, String)>>,
+    /// Parsed from: `#+ATTR_BACKEND: VALUE`.
+    ///
+    /// The attr keywords for one backend can occur more than once.
+    pub attrs: HashMap<String, Vec<SpannedValue<String>>>,
 }
+
+/// Represents a value and its position in an org file.
+pub struct SpannedValue<T> {
+    span: Span,
+    value: T,
+}
+
+pub struct SecondaryString {}
 
 /// Marker trait for objects in an org file.
 ///
