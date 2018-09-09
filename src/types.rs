@@ -40,11 +40,11 @@ pub trait SharedBehavior {
         &self.shared_behavior_data().span
     }
 
-    fn post_blank(&self) -> &PostBlank {
+    fn post_blank(&self) -> &u32 {
         &self.shared_behavior_data().post_blank
     }
 
-    fn parent(&self) -> &Option<Parent> {
+    fn parent(&self) -> &Option<ParentId> {
         &self.shared_behavior_data().parent
     }
 }
@@ -52,8 +52,8 @@ pub trait SharedBehavior {
 /// Helper struct that contains the data for the shared behavior. See [`SharedBehavior`].
 pub struct SharedBehaviorData {
     span: Span,
-    post_blank: PostBlank,
-    parent: Option<Parent>,
+    post_blank: u32,
+    parent: Option<ParentId>,
 }
 
 /// Represents where in the file the a object or element is.
@@ -81,9 +81,7 @@ impl Span {
 }
 
 // TODO
-pub struct PostBlank;
-// TODO
-pub struct Parent;
+pub struct ParentId;
 
 /// Some greater elements, elements and objects can contain other objects. These elements and
 /// objects have the following additional properties:
@@ -114,7 +112,9 @@ pub trait ContainsObjects: SharedBehavior {
 }
 
 /// Helper struct that contains the data for the elements and objects that can contain other
-/// objects. See [`ContainsObjects`].
+/// objects.
+///
+/// See [`ContainsObjects`].
 pub struct ContentData {
     span: Span,
     content: Vec<ObjectId>,
@@ -142,7 +142,7 @@ pub trait HasAffiliatedKeywords: Element {
     /// Wenn implementing this method you should simply return the field that stores this data.
     fn affiliated_keywords_data(&self) -> &AffiliatedKeywordsData;
 
-    fn affiliated_keywords(&self) -> &AffiliatedKeywords {
+    fn affiliated_keywords(&self) -> &[AffiliatedKeyword] {
         &self.affiliated_keywords_data().affiliated_keywords
     }
 
@@ -151,15 +151,70 @@ pub trait HasAffiliatedKeywords: Element {
     }
 }
 
-/// Helper struct that contains the data for the elements that have affiliated keywords. See
-/// [`HasAffiliatedKeywords`].
+/// Helper struct that contains the data for the elements that have affiliated keywords.
+///
+/// See [`HasAffiliatedKeywords`].
 pub struct AffiliatedKeywordsData {
-    affiliated_keywords: AffiliatedKeywords,
+    affiliated_keywords: Vec<AffiliatedKeyword>,
     span: Span,
 }
 
-// TODO
-pub struct AffiliatedKeywords;
+/// An affiliated keyword represents an attribute of an element.
+///
+/// Not all elements can have affiliated keywords. See the specific element.
+///
+/// Affiliated keywords have one of the following formats:
+///
+/// - `#+KEY: VALUE`
+/// - `#+KEY[OPTIONAL]: VALUE`
+/// - `#+ATTR_BACKEND: VALUE`
+///
+/// Where `KEY` represents one of the variants of [`AffiliatedKeywordKey`]. Only
+/// [`AffiliatedKeywordKey::Caption`] and [`AffiliatedKeywordKey::Results`] can have an optional
+/// value.
+///
+/// In the `ATTR_BACKEND` variation only `BACKEND` can vary. This key is represented as
+/// [`AffiliatedKeywordKey::Attr`].
+pub struct AffiliatedKeyword {
+    pub span: Span,
+    pub key: AffiliatedKeywordKey,
+    pub value: String,
+}
+
+impl AffiliatedKeyword {
+    pub fn new(span: Span, key: AffiliatedKeywordKey, value: String) -> Self {
+        AffiliatedKeyword { span, key, value }
+    }
+}
+
+/// The key of an [`AffiliatedKeyword`].
+///
+/// See the variants on how they are parsed.
+pub enum AffiliatedKeywordKey {
+    /// Parsed from: `#+ATTR_BACKEND: VALUE`.
+    Attr(String),
+    /// Parsed from: `#+CAPTION[OPTIONAL]: VALUE`.
+    ///
+    /// Where `OPTIONAL` (and the brackets) are optional.
+    Caption(Option<String>),
+    /// Parsed from: `#+HEADER: VALUE`.
+    ///
+    /// The deprecated `HEADERS` key will also be parsed to this variant.
+    Header,
+    /// Parsed from: `#+NAME: VALUE`.
+    ///
+    /// The deprecated `LABEL`, `SRCNAME`, `TBLNAME`, `DATA`, `RESNAME` and `SOURCE` keys will also
+    /// be parsed to this variant.
+    Name,
+    /// Parsed from: `#+PLOT: VALUE`.
+    Plot,
+    /// Parsed from: `#+RESULTS[OPTIONAL]: VALUE`.
+    ///
+    /// Where `OPTIONAL` (and the brackets) are optional.
+    ///
+    /// The deprecated `HEADER` key will also be parsed to this variant.
+    Results(Option<String>),
+}
 
 pub trait Object: SharedBehavior {}
 pub trait Element: Object {}
