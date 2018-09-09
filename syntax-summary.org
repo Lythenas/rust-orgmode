@@ -1642,7 +1642,6 @@ The following affiliated keywords are recognized:
 - ~NAME~
 - ~PLOT~
 - ~RESULTS~
-- ~SOURCE~
 - and ~ATTR_~ followed by any string consisting of alpha-numeric characters,
   hyphens and underscores
 
