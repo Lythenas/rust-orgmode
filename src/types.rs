@@ -175,6 +175,11 @@ pub struct AffiliatedKeywordsData {
 ///
 /// In the `ATTR_BACKEND` variation only `BACKEND` can vary. This key is represented as
 /// [`AffiliatedKeywordKey::Attr`].
+///
+/// TODO figure out how to handle multiple occurences of `CAPTION`, `HEADER` and `ATTR_*` which
+/// should be stored as a list of strings.
+///
+/// TODO `CAPTION`s optional value is a secondary string and contain objects.
 pub struct AffiliatedKeyword {
     pub span: Span,
     pub key: AffiliatedKeywordKey,
@@ -216,6 +221,17 @@ pub enum AffiliatedKeywordKey {
     Results(Option<String>),
 }
 
+/// Marker trait for objects in an org file.
+///
+/// Objects are the smallest units and represent the content of the org file.
 pub trait Object: SharedBehavior {}
-pub trait Element: Object {}
-pub trait GreaterElement: Element {}
+
+/// Marker trait for the elements in an org file.
+///
+/// Elements represent the structure of the org file.
+pub trait Element: SharedBehavior {}
+
+/// Marker trait for the greater elements in an org file.
+///
+/// Greater elements are elements which can contain other (greater) elements.
+pub trait GreaterElement: Element + ContainsObjects {}
