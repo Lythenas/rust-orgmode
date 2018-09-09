@@ -1004,6 +1004,7 @@ Elements containing other elements are called greater elements. These are:
 - Quote block
 - Section
 - Special block
+- Table
 
 With the exception of headline and item greater elements can not contain
 greater elements of the same type.
