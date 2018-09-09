@@ -11,3 +11,5 @@ failure = "0.1"
 failure_derive = "0.1"
 nom = "4.0"
 itertools = "0.7"
+
+rust-orgmode-derive = { path = "rust-orgmode-derive" }

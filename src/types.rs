@@ -301,6 +301,7 @@ pub mod elements {
     ///
     /// `FUNCTION` is the name of a [`SrcBlock`] to execute. `INSIDE-HEADER`, `ARGUEMENTS` and
     /// `END-HEADER` can contain everything except a newline (and their respective closing char).
+    #[derive(Element, HasAffiliatedKeywords)]
     pub struct BabelCall {
         shared_behavior_data: SharedBehaviorData,
         content_data: ContentData,
@@ -329,31 +330,23 @@ pub mod elements {
         }
     }
 
-    impl SharedBehavior for BabelCall {
-        fn shared_behavior_data(&self) -> &SharedBehaviorData {
-            &self.shared_behavior_data
-        }
-    }
-    impl ContainsObjects for BabelCall {
-        fn content_data(&self) -> &ContentData {
-            &self.content_data
-        }
-    }
-    impl Element for BabelCall {}
-    impl GreaterElement for BabelCall {}
-    impl HasAffiliatedKeywords for BabelCall {
-        fn affiliated_keywords_data(&self) -> &AffiliatedKeywordsData {
-            &self.affiliated_keywords_data
-        }
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct CenterBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
-    pub struct CenterBlock;
     pub struct Clock;
     pub struct Comment;
     pub struct CommentBlock;
     pub struct DiarySexp;
     pub struct Drawer;
-    pub struct DynamicBlock;
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct DynamicBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
     pub struct ExampleBlock;
     pub struct ExportBlock;
     pub struct FixedWidth;

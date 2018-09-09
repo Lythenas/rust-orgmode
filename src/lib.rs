@@ -12,6 +12,8 @@
 //!
 //! Currently only parsing of the major outline and timestamp is supported.
 
+#[macro_use]
+extern crate rust_orgmode_derive;
 extern crate chrono;
 #[macro_use]
 extern crate nom;
