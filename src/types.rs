@@ -212,7 +212,19 @@ pub struct SpannedValue<T> {
     value: T,
 }
 
-pub struct SecondaryString {}
+impl<T> SpannedValue<T> {
+    pub fn new(span: Span, value: T) -> Self {
+        SpannedValue { span, value }
+    }
+    pub fn span(&self) -> &Span {
+        &self.span
+    }
+    pub fn value(&self) -> &T {
+        &self.value
+    }
+}
+
+pub struct SecondaryString(Vec<ObjectId>);
 
 /// Marker trait for objects in an org file.
 ///
