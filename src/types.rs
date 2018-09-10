@@ -508,3 +508,97 @@ pub mod elements {
         affiliated_keywords_data: AffiliatedKeywordsData,
     }
 }
+
+pub mod objects {
+    use super::*;
+
+    #[derive(Object)]
+    pub struct Entity {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct ExportSnippet {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct FootnoteReference {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct InlineBabelCall {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct InlineSrcBlock {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct LatexFragment {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct LineBreak {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Link {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Macro {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct RadioTarget {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct StatisticsCookie {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Subscript {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Superscript {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct TableCell {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Target {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Bold {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Italic {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Underline {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct StrikeThrough {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Code {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Verbatim {
+        shared_behavior_data: SharedBehaviorData,
+    }
+    #[derive(Object)]
+    pub struct Timestamp {
+        shared_behavior_data: SharedBehaviorData,
+    }
+
+}
