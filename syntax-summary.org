@@ -1096,7 +1096,7 @@ latex, latex-math-p, html, ascii, latin1 and utf-8 is defined in
 - end
 - post-blank
 
-** Footnote reference
+** Footnote reference								:recursive:
 :PROPERTIES:
 :CUSTOM_ID: footnote-reference
 :END:
@@ -1263,7 +1263,7 @@ lines.
 - end
 - post-blank = 0
 
-** Link
+** Link										:recursive:
 :PROPERTIES:
 :CUSTOM_ID: link
 :END:
@@ -1365,7 +1365,7 @@ single space.
 - end
 - post-blank
 
-** Radio target
+** Radio target									:recursive:
 :PROPERTIES:
 :CUSTOM_ID: radio-target
 :END:
@@ -1411,7 +1411,7 @@ objects.
 - value
 - post-blank
 
-** Sub/Superscript
+** Sub/Superscript								:recursive:
 :PROPERTIES:
 :CUSTOM_ID: sub-superscript
 :END:
@@ -1452,7 +1452,7 @@ There is no whitespace between ~SIGN~, ~CHARS~ and ~FINAL~.
 - contents-end
 - post-blank
 
-** Table cell
+** Table cell									:recursive:
 :PROPERTIES:
 :CUSTOM_ID: table-cell
 :END:
@@ -1504,7 +1504,7 @@ start or end with a whitespace character. It cannot contain any objects.
 - value
 - post-blank
 
-** Text markup
+** Text markup									:recursive:
 :PROPERTIES:
 :CUSTOM_ID: text-markup
 :END:
