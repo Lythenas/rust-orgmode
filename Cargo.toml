@@ -1,5 +1,5 @@
 [package]
-name = "orgmode"
+name = "rust-orgmode"
 version = "0.1.0"
 authors = ["Matthias Seiffert <lythenas@hotmail.de>"]
 
