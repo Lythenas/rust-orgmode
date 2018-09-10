@@ -304,7 +304,6 @@ pub mod elements {
     #[derive(Element, HasAffiliatedKeywords)]
     pub struct BabelCall {
         shared_behavior_data: SharedBehaviorData,
-        content_data: ContentData,
         affiliated_keywords_data: AffiliatedKeywordsData,
 
         /// The code block to call
@@ -330,43 +329,182 @@ pub mod elements {
         }
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
     pub struct CenterBlock {
+        shared_behavior_data: SharedBehaviorData,
+        content_data: ContentData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(Element)]
+    pub struct Clock {
+        shared_behavior_data: SharedBehaviorData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct Comment {
         shared_behavior_data: SharedBehaviorData,
         affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
-    pub struct Clock;
-    pub struct Comment;
-    pub struct CommentBlock;
-    pub struct DiarySexp;
-    pub struct Drawer;
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct CommentBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct DiarySexp {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct Drawer {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
     #[derive(GreaterElement, HasAffiliatedKeywords)]
     pub struct DynamicBlock {
         shared_behavior_data: SharedBehaviorData,
         affiliated_keywords_data: AffiliatedKeywordsData,
         content_data: ContentData,
     }
-    pub struct ExampleBlock;
-    pub struct ExportBlock;
-    pub struct FixedWidth;
-    pub struct FootnoteDefinition;
-    pub struct Headline;
-    pub struct HorizontalRule;
-    pub struct Inlinetask;
-    pub struct Item;
-    pub struct Keyword;
-    pub struct LatexEnvironment;
-    pub struct NodeProperty;
-    pub struct Paragraph;
-    pub struct PlainList;
-    pub struct Planning;
-    pub struct PropertyDrawer;
-    pub struct QuoteBlock;
-    pub struct Section;
-    pub struct SpecialBlock;
-    pub struct SrcBlock;
-    pub struct Table;
-    pub struct TableRow;
-    pub struct VerseBlock;
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct ExampleBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct ExportBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct FixedWidth {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct FootnoteDefinition {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct Headline {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct HorizontalRule {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(GreaterElement)]
+    pub struct Inlinetask {
+        shared_behavior_data: SharedBehaviorData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement)]
+    pub struct Item {
+        shared_behavior_data: SharedBehaviorData,
+        content_data: ContentData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct Keyword {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct LatexEnvironment {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(Element)]
+    pub struct NodeProperty {
+        shared_behavior_data: SharedBehaviorData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct Paragraph {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct PlainList {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
+    #[derive(Element)]
+    pub struct Planning {
+        shared_behavior_data: SharedBehaviorData,
+    }
+
+    #[derive(GreaterElement)]
+    pub struct PropertyDrawer {
+        shared_behavior_data: SharedBehaviorData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct QuoteBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement)]
+    pub struct Section {
+        shared_behavior_data: SharedBehaviorData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct SpecialBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct SrcBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct Table {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
+    #[derive(Element)]
+    pub struct TableRow {
+        shared_behavior_data: SharedBehaviorData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct VerseBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
 }
