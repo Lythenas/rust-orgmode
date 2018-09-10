@@ -78,8 +78,9 @@ pub fn contains_objects_derive(input: proc_macro::TokenStream) -> proc_macro::To
 /// Implements the `ContainsObjects` trait.
 fn impl_contains_objects(input: &DeriveInput) -> TokenStream {
     let name = &input.ident;
+    let field = get_field("ContainsObjects", "content_data", &input.data);
 
-    quote! {
+    quote_spanned! { field.span()=>
         impl ContainsObjects for #name {
             fn content_data(&self) -> &ContentData {
                 &self.content_data
@@ -123,13 +124,32 @@ pub fn has_affiliated_keywords_derive(input: proc_macro::TokenStream) -> proc_ma
 /// Implements the `HasAffiliatedKeywords` trait.
 fn impl_affiliated_keywords(input: &DeriveInput) -> TokenStream {
     let name = &input.ident;
+    let field = get_field("HasAffiliatedKeywords", "affiliated_keywords_data", &input.data);
 
-    quote! {
+    quote_spanned! { field.span()=>
         impl HasAffiliatedKeywords for #name {
             fn affiliated_keywords_data(&self) -> &AffiliatedKeywordsData {
                 &self.affiliated_keywords_data
             }
         }
+    }
+}
+
+#[proc_macro_derive(Object)]
+pub fn object_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let expanded = impl_object(&input);
+    proc_macro::TokenStream::from(expanded)
+}
+
+fn impl_object(input: &DeriveInput) -> TokenStream {
+    let name = &input.ident;
+    let shared_behavior_impl = impl_shared_behavior(&input);
+
+    quote! {
+        #shared_behavior_impl
+
+        impl Object for #name {}
     }
 }
 
