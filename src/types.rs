@@ -4,7 +4,7 @@
 //!
 //! - [`Object`]s represent the content of the file.
 //! - [`Element`]s represent the structure of the file.
-//! - [`GreaterElement`] is a kind of `Element` that can contain other elements.
+//! - [`GreaterElement`] is a kind of [`Element`] that can contain other elements.
 //!
 //! # Implementation of shared behavior
 //!
@@ -14,6 +14,13 @@
 //! stored in helper traits and these helper traits are then stored in elements/objects. The
 //! element/object structs only need to implement a getter method for the helper struct and the
 //! trait will give them getter methods for the data in those helper structs.
+//!
+//! [`Object`]: trait.Object.html
+//! [`Element`]: trait.Element.html
+//! [`GreaterElement`]: trait.Element.html
+//! [`SharedBehavior`]: trait.SharedBehavior.html
+//! [`ContainsObjects`]: trait.ContainsObjects.html
+//! [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
 
 use std::collections::HashMap;
 
@@ -29,6 +36,8 @@ use std::collections::HashMap;
 /// The actual data is stored in the convenience struct [`SharedBehaviorData`]. The implementing
 /// structs only need to implement `shared_behavior_data()` and this trait will provide the
 /// getters for the fields of the `SharedBehaviorData` struct.
+///
+/// [`SharedBehaviorData`]: struct.SharedBehaviorData.html
 pub trait SharedBehavior {
     /// Returns a reference to the data of the shared behavior.
     ///
@@ -52,6 +61,8 @@ pub trait SharedBehavior {
 }
 
 /// Helper struct that contains the data for the shared behavior. See [`SharedBehavior`].
+///
+/// [`SharedBehavior`]: trait.SharedBehavior.html
 pub struct SharedBehaviorData {
     span: Span,
     post_blank: u32,
@@ -82,11 +93,12 @@ impl Span {
     }
 }
 
-// TODO
+/// This represents a parent in the storage engine (TODO).
 pub struct ParentId;
 
-/// Some greater elements, elements and objects can contain other objects. These elements and
-/// objects have the following additional properties:
+/// Some greater elements, elements and objects can contain other objects.
+///
+/// These elements and objects have the following additional properties:
 ///
 /// - **content span**: Marks where in the document the content begins and ends.
 /// - **content**: A list of all elements, objects and raw string contained in this element or
@@ -95,6 +107,8 @@ pub struct ParentId;
 /// The actual data is stored in the convenience struct [`ContentData`]. The implementing structs
 /// only need to implement `content_data()` and this trait will provide the getters for the fields
 /// of the `ContentData` struct.
+///
+/// [`ContentData`]: struct.ContentData.html
 pub trait ContainsObjects: SharedBehavior {
     /// Returns a reference to the data needed to contain objects.
     ///
@@ -117,12 +131,14 @@ pub trait ContainsObjects: SharedBehavior {
 /// objects.
 ///
 /// See [`ContainsObjects`].
+///
+/// [`ContainsObjects`]: trait.ContainsObjects.html
 pub struct ContentData {
     span: Span,
     content: Vec<ObjectId>,
 }
 
-/// This is an id in the storage engine.
+/// This is an id in the storage engine (TODO).
 pub struct ObjectId;
 
 /// Some greater elements and elements can have affiliated keywords. Those elements have to
@@ -135,6 +151,8 @@ pub struct ObjectId;
 /// The actual data is stored in the convenience struct [`AffiliatedKeywordsData`]. The
 /// implementing structs only need to implement `affiliated_keywords_data()` and this trait will
 /// provide the getters for the fields of the `AffiliatedKeywordsData` struct.
+///
+/// [`AffiliatedKeywordsData`]: struct.AffiliatedKeywordsData.html
 pub trait HasAffiliatedKeywords: Element {
     /// Returns a reference to the data needed to have affiliated keywords.
     ///
@@ -156,6 +174,8 @@ pub trait HasAffiliatedKeywords: Element {
 /// Helper struct that contains the data for the elements that have affiliated keywords.
 ///
 /// See [`HasAffiliatedKeywords`].
+///
+/// [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
 pub struct AffiliatedKeywordsData {
     affiliated_keywords: AffiliatedKeywords,
     span: Span,
@@ -224,6 +244,9 @@ impl<T> SpannedValue<T> {
     }
 }
 
+/// A secondary string is a list of raw strings and objects.
+///
+/// It is used for attributes of elements that can contain objects.
 pub struct SecondaryString(Vec<ObjectId>);
 
 /// Marker trait for objects in an org file.
@@ -235,26 +258,9 @@ pub trait Object: SharedBehavior {}
 ///
 /// Elements represent the structure of the org file.
 ///
-/// Elements are:
+/// See [`elements`] module for all available elements.
 ///
-/// - all elements listen in [`GreaterElement`]
-/// - [`BabelCall`]
-/// - [`Clock`]
-/// - [`Comment`]
-/// - [`CommentBlock`]
-/// - [`DiarySexp`]
-/// - [`ExampleBlock`]
-/// - [`ExportBlock`]
-/// - [`FixedWidth`]
-/// - [`HorizontalRule`]
-/// - [`Keyword`]
-/// - [`LatexEnvironment`]
-/// - [`NodeProperty`]
-/// - [`Paragraph`]
-/// - [`Planning`]
-/// - [`SrcBlock`]
-/// - [`TableRow`]
-/// - [`VerseBlock`]
+/// [`elements`]: elements/index.html
 pub trait Element: SharedBehavior {}
 
 /// Marker trait for the greater elements in an org file.
@@ -509,6 +515,7 @@ pub mod elements {
     }
 }
 
+/// Contains all objects.
 pub mod objects {
     use super::*;
 
