@@ -407,10 +407,10 @@ impl Timestamp {
     ///
     /// ```
     /// # extern crate chrono;
-    /// # extern crate orgmode;
+    /// # extern crate rust_orgmode;
     /// # use chrono::NaiveDate;
-    /// # use orgmode::Timestamp;
-    /// # use orgmode::TimestampData;
+    /// # use rust_orgmode::Timestamp;
+    /// # use rust_orgmode::TimestampData;
     /// #
     /// let ts = Timestamp::Active(
     ///     TimestampData::new(NaiveDate::from_ymd(2018, 04, 28))
