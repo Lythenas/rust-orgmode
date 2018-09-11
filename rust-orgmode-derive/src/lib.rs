@@ -9,34 +9,86 @@ use proc_macro2::{TokenStream, Span};
 use syn::{DeriveInput, Data, Fields, Field, Type, TypePath, Visibility, Ident, Path};
 use syn::spanned::Spanned;
 use syn::token::Colon;
+use syn::parse::{Parse, ParseStream};
 
-#[proc_macro_attribute]
-pub fn shared_behavior(_: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let mut input = parse_macro_input!(input as DeriveInput);
-    match &mut input.data {
-        Data::Struct(ref mut data) => {
-            match data.fields {
-                Fields::Named(ref mut fields) => {
-                    let path = quote! { SharedBehaviorData }.into();
-                    fields.named.push(Field {
-                        attrs: Vec::new(),
-                        vis: Visibility::Inherited,
-                        ident: Some(Ident::new("shared_behavior_data", Span::call_site())),
-                        colon_token: Some(Colon { spans: [Span::call_site()] }),
-                        ty: Type::Path(TypePath {
-                            qself: None,
-                            path: parse_macro_input!(path as Path),
-                        }),
-                    })
-                },
-                _ => panic!("Not named fields."),
+struct FieldsToAdd {
+    fields: Vec<String>,
+}
+
+impl Parse for FieldsToAdd {
+    fn parse(input: ParseStream) -> Result<Self, syn::parse::Error> {
+        let mut fields = Vec::new();
+        loop {
+            let ident = input.parse::<Ident>()?;
+            fields.push(ident.to_string());
+
+            if input.peek(Token![,]) {
+                input.parse::<Token![,]>()?;
+            } else {
+                break;
             }
-        },
-        _ => panic!("Not a struct."),
+        }
+        return Ok(FieldsToAdd { fields })
+    }
+}
+
+macro_rules! make_path {
+    ($name:ident) => {
+        {
+            let path = quote! { $name }.into();
+            parse_macro_input!(path as Path)
+        }
     };
-    //shared_behavior_data: SharedBehaviorData,
+}
+
+/// Attribute for adding fields used in the traits:
+///
+/// - `SharedBehavior`
+/// - `HasAffiliatedKeywords`
+/// - `ContainsObjects`
+#[proc_macro_attribute]
+pub fn add_fields_for(args: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let FieldsToAdd { fields } = parse_macro_input!(args as FieldsToAdd);
+    let mut input = parse_macro_input!(input as DeriveInput);
+
+    {
+        let output_fields = match &mut input.data {
+            Data::Struct(ref mut data) => {
+                match data.fields {
+                    Fields::Named(ref mut fields) => &mut fields.named,
+                    _ => panic!("Not named fields."),
+                }
+            },
+            _ => panic!("Not a struct."),
+        };
+
+        for field in fields {
+            let field = match field.as_ref() {
+                "SharedBehavior" => make_field(make_path!(SharedBehaviorData), "shared_behavior_data"),
+                "HasAffiliatedKeywords" => make_field(make_path!(AffiliatedKeywordsData), "affiliated_keywords_data"),
+                "ContainsObjects" => make_field(make_path!(ContentData), "content_data"),
+                _ => panic!(format!("{} not recognized.", field)),
+            };
+            output_fields.push(field);
+        }
+    }
+
     let output = quote! { #input };
     proc_macro::TokenStream::from(output)
+}
+
+/// Creates the field with the given path and name.
+fn make_field(path: Path, name: &str) -> Field {
+    Field {
+        attrs: Vec::new(),
+        vis: Visibility::Inherited,
+        ident: Some(Ident::new(name, Span::call_site())),
+        colon_token: Some(Colon { spans: [Span::call_site()] }),
+        ty: Type::Path(TypePath {
+            qself: None,
+            path,
+        }),
+    }
 }
 
 /// Searched for the given field on the data.

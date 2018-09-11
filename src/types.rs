@@ -23,7 +23,6 @@
 //! [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
 
 use std::collections::HashMap;
-use rust_orgmode_derive::shared_behavior;
 
 /// All greater elements, elements and objects share some shared behavior.
 ///
@@ -292,6 +291,7 @@ pub trait GreaterElement: Element + ContainsObjects {}
 /// [greater elements]: greater_elements/index.html
 pub mod elements {
     use super::*;
+    use rust_orgmode_derive::add_fields_for;
 
     /// A babel call element.
     ///
@@ -334,95 +334,83 @@ pub mod elements {
     }
 
     #[derive(Element)]
-    #[shared_behavior]
+    #[add_fields_for(SharedBehavior)]
     pub struct Clock {
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct Comment {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct CommentBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct DiarySexp {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct ExampleBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct ExportBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct FixedWidth {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct HorizontalRule {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct Keyword {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct LatexEnvironment {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element)]
+    #[add_fields_for(SharedBehavior)]
     pub struct NodeProperty {
-        shared_behavior_data: SharedBehaviorData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct Paragraph {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element)]
+    #[add_fields_for(SharedBehavior)]
     pub struct Planning {
-        shared_behavior_data: SharedBehaviorData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct SrcBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(Element)]
+    #[add_fields_for(SharedBehavior)]
     pub struct TableRow {
-        shared_behavior_data: SharedBehaviorData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct VerseBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 }
 
