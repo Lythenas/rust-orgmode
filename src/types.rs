@@ -286,15 +286,11 @@ pub trait Element: SharedBehavior {}
 /// - [`Table`]
 pub trait GreaterElement: Element + ContainsObjects {}
 
-use self::elements::*;
-
-/// Contains all elements.
+/// Contains all elements except [greater elements].
 ///
-/// TODO maybe separate in elements and greater elements.
+/// [greater elements]: greater_elements/index.html
 pub mod elements {
     use super::*;
-
-    // TODO make a procedural macro to derive all this
 
     /// A babel call element.
     ///
@@ -336,13 +332,6 @@ pub mod elements {
         }
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
-    pub struct CenterBlock {
-        shared_behavior_data: SharedBehaviorData,
-        content_data: ContentData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-    }
-
     #[derive(Element)]
     pub struct Clock {
         shared_behavior_data: SharedBehaviorData,
@@ -366,20 +355,6 @@ pub mod elements {
         affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
-    pub struct Drawer {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
-    }
-
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
-    pub struct DynamicBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
-    }
-
     #[derive(Element, HasAffiliatedKeywords)]
     pub struct ExampleBlock {
         shared_behavior_data: SharedBehaviorData,
@@ -398,36 +373,10 @@ pub mod elements {
         affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
-    pub struct FootnoteDefinition {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
-    }
-
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
-    pub struct Headline {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
-    }
-
     #[derive(Element, HasAffiliatedKeywords)]
     pub struct HorizontalRule {
         shared_behavior_data: SharedBehaviorData,
         affiliated_keywords_data: AffiliatedKeywordsData,
-    }
-
-    #[derive(GreaterElement)]
-    pub struct Inlinetask {
-        shared_behavior_data: SharedBehaviorData,
-        content_data: ContentData,
-    }
-
-    #[derive(GreaterElement)]
-    pub struct Item {
-        shared_behavior_data: SharedBehaviorData,
-        content_data: ContentData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
@@ -453,16 +402,85 @@ pub mod elements {
         affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
+    #[derive(Element)]
+    pub struct Planning {
+        shared_behavior_data: SharedBehaviorData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct SrcBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(Element)]
+    pub struct TableRow {
+        shared_behavior_data: SharedBehaviorData,
+    }
+
+    #[derive(Element, HasAffiliatedKeywords)]
+    pub struct VerseBlock {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+}
+
+/// Contains all greater elements.
+pub mod greater_elements {
+    use super::*;
+
     #[derive(GreaterElement, HasAffiliatedKeywords)]
-    pub struct PlainList {
+    pub struct CenterBlock {
+        shared_behavior_data: SharedBehaviorData,
+        content_data: ContentData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct Drawer {
         shared_behavior_data: SharedBehaviorData,
         affiliated_keywords_data: AffiliatedKeywordsData,
         content_data: ContentData,
     }
 
-    #[derive(Element)]
-    pub struct Planning {
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct DynamicBlock {
         shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct FootnoteDefinition {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct Headline {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement)]
+    pub struct Inlinetask {
+        shared_behavior_data: SharedBehaviorData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement)]
+    pub struct Item {
+        shared_behavior_data: SharedBehaviorData,
+        content_data: ContentData,
+    }
+
+    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    pub struct PlainList {
+        shared_behavior_data: SharedBehaviorData,
+        affiliated_keywords_data: AffiliatedKeywordsData,
+        content_data: ContentData,
     }
 
     #[derive(GreaterElement)]
@@ -491,12 +509,6 @@ pub mod elements {
         content_data: ContentData,
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
-    pub struct SrcBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-    }
-
     #[derive(GreaterElement, HasAffiliatedKeywords)]
     pub struct Table {
         shared_behavior_data: SharedBehaviorData,
@@ -504,16 +516,6 @@ pub mod elements {
         content_data: ContentData,
     }
 
-    #[derive(Element)]
-    pub struct TableRow {
-        shared_behavior_data: SharedBehaviorData,
-    }
-
-    #[derive(Element, HasAffiliatedKeywords)]
-    pub struct VerseBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-    }
 }
 
 /// Contains all objects.
