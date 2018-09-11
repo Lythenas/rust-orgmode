@@ -417,92 +417,71 @@ pub mod elements {
 /// Contains all greater elements.
 pub mod greater_elements {
     use super::*;
+    use rust_orgmode_derive::add_fields_for;
 
     #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct CenterBlock {
-        shared_behavior_data: SharedBehaviorData,
-        content_data: ContentData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
     }
 
     #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct Drawer {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct DynamicBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct FootnoteDefinition {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct Headline {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement)]
+    #[add_fields_for(GreaterElement)]
     pub struct Inlinetask {
-        shared_behavior_data: SharedBehaviorData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement)]
+    #[add_fields_for(GreaterElement)]
     pub struct Item {
-        shared_behavior_data: SharedBehaviorData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct PlainList {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement)]
+    #[add_fields_for(GreaterElement)]
     pub struct PropertyDrawer {
-        shared_behavior_data: SharedBehaviorData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct QuoteBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement)]
+    #[add_fields_for(GreaterElement)]
     pub struct Section {
-        shared_behavior_data: SharedBehaviorData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct SpecialBlock {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
     }
 
     #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct Table {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-        content_data: ContentData,
     }
 
 }
@@ -510,94 +489,95 @@ pub mod greater_elements {
 /// Contains all objects.
 pub mod objects {
     use super::*;
+    use rust_orgmode_derive::add_fields_for;
 
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Entity {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct ExportSnippet {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct FootnoteReference {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct InlineBabelCall {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct InlineSrcBlock {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct LatexFragment {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct LineBreak {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Link {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Macro {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct RadioTarget {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct StatisticsCookie {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Subscript {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Superscript {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct TableCell {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Target {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Bold {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Italic {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Underline {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct StrikeThrough {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Code {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Verbatim {
-        shared_behavior_data: SharedBehaviorData,
     }
     #[derive(Object)]
+    #[add_fields_for(Object)]
     pub struct Timestamp {
-        shared_behavior_data: SharedBehaviorData,
     }
 
 }

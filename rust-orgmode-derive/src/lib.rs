@@ -1,3 +1,4 @@
+#![feature(proc_macro_diagnostic)]
 extern crate proc_macro;
 extern crate proc_macro2;
 #[macro_use]
@@ -6,13 +7,13 @@ extern crate syn;
 extern crate quote;
 
 use proc_macro2::{TokenStream, Span};
-use syn::{DeriveInput, Data, Fields, Field, Type, TypePath, Visibility, Ident, Path};
+use syn::{DeriveInput, Data, Fields, Field, Type, TypePath, Visibility, Ident, Path, DataUnion, DataEnum};
 use syn::spanned::Spanned;
 use syn::token::Colon;
 use syn::parse::{Parse, ParseStream};
 
 struct FieldsToAdd {
-    fields: Vec<String>,
+    fields: Vec<Ident>,
 }
 
 impl Parse for FieldsToAdd {
@@ -20,7 +21,7 @@ impl Parse for FieldsToAdd {
         let mut fields = Vec::new();
         loop {
             let ident = input.parse::<Ident>()?;
-            fields.push(ident.to_string());
+            fields.push(ident);
 
             if input.peek(Token![,]) {
                 input.parse::<Token![,]>()?;
@@ -36,16 +37,48 @@ macro_rules! make_path {
     ($name:ident) => {
         {
             let path = quote! { $name }.into();
-            parse_macro_input!(path as Path)
+            match syn::parse::<Path>(path) {
+                Ok(data) => data,
+                Err(err) => panic!(format!("Err: {:?}", err)),
+            }
         }
     };
 }
 
-/// Attribute for adding fields used in the traits:
+fn error_no_struct_with_named_fields<T>(elem: &T) -> proc_macro::TokenStream 
+    where T: Spanned + quote::ToTokens {
+    elem.span().unstable().error("Only structs with named fields are supported.").emit();
+    proc_macro::TokenStream::new()
+}
+
+/// Attribute for adding fields to structs with named fields.
+///
+/// Can add fields used in the traits:
 ///
 /// - `SharedBehavior`
 /// - `HasAffiliatedKeywords`
 /// - `ContainsObjects`
+/// - `Element` (same as `SharedBehavior`)
+/// - `Object` (same as `SharedBehavior`)
+/// - `GreaterElement` (same as `SharedBehavior` and `ContainsObjects`)
+///
+/// # Usage
+///
+/// ```ignore
+/// use rust_orgmode_derive::add_fields_for;
+///
+/// #[add_fields_for(GreaterElement)]
+/// struct SomeStruct {}
+/// ```
+///
+/// produces:
+///
+/// ```ignore
+/// struct SomeStruct {
+///     shared_behavior_data: SharedBehaviorData,
+///     content_data: ContentData,
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn add_fields_for(args: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let FieldsToAdd { fields } = parse_macro_input!(args as FieldsToAdd);
@@ -56,25 +89,53 @@ pub fn add_fields_for(args: proc_macro::TokenStream, input: proc_macro::TokenStr
             Data::Struct(ref mut data) => {
                 match data.fields {
                     Fields::Named(ref mut fields) => &mut fields.named,
-                    _ => panic!("Not named fields."),
+                    ref other => {
+                        return error_no_struct_with_named_fields(other);
+                    },
                 }
             },
-            _ => panic!("Not a struct."),
+            Data::Enum(DataEnum { enum_token: other, .. }) => {
+                return error_no_struct_with_named_fields(&other);
+            },
+            Data::Union(DataUnion { union_token: other, .. }) => {
+                return error_no_struct_with_named_fields(&other);
+            },
         };
 
         for field in fields {
-            let field = match field.as_ref() {
-                "SharedBehavior" => make_field(make_path!(SharedBehaviorData), "shared_behavior_data"),
-                "HasAffiliatedKeywords" => make_field(make_path!(AffiliatedKeywordsData), "affiliated_keywords_data"),
-                "ContainsObjects" => make_field(make_path!(ContentData), "content_data"),
-                _ => panic!(format!("{} not recognized.", field)),
+            let field_name = field.to_string();
+            let fields = match field_name.as_ref() {
+                "SharedBehavior" | "Element" | "Object" => vec![shared_behavior_field()],
+                "HasAffiliatedKeywords" => vec![has_affiliated_keywords_field()],
+                "ContainsObjects" => vec![contains_objects_field()],
+                "GreaterElement" => {
+                    vec![
+                        shared_behavior_field(),
+                        contains_objects_field()
+                    ]
+                },
+                _ => {
+                    field.span().unstable().error(format!("`{}` is not recognized.", field_name)).emit();
+                    Vec::new()
+                },
             };
-            output_fields.push(field);
+            output_fields.extend(fields);
         }
     }
 
     let output = quote! { #input };
     proc_macro::TokenStream::from(output)
+}
+
+fn shared_behavior_field() -> Field {
+    make_field(make_path!(SharedBehaviorData), "shared_behavior_data")
+}
+
+fn has_affiliated_keywords_field() -> Field {
+    make_field(make_path!(AffiliatedKeywordsData), "affiliated_keywords_data")
+}
+fn contains_objects_field() -> Field {
+    make_field(make_path!(ContentData), "content_data")
 }
 
 /// Creates the field with the given path and name.
