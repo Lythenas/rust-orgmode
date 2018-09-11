@@ -75,9 +75,9 @@ fn impl_shared_behavior(input: &DeriveInput) -> TokenStream {
     }
 }
 
-/// Derive the impl for [`Element`].
+/// Derive the impl for `Element`.
 ///
-/// Also implements [`SharedBehavior`].
+/// Also implements `SharedBehavior`.
 #[proc_macro_derive(Element)]
 pub fn element_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -97,7 +97,7 @@ fn impl_element(input: &DeriveInput) -> TokenStream {
     }
 }
 
-/// Derive the impl for [`ContainsObjects`].
+/// Derive the impl for `ContainsObjects`.
 #[proc_macro_derive(ContainsObjects)]
 pub fn contains_objects_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -119,9 +119,9 @@ fn impl_contains_objects(input: &DeriveInput) -> TokenStream {
     }
 }
 
-/// Derive the impl for [`GreaterElement`].
+/// Derive the impl for `GreaterElement`.
 ///
-/// Also implements [`Element`] and [`SharedBehavior`].
+/// Also implements `Element` and `SharedBehavior`.
 #[proc_macro_derive(GreaterElement)]
 pub fn greater_element_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -143,7 +143,7 @@ fn impl_greater_element(input: &DeriveInput) -> TokenStream {
     }
 }
 
-/// Derive the impl for [`HasAffiliatedKeywords`].
+/// Derive the impl for `HasAffiliatedKeywords`.
 #[proc_macro_derive(HasAffiliatedKeywords)]
 pub fn has_affiliated_keywords_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
