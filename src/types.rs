@@ -141,8 +141,9 @@ pub struct ContentData {
 /// This is an id in the storage engine (TODO).
 pub struct ObjectId;
 
-/// Some greater elements and elements can have affiliated keywords. Those elements have to
-/// following additional properties:
+/// Some greater elements and elements can have affiliated keywords.
+///
+/// Those elements have to following additional properties:
 ///
 /// - **affiliated keywords span**: Marks where in the document the affiliated keywords are
 ///   location.
