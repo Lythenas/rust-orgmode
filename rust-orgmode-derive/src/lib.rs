@@ -6,8 +6,38 @@ extern crate syn;
 extern crate quote;
 
 use proc_macro2::{TokenStream, Span};
-use syn::{DeriveInput, Data, Fields, Field, Type, TypePath};
+use syn::{DeriveInput, Data, Fields, Field, Type, TypePath, Visibility, Ident, Path};
 use syn::spanned::Spanned;
+use syn::token::Colon;
+
+#[proc_macro_attribute]
+pub fn shared_behavior(_: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let mut input = parse_macro_input!(input as DeriveInput);
+    match &mut input.data {
+        Data::Struct(ref mut data) => {
+            match data.fields {
+                Fields::Named(ref mut fields) => {
+                    let path = quote! { SharedBehaviorData }.into();
+                    fields.named.push(Field {
+                        attrs: Vec::new(),
+                        vis: Visibility::Inherited,
+                        ident: Some(Ident::new("shared_behavior_data", Span::call_site())),
+                        colon_token: Some(Colon { spans: [Span::call_site()] }),
+                        ty: Type::Path(TypePath {
+                            qself: None,
+                            path: parse_macro_input!(path as Path),
+                        }),
+                    })
+                },
+                _ => panic!("Not named fields."),
+            }
+        },
+        _ => panic!("Not a struct."),
+    };
+    //shared_behavior_data: SharedBehaviorData,
+    let output = quote! { #input };
+    proc_macro::TokenStream::from(output)
+}
 
 /// Searched for the given field on the data.
 ///
@@ -29,7 +59,7 @@ fn get_field<'a>(trait_name: &str, field_name: &str, data: &'a Data) -> &'a Fiel
     }
 }
 
-/// Implements [`SharedBehavior`].
+/// Implements `SharedBehavior`.
 ///
 /// This is not derivable because it's not very useful on it's own.
 fn impl_shared_behavior(input: &DeriveInput) -> TokenStream {

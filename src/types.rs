@@ -23,6 +23,7 @@
 //! [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
 
 use std::collections::HashMap;
+use rust_orgmode_derive::shared_behavior;
 
 /// All greater elements, elements and objects share some shared behavior.
 ///
@@ -333,8 +334,8 @@ pub mod elements {
     }
 
     #[derive(Element)]
+    #[shared_behavior]
     pub struct Clock {
-        shared_behavior_data: SharedBehaviorData,
     }
 
     #[derive(Element, HasAffiliatedKeywords)]
