@@ -1,6 +1,6 @@
 language: rust
 rust:
   - nightly
-matrix:
-  fast_finish: true<Paste>
 cache: cargo
+matrix:
+  fast_finish: true
