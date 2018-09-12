@@ -17,7 +17,7 @@
 //!
 //! [`Object`]: trait.Object.html
 //! [`Element`]: trait.Element.html
-//! [`GreaterElement`]: trait.Element.html
+//! [`GreaterElement`]: trait.GreaterElement.html
 //! [`SharedBehavior`]: trait.SharedBehavior.html
 //! [`ContainsObjects`]: trait.ContainsObjects.html
 //! [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
@@ -260,35 +260,17 @@ pub trait Object: SharedBehavior {}
 /// Elements represent the structure of the org file.
 ///
 /// See [`elements`] module for all available elements.
-///
-/// [`elements`]: elements/index.html
 pub trait Element: SharedBehavior {}
 
 /// Marker trait for the greater elements in an org file.
 ///
 /// Greater elements are elements which can contain other (greater) elements. Usually they can't
-/// contain themselfes.
+/// contain themselfes (see the specific element for more details).
 ///
-/// Greater elements are:
-///
-/// - [`CenterBlock`]
-/// - [`Drawer`]
-/// - [`DynamicBlock`]
-/// - [`FootnoteDefinition`]
-/// - [`Headline`]
-/// - [`Inlinetask`]
-/// - [`Item`]
-/// - [`PlainList`]
-/// - [`PropertyDrawer`]
-/// - [`QuoteBlock`]
-/// - [`Section`]
-/// - [`SpecialBlock`]
-/// - [`Table`]
+/// See [`greater_elements`] module for all available greater elements.
 pub trait GreaterElement: Element + ContainsObjects {}
 
-/// Contains all elements except [greater elements].
-///
-/// [greater elements]: greater_elements/index.html
+/// Contains all elements except [`greater_elements`].
 pub mod elements {
     use super::*;
     use rust_orgmode_derive::add_fields_for;
