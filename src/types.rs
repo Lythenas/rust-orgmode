@@ -287,110 +287,93 @@ pub mod elements {
     ///
     /// `FUNCTION` is the name of a [`SrcBlock`] to execute. `INSIDE-HEADER`, `ARGUEMENTS` and
     /// `END-HEADER` can contain everything except a newline (and their respective closing char).
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct BabelCall {
-        shared_behavior_data: SharedBehaviorData,
-        affiliated_keywords_data: AffiliatedKeywordsData,
-
         /// The code block to call
         call: String,
         inside_header: String,
         arguments: String,
         end_header: String,
-        // raw_value: String,
+        raw_value: String,
     }
 
-    impl BabelCall {
-        pub fn call(&self) -> &str {
-            &self.call
-        }
-        pub fn inside_header(&self) -> &str {
-            &self.inside_header
-        }
-        pub fn arguments(&self) -> &str {
-            &self.arguments
-        }
-        pub fn end_header(&self) -> &str {
-            &self.end_header
-        }
-    }
-
-    #[derive(Element)]
+    #[derive(Element, getters)]
     #[add_fields_for(SharedBehavior)]
     pub struct Clock {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct Comment {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct CommentBlock {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct DiarySexp {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct ExampleBlock {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct ExportBlock {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct FixedWidth {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct HorizontalRule {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct Keyword {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct LatexEnvironment {
     }
 
-    #[derive(Element)]
+    #[derive(Element, getters)]
     #[add_fields_for(SharedBehavior)]
     pub struct NodeProperty {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct Paragraph {
     }
 
-    #[derive(Element)]
+    #[derive(Element, getters)]
     #[add_fields_for(SharedBehavior)]
     pub struct Planning {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct SrcBlock {
     }
 
-    #[derive(Element)]
+    #[derive(Element, getters)]
     #[add_fields_for(SharedBehavior)]
     pub struct TableRow {
     }
 
-    #[derive(Element, HasAffiliatedKeywords)]
+    #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct VerseBlock {
     }
@@ -401,67 +384,67 @@ pub mod greater_elements {
     use super::*;
     use rust_orgmode_derive::add_fields_for;
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct CenterBlock {
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct Drawer {
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct DynamicBlock {
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct FootnoteDefinition {
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct Headline {
     }
 
-    #[derive(GreaterElement)]
+    #[derive(GreaterElement, getters)]
     #[add_fields_for(GreaterElement)]
     pub struct Inlinetask {
     }
 
-    #[derive(GreaterElement)]
+    #[derive(GreaterElement, getters)]
     #[add_fields_for(GreaterElement)]
     pub struct Item {
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct PlainList {
     }
 
-    #[derive(GreaterElement)]
+    #[derive(GreaterElement, getters)]
     #[add_fields_for(GreaterElement)]
     pub struct PropertyDrawer {
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct QuoteBlock {
     }
 
-    #[derive(GreaterElement)]
+    #[derive(GreaterElement, getters)]
     #[add_fields_for(GreaterElement)]
     pub struct Section {
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct SpecialBlock {
     }
 
-    #[derive(GreaterElement, HasAffiliatedKeywords)]
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct Table {
     }
@@ -473,91 +456,91 @@ pub mod objects {
     use super::*;
     use rust_orgmode_derive::add_fields_for;
 
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Entity {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct ExportSnippet {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct FootnoteReference {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct InlineBabelCall {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct InlineSrcBlock {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct LatexFragment {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct LineBreak {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Link {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Macro {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct RadioTarget {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct StatisticsCookie {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Subscript {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Superscript {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct TableCell {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Target {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Bold {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Italic {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Underline {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct StrikeThrough {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Code {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Verbatim {
     }
-    #[derive(Object)]
+    #[derive(Object, getters)]
     #[add_fields_for(Object)]
     pub struct Timestamp {
     }

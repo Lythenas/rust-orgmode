@@ -11,6 +11,7 @@
 //! This library is aimed to support most org mode features. But org mode is very comprehensive.
 //!
 //! Currently only parsing of the major outline and timestamp is supported.
+#![feature(custom_attribute)]
 
 #[macro_use]
 extern crate rust_orgmode_derive;
