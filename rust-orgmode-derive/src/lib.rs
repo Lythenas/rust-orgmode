@@ -6,11 +6,14 @@ extern crate syn;
 #[macro_use]
 extern crate quote;
 
-use proc_macro2::{TokenStream, Span};
-use syn::{DeriveInput, Data, Fields, Field, Type, TypePath, Visibility, Ident, Path, DataUnion, DataEnum, Attribute};
+use proc_macro2::{Span, TokenStream};
+use syn::parse::{Parse, ParseStream};
 use syn::spanned::Spanned;
 use syn::token::Colon;
-use syn::parse::{Parse, ParseStream};
+use syn::{
+    Attribute, Data, DataEnum, DataUnion, DeriveInput, Field, Fields, Ident, Path, Type, TypePath,
+    Visibility,
+};
 
 struct FieldsToAdd {
     fields: Vec<Ident>,
@@ -29,25 +32,28 @@ impl Parse for FieldsToAdd {
                 break;
             }
         }
-        return Ok(FieldsToAdd { fields })
+        return Ok(FieldsToAdd { fields });
     }
 }
 
 macro_rules! make_path {
-    ($name:ident) => {
-        {
-            let path = quote! { $name }.into();
-            match syn::parse::<Path>(path) {
-                Ok(data) => data,
-                Err(err) => panic!(format!("Err: {:?}", err)),
-            }
+    ($name:ident) => {{
+        let path = quote! { $name }.into();
+        match syn::parse::<Path>(path) {
+            Ok(data) => data,
+            Err(err) => panic!(format!("Err: {:?}", err)),
         }
-    };
+    }};
 }
 
 fn error_no_struct_with_named_fields<T>(elem: &T) -> proc_macro::TokenStream
-    where T: Spanned + quote::ToTokens {
-    elem.span().unstable().error("Only structs with named fields are supported.").emit();
+where
+    T: Spanned + quote::ToTokens,
+{
+    elem.span()
+        .unstable()
+        .error("Only structs with named fields are supported.")
+        .emit();
     proc_macro::TokenStream::new()
 }
 
@@ -80,26 +86,31 @@ fn error_no_struct_with_named_fields<T>(elem: &T) -> proc_macro::TokenStream
 /// }
 /// ```
 #[proc_macro_attribute]
-pub fn add_fields_for(args: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn add_fields_for(
+    args: proc_macro::TokenStream,
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
     let FieldsToAdd { fields } = parse_macro_input!(args as FieldsToAdd);
     let mut input = parse_macro_input!(input as DeriveInput);
 
     {
         let output_fields = match &mut input.data {
-            Data::Struct(ref mut data) => {
-                match data.fields {
-                    Fields::Named(ref mut fields) => &mut fields.named,
-                    ref other => {
-                        return error_no_struct_with_named_fields(other);
-                    },
+            Data::Struct(ref mut data) => match data.fields {
+                Fields::Named(ref mut fields) => &mut fields.named,
+                ref other => {
+                    return error_no_struct_with_named_fields(other);
                 }
             },
-            Data::Enum(DataEnum { enum_token: other, .. }) => {
+            Data::Enum(DataEnum {
+                enum_token: other, ..
+            }) => {
                 return error_no_struct_with_named_fields(&other);
-            },
-            Data::Union(DataUnion { union_token: other, .. }) => {
+            }
+            Data::Union(DataUnion {
+                union_token: other, ..
+            }) => {
                 return error_no_struct_with_named_fields(&other);
-            },
+            }
         };
 
         for field in fields {
@@ -108,16 +119,15 @@ pub fn add_fields_for(args: proc_macro::TokenStream, input: proc_macro::TokenStr
                 "SharedBehavior" | "Element" | "Object" => vec![shared_behavior_field()],
                 "HasAffiliatedKeywords" => vec![has_affiliated_keywords_field()],
                 "ContainsObjects" => vec![contains_objects_field()],
-                "GreaterElement" => {
-                    vec![
-                        shared_behavior_field(),
-                        contains_objects_field()
-                    ]
-                },
+                "GreaterElement" => vec![shared_behavior_field(), contains_objects_field()],
                 _ => {
-                    field.span().unstable().error(format!("`{}` is not recognized.", field_name)).emit();
+                    field
+                        .span()
+                        .unstable()
+                        .error(format!("`{}` is not recognized.", field_name))
+                        .emit();
                     Vec::new()
-                },
+                }
             };
             output_fields.extend(fields);
         }
@@ -132,7 +142,10 @@ fn shared_behavior_field() -> Field {
 }
 
 fn has_affiliated_keywords_field() -> Field {
-    make_field(make_path!(AffiliatedKeywordsData), "affiliated_keywords_data")
+    make_field(
+        make_path!(AffiliatedKeywordsData),
+        "affiliated_keywords_data",
+    )
 }
 fn contains_objects_field() -> Field {
     make_field(make_path!(ContentData), "content_data")
@@ -140,21 +153,26 @@ fn contains_objects_field() -> Field {
 
 /// Creates the field with the given path and name.
 fn make_field(path: Path, name: &str) -> Field {
+    // this does not work so we have to construct the field manually
+    //let expand = quote! {
+    //    #[no_getter]
+    //    #name: #path
+    //}.into();
+    //Field::parse_named(&expand).unwrap()
     Field {
         attrs: vec![make_attribute("no_getter")],
         vis: Visibility::Inherited,
         ident: Some(Ident::new(name, Span::call_site())),
-        colon_token: Some(Colon { spans: [Span::call_site()] }),
-        ty: Type::Path(TypePath {
-            qself: None,
-            path,
+        colon_token: Some(Colon {
+            spans: [Span::call_site()],
         }),
+        ty: Type::Path(TypePath { qself: None, path }),
     }
 }
 
 fn make_attribute(name: &str) -> Attribute {
-    use syn::AttrStyle;
     use syn::token::{Bracket, Pound};
+    use syn::AttrStyle;
 
     let name = Ident::new(name, Span::call_site());
     let path = quote! { #name }.into();
@@ -164,9 +182,13 @@ fn make_attribute(name: &str) -> Attribute {
     };
 
     Attribute {
-        pound_token: Pound { spans: [Span::call_site()] },
+        pound_token: Pound {
+            spans: [Span::call_site()],
+        },
         style: AttrStyle::Outer,
-        bracket_token: Bracket { span: Span::call_site() },
+        bracket_token: Bracket {
+            span: Span::call_site(),
+        },
         path,
         tts: TokenStream::new(),
     }
@@ -178,17 +200,21 @@ fn make_attribute(name: &str) -> Attribute {
 /// Panic messages will include the `trait_name`.
 fn get_field<'a>(trait_name: &str, field_name: &str, data: &'a Data) -> &'a Field {
     match *data {
-        Data::Struct(ref data) => {
-            match data.fields {
-                Fields::Named(ref fields) => {
-                    fields.named.iter()
-                        .find(|ref field| field.ident.as_ref().unwrap() == field_name)
-                        .expect(&format!("{} needs a field named \"{}\".", trait_name, field_name))
-                },
-                _ => panic!("{} can only be derived on a struct with named fields.", trait_name)
-            }
+        Data::Struct(ref data) => match data.fields {
+            Fields::Named(ref fields) => fields
+                .named
+                .iter()
+                .find(|ref field| field.ident.as_ref().unwrap() == field_name)
+                .expect(&format!(
+                    "{} needs a field named \"{}\".",
+                    trait_name, field_name
+                )),
+            _ => panic!(
+                "{} can only be derived on a struct with named fields.",
+                trait_name
+            ),
         },
-        _ => panic!("{} can only be derived on a struct.", trait_name)
+        _ => panic!("{} can only be derived on a struct.", trait_name),
     }
 }
 
@@ -287,7 +313,11 @@ pub fn has_affiliated_keywords_derive(input: proc_macro::TokenStream) -> proc_ma
 /// Implements the `HasAffiliatedKeywords` trait.
 fn impl_affiliated_keywords(input: &DeriveInput) -> TokenStream {
     let name = &input.ident;
-    let field = get_field("HasAffiliatedKeywords", "affiliated_keywords_data", &input.data);
+    let field = get_field(
+        "HasAffiliatedKeywords",
+        "affiliated_keywords_data",
+        &input.data,
+    );
 
     quote_spanned! { field.span()=>
         impl HasAffiliatedKeywords for #name {
@@ -320,6 +350,8 @@ fn impl_object(input: &DeriveInput) -> TokenStream {
 ///
 /// The `add_fields_for` attribute adds this marker to all fields it generates.
 ///
+/// This needs `#![feature(custom_attribute)]`.
+///
 /// [`add_fields_for`]: fn.add_fields_for.html
 #[proc_macro_derive(getters)]
 pub fn getters_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -327,30 +359,32 @@ pub fn getters_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
     let name = &input.ident;
     let fields = match &input.data {
-        Data::Struct(ref data) => {
-            match data.fields {
-                Fields::Named(ref fields) => &fields.named,
-                ref other => {
-                    return error_no_struct_with_named_fields(other);
-                },
+        Data::Struct(ref data) => match data.fields {
+            Fields::Named(ref fields) => &fields.named,
+            ref other => {
+                return error_no_struct_with_named_fields(other);
             }
         },
-        Data::Enum(DataEnum { enum_token: other, .. }) => {
+        Data::Enum(DataEnum {
+            enum_token: other, ..
+        }) => {
             return error_no_struct_with_named_fields(&other);
-        },
-        Data::Union(DataUnion { union_token: other, .. }) => {
+        }
+        Data::Union(DataUnion {
+            union_token: other, ..
+        }) => {
             return error_no_struct_with_named_fields(&other);
-        },
+        }
     };
 
     let expanded = impl_getters(name, fields.iter());
     proc_macro::TokenStream::from(expanded)
 }
 
-fn impl_getters<'a>(name: &'a Ident, fields: impl Iterator<Item=&'a Field>) -> TokenStream {
-    let getters = fields.filter(|field| {
-        !contains_attr(field.attrs.iter(), "no_getter")
-    }).map(impl_one_getter);
+fn impl_getters<'a>(name: &'a Ident, fields: impl Iterator<Item = &'a Field>) -> TokenStream {
+    let getters = fields
+        .filter(|field| !contains_attr(field.attrs.iter(), "no_getter"))
+        .map(impl_one_getter);
 
     quote! {
         impl #name {
@@ -359,7 +393,7 @@ fn impl_getters<'a>(name: &'a Ident, fields: impl Iterator<Item=&'a Field>) -> T
     }
 }
 
-fn contains_attr<'a>(mut attrs: impl Iterator<Item=&'a Attribute>, name: &str) -> bool {
+fn contains_attr<'a>(mut attrs: impl Iterator<Item = &'a Attribute>, name: &str) -> bool {
     attrs.any(|attr| attr.interpret_meta().unwrap().name().to_string() == name)
 }
 
@@ -378,6 +412,5 @@ fn impl_one_getter(field: &Field) -> TokenStream {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {
-    }
+    fn it_works() {}
 }
