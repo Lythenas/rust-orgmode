@@ -277,6 +277,8 @@ pub mod elements {
 
     /// A babel call element.
     ///
+    /// # Sematics
+    ///
     /// Used to execute [`SrcBlock`]s and put their results into the org file.
     ///
     /// # Syntax
@@ -295,88 +297,383 @@ pub mod elements {
         inside_header: String,
         arguments: String,
         end_header: String,
-        raw_value: String,
     }
 
+    /// A clock element.
+    ///
+    /// # Sematics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// CLOCK: TIMESTAMP DURATION
+    /// ```
+    ///
+    /// `TIMESTAMP` and `DURATION` are optional. `TIMESTAMP` is a [`objects::Timestamp`]. `DURATION`
+    /// follows the pattern `=> HH:MM` where `HH` is a number containing any number of digits and
+    /// `MM` is a two digit number.
     #[derive(Element, getters)]
     #[add_fields_for(SharedBehavior)]
     pub struct Clock {
+        timestamp: Option<objects::Timestamp>,
+        duration: Option<(u64, u8)>,
     }
 
+    impl Clock {
+        pub fn status(&self) -> ClockStatus {
+            match self.duration {
+                Some(_) => ClockStatus::Closed,
+                None => ClockStatus::Running,
+            }
+        }
+    }
+
+    pub enum ClockStatus {
+        Running,
+        Closed,
+    }
+
+    /// A comment element.
+    ///
+    /// # Semantics
+    ///
+    /// Comments are ignored when parsing. They are not actually ignored, they just don't have any
+    /// meaning.
+    ///
+    /// # Snytax
+    ///
+    /// A line starting with `#` and space (or end of line). The `#` can be optionally preceded
+    /// with whitespace.
+    ///
+    ///
+    /// ```text
+    /// # CONTENTS
+    /// ```
+    ///
+    /// `CONTENTS` can be any string.
+    ///
+    /// Consecutive comment lines are accumulated into one comment.
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct Comment {
+        value: String,
     }
 
+    /// A comment block.
+    ///
+    /// # Semantics
+    ///
+    /// See [`Comment`].
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// #+BEGIN_COMMENT
+    /// CONTENTS
+    /// #+END_COMMENT
+    /// ```
+    ///
+    /// `CONTENTS` can contain anything except a line `#+END_COMMENT` on its own. Lines beginning
+    /// with stars must be quoted by a comma. `CONTENTS` will not be parsed.
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct CommentBlock {
+        value: String,
     }
 
+    /// A diary sexp.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// %%(VALUE
+    /// ```
+    ///
+    /// `VALUE` can contain any character except a newline. The expression has to start at the
+    /// beginning of the line.
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct DiarySexp {
+        value: String,
     }
 
+    /// An example block.
+    ///
+    /// # Semantics
+    ///
+    /// Its content will not be parsed. Examples are typeset in monospace when exporting.
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// #+BEGIN_EXAMPLE FLAGS
+    /// CONTENTS
+    /// #+END_EXAMPLE
+    /// ```
+    ///
+    /// `CONTENTS` can contain anything except a line `#+END_EXAMPLE` on its own. Lines beginning
+    /// with stars must be quoted by comma. `CONTENTS` will not be parsed. `CONTENT` can also
+    /// contain labels with the pattern `(ref:LABEL)`. **Labels are not recognized.**
+    ///
+    /// `FLAGS` see [`BlockFlags`].
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct ExampleBlock {
+        value: String,
+        flags: BlockFlags,
     }
 
+    /// Contains the flags of an [`ExampleBlock`] or [`SrcBlock`].
+    ///
+    /// Can contain the following flags:
+    ///
+    /// - `+n AMOUNT`: continued number lines, will continue the numbering of the previos numbered
+    ///   snippet. `AMOUNT` will be added to the last line of the previod block to determine the
+    ///   number of the first line.
+    /// - `-n AMOUNT`: new number lines (`AMOUNT` is the start line number of the block)
+    /// - `-i`: preserve indent
+    /// - `-r`: removes the labels when exporting. References will use line numbers.
+    /// - `-k`: don't use labels
+    /// - `-l "FMT"`: label format (if the default format conflicts with the language you are
+    ///   using)
+    ///
+    /// `AMOUNT` is an optional positive number.
+    ///
+    /// `FMT` can contain everything except `"` and newlines.
+    #[derive(getters)]
+    pub struct BlockFlags {
+        number_lines: Option<NumberLinesFlag>,
+        /// Default: false
+        preserve_indent: bool,
+        /// Default: true
+        ///
+        /// If true, code-references should use labels instead of line numbers.
+        retain_labels: bool,
+        label_fmt: Option<String>,
+    }
+
+    pub enum NumberLinesFlag {
+        Continued(u64),
+        New(u64),
+    }
+
+    /// An export block.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// #+BEGIN_EXPORT BACKEND
+    /// CONTENTS
+    /// #+END_EXPORT
+    /// ```
+    ///
+    /// `CONTENTS` can contain anything except a line `#+END_EXAMPLE` on its own. Lines beginning
+    /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
+    ///
+    /// `BACKEND` can contain any alpha-numerical character. Case is ignored.
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct ExportBlock {
+        value: String,
+        /// Always lowercase.
+        backend: String,
     }
 
+    /// A fixed width area.
+    ///
+    /// # Semantics
+    ///
+    /// Can be used in lists or text for examples. Similar to [`ExampleBlock`] but can be indented.
+    ///
+    /// # Syntax
+    ///
+    /// A line beginning with `:` followed by a whitespace or end of line. The `:` can be preceded
+    /// by whitespace.
+    ///
+    /// Consecutive fixed width lines are accumulated.
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct FixedWidth {
+        value: String,
     }
 
+    /// A horizontal line.
+    ///
+    /// # Semantics
+    ///
+    /// A horizontal line.
+    ///
+    /// # Syntax
+    ///
+    /// A line of at least 5 consecutive hyphens. Can be precesed by whitespace.
+    ///
+    /// ```text
+    /// -----
+    /// ```
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct HorizontalRule {
     }
 
+    /// A keyword.
+    ///
+    /// # Semantics
+    ///
+    /// A keywords is similar to [`AffiliatedKeywords`] but they don't belong to another element.
+    /// Orphaned affiliated keywords are considered regular keywords.
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// #+KEY: VALUE
+    /// ```
+    ///
+    /// `KEY` can contain any non-whitespace character. But it can't be equal to `CALL` or any
+    /// affiliated keyword.
+    ///
+    /// `VALUE` can contain any character except a newline.
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct Keyword {
     }
 
+    // TODO DocumentProperty same as keyword but contains objects.
+
+    /// A LaTeX environment.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// \begin{ENVIRONMENT}
+    /// CONTENTS
+    /// \end{ENVIRONMENT}
+    /// ```
+    ///
+    /// `ENVIRONMENT` can contain any alpha-numeric character and asterisks. Usually the asterisk
+    /// is only at the end.
+    ///
+    /// `CONTENT` can be anything except `\end{ENVIRONMENT}`.
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct LatexEnvironment {
+        /// Contains everything including `\begin...` and `\end`.
+        value: String,
     }
 
+    /// A node property.
+    ///
+    /// # Semantics
+    ///
+    /// A property contained in a [`greater_elements::PropertyDrawer`].
+    ///
+    /// # Syntax
+    ///
+    /// Follows one of these patterns:
+    ///
+    /// - `:NAME: VALUE`
+    /// - `:NAME+: VALUE`
+    /// - `:NAME:`
+    /// - `:NAME+:`
+    ///
+    /// `NAME` can contain any non-whitespace character but can't be an empty string or end with a
+    /// plus sign (`+`).
+    ///
+    /// `VALUE` can contain anything but a newline character.
     #[derive(Element, getters)]
     #[add_fields_for(SharedBehavior)]
     pub struct NodeProperty {
+        name: String,
+        value: String,
     }
 
+    /// A paragraph.
+    ///
+    /// # Semantics
+    ///
+    /// A paragraph is a list of strings and objects ([`SecondaryString`]). Line breaks in the text
+    /// are ignored and only [`objects::LineBreak`] will be recognized as a line break.
+    ///
+    /// # Syntax
+    ///
+    /// Everything that is not another element is paragraph. Empty lines and other elements end
+    /// paragraphs but all inner elements of the current paragraph must be closed first.
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct Paragraph {
+        // TODO figure out how to actually handle secondary strings
     }
 
+    /// A planning element.
+    ///
+    /// # Semantics
+    ///
+    /// Contains the deadline, scheduled and closed timestamps for a headline. All are optional.
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// KEYWORD: TIMESTAMP
+    /// ```
+    ///
+    /// `KEYWORD` is one of `DEADLINE`, `SCHEDULED` or `CLOSED`. Planning can be repeated but one
+    /// keywords can only be used once. The order doesn't matter.
+    ///
+    /// `TIMESTAMP` is a [`objects::Timestamp`].
+    ///
+    /// Consecutive planning items are aggregated into one.
     #[derive(Element, getters)]
     #[add_fields_for(SharedBehavior)]
     pub struct Planning {
+        closed: Option<objects::Timestamp>,
+        deadline: Option<objects::Timestamp>,
+        scheduled: Option<objects::Timestamp>,
     }
 
+    /// A block of source code.
+    ///
+    /// # Semantics
+    ///
+    /// Same as [`ExampleBlock`] but usually contains source code. The content will be highlighted
+    /// according to the language specified.
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// #+BEGIN_SRC LANGUAGE FLAGS ARGUMENTS
+    /// CONTENTS
+    /// #+END_SRC
+    /// ```
+    ///
+    /// `CONTENTS` can contain anything except a line `#+END_SRC` on its own. Lines beginning
+    /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
+    ///
+    /// `LANGUAGE` can contain anything except whitespace.
+    ///
+    /// `FLAGS` see [`BlockFlags`].
+    ///
+    /// `ARGUMENTS` can contain any character except a newline.
     #[derive(Element, HasAffiliatedKeywords, getters)]
     #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
     pub struct SrcBlock {
+        language: String,
+        flags: BlockFlags,
+        arguments: String,
     }
 
-    #[derive(Element, getters)]
-    #[add_fields_for(SharedBehavior)]
-    pub struct TableRow {
-    }
-
-    #[derive(Element, HasAffiliatedKeywords, getters)]
-    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
-    pub struct VerseBlock {
-    }
 }
 
 /// Contains all greater elements.
@@ -384,69 +681,259 @@ pub mod greater_elements {
     use super::*;
     use rust_orgmode_derive::add_fields_for;
 
+    /// A center block.
+    ///
+    /// # Semantics
+    ///
+    /// Centers text. Also the content can contain markup.
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// #+BEGIN_CENTER
+    /// CONTENTS
+    /// #+END_CENTER
+    /// ```
+    ///
+    /// `CONTENTS` can contain anything except a line `#+END_CENTER` on its own. Lines beginning
+    /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
     #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-    #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
+    #[add_fields_for(Element, HasAffiliatedKeywords)]
     pub struct CenterBlock {
+        content_data: ContentData, // TODO only allow the standard set of elements
     }
 
+    /// A drawer to hide content.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct Drawer {
     }
 
+    /// A dynamic block.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct DynamicBlock {
     }
 
+    /// A footnote definition.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct FootnoteDefinition {
     }
 
+    /// A headline.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct Headline {
     }
 
+    /// An inline task.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, getters)]
     #[add_fields_for(GreaterElement)]
     pub struct Inlinetask {
     }
 
+    /// An item in a list.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, getters)]
     #[add_fields_for(GreaterElement)]
     pub struct Item {
     }
 
+    /// A plain list.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct PlainList {
     }
 
+    /// A property drawer.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, getters)]
     #[add_fields_for(GreaterElement)]
     pub struct PropertyDrawer {
     }
 
+    /// A quote.
+    ///
+    /// # Semantics
+    ///
+    /// Used for quotes. When exporting this block will be indented on the left and right margin.
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct QuoteBlock {
     }
 
+    /// A section.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, getters)]
     #[add_fields_for(GreaterElement)]
     pub struct Section {
     }
 
+    /// A special block.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct SpecialBlock {
     }
 
+    /// A table.
+    ///
+    /// # Semantics
+    ///
+    /// TODO
+    ///
+    /// # Syntax
+    ///
+    /// TODO
+    ///
     #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
     #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
     pub struct Table {
+    }
+
+    /// A row in a [`Table`][`Table`].
+    ///
+    /// # Semantics
+    ///
+    /// A row contains cell which can contain content.
+    ///
+    /// # Syntax
+    ///
+    /// There are two kinds of table rows:
+    ///
+    /// - normal: vertical bar and any number of [`TableCell`][`objects::TableCell`]s
+    ///   ```text
+    ///   | cell 1 | cell 2 | ... |
+    ///   ```
+    /// - a rule: vertical bar followed by hyphens followed by a vertical bar
+    ///   ```text
+    ///   |--------|
+    ///   ```
+    #[derive(GreaterElement, getters)]
+    #[add_fields_for(SharedBehavior)]
+    pub struct TableRow {
+        kind: TableRowKind,
+        content_data: ContentData, // TODO only allow TableCells
+    }
+
+    pub enum TableRowKind {
+        Normal,
+        Rule,
+    }
+
+    /// A verse block.
+    ///
+    /// # Semantics
+    ///
+    /// Simmilar to an [`ExampleBlock`] but content is interpreted as objects. Verse blocks
+    /// preserve indentation.
+    ///
+    /// # Syntax
+    ///
+    /// ```text
+    /// #+BEGIN_VERSE
+    /// CONTENTS
+    /// #+END_VERSE
+    /// ```
+    ///
+    /// `CONTENTS` can contain anything except a line `#+END_VERSE` on its own. Lines beginning
+    /// with stars must be quoted by comma. `CONTENTS` will be parsed as objects.
+    #[derive(GreaterElement, HasAffiliatedKeywords, getters)]
+    #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+    pub struct VerseBlock {
+        content_data: ContentData, // TODO only allow the standard set of objects
     }
 
 }
