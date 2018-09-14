@@ -371,7 +371,10 @@ fn impl_object(input: &DeriveInput) -> TokenStream {
 /// extern crate rust_orgmode_derive;
 ///
 /// #[derive(getters)]
-/// pub struct Something<T> where T: Eq {
+/// pub struct Something<T>
+/// where
+///     T: Eq
+/// {
 ///     value: T,
 /// }
 ///
