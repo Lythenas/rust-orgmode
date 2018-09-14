@@ -11,8 +11,8 @@ use syn::parse::{Parse, ParseStream};
 use syn::spanned::Spanned;
 use syn::token::Colon;
 use syn::{
-    Attribute, Data, DataEnum, DataUnion, DeriveInput, Field, Fields, Ident, Path, Type, TypePath,
-    Visibility,
+    Attribute, Data, DataEnum, DataUnion, DeriveInput, Field, Fields, FieldsNamed, Generics, Ident,
+    Path, Type, TypePath, Visibility,
 };
 
 struct FieldsToAdd {
@@ -68,23 +68,35 @@ where
 /// - `Object` (same as `SharedBehavior`)
 /// - `GreaterElement` (same as `SharedBehavior` and `ContainsObjects`)
 ///
+/// **Note:** You need to enable the `custom_attribute` feature because we annotate all fields with
+/// `#[no_getter]` so the [`getters_derive`] does not generate unneded getters.
+///
 /// # Usage
 ///
-/// ```ignore
+/// ```
+/// #![feature(custom_attribute)]
 /// use rust_orgmode_derive::add_fields_for;
 ///
+/// # struct SharedBehaviorData;
+/// # struct ContentData;
+/// #
 /// #[add_fields_for(GreaterElement)]
 /// struct SomeStruct {}
 /// ```
 ///
 /// produces:
 ///
-/// ```ignore
+/// ```
+/// # struct SharedBehaviorData;
+/// # struct ContentData;
+/// #
 /// struct SomeStruct {
 ///     shared_behavior_data: SharedBehaviorData,
 ///     content_data: ContentData,
 /// }
 /// ```
+///
+/// [`getters_derive`]: fn.getters_derive.html
 #[proc_macro_attribute]
 pub fn add_fields_for(
     args: proc_macro::TokenStream,
@@ -352,7 +364,23 @@ fn impl_object(input: &DeriveInput) -> TokenStream {
 ///
 /// This needs `#![feature(custom_attribute)]`.
 ///
-/// [`add_fields_for`]: fn.add_fields_for.html
+/// # Examples
+///
+/// ```
+/// #[macro_use]
+/// extern crate rust_orgmode_derive;
+///
+/// #[derive(getters)]
+/// pub struct Something<T> where T: Eq {
+///     value: T,
+/// }
+///
+/// fn use_something(s: Something<String>) -> bool {
+///     s.value() == "something"
+/// }
+///
+/// # fn main() {}
+/// ```
 #[proc_macro_derive(getters)]
 pub fn getters_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -360,7 +388,7 @@ pub fn getters_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     let name = &input.ident;
     let fields = match &input.data {
         Data::Struct(ref data) => match data.fields {
-            Fields::Named(ref fields) => &fields.named,
+            Fields::Named(ref fields) => fields,
             ref other => {
                 return error_no_struct_with_named_fields(other);
             }
@@ -376,18 +404,22 @@ pub fn getters_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream
             return error_no_struct_with_named_fields(&other);
         }
     };
+    let generics = &input.generics;
 
-    let expanded = impl_getters(name, fields.iter());
+    let expanded = impl_getters(name, fields, generics);
     proc_macro::TokenStream::from(expanded)
 }
 
-fn impl_getters<'a>(name: &'a Ident, fields: impl Iterator<Item = &'a Field>) -> TokenStream {
+fn impl_getters(name: &Ident, fields: &FieldsNamed, generics: &Generics) -> TokenStream {
     let getters = fields
+        .named
+        .iter()
         .filter(|field| !contains_attr(field.attrs.iter(), "no_getter"))
         .map(impl_one_getter);
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     quote! {
-        impl #name {
+        impl #impl_generics #name #ty_generics #where_clause {
             #(#getters)*
         }
     }
@@ -401,8 +433,10 @@ fn impl_one_getter(field: &Field) -> TokenStream {
     let name = &field.ident;
     let ty = &field.ty;
     let span = field.span();
+    let attrs = &field.attrs; // TODO maybe whitelist or blacklist specific attributes
 
     quote_spanned! { span=>
+        #(#attrs)*
         pub fn #name(&self) -> &#ty {
             &self.#name
         }
