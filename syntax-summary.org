@@ -1063,7 +1063,7 @@ There can also be user defined entities which are configured in emacs.
 - latex-math-p
 - html
 - ascii
-- altin1
+- latin1
 - utf-8
 - begin
 - end
@@ -1090,7 +1090,7 @@ latex, latex-math-p, html, ascii, latin1 and utf-8 is defined in
 
 *** Properties
 
-- back-end
+- backend
 - value
 - begin
 - end
@@ -1578,7 +1578,7 @@ start with 0.
   MARK VALUE UNIT
 #+END_SRC
 
-~MARK~ is ~+~ (mumulate type), ~++~ (catch-up type) or ~.+~ (restart type)
+~MARK~ is ~+~ (cumulate type), ~++~ (catch-up type) or ~.+~ (restart type)
 for a repeater and ~-~ (all type) or ~--~ (first type) for warning delays.
 
 ~VALUE~ is a number.
