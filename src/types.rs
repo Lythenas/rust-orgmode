@@ -660,6 +660,8 @@ pub mod elements {
     ///
     /// # Syntax
     ///
+    /// Planning lines are context-free.
+    ///
     /// ```text
     /// KEYWORD: TIMESTAMP
     /// ```
@@ -843,6 +845,8 @@ pub mod greater_elements {
     ///
     /// # Syntax
     ///
+    /// Headlines are context-free.
+    ///
     /// ```text
     /// STARS KEYWORD PRIORITY TITLE TAGS
     /// ```
@@ -1016,6 +1020,8 @@ pub mod greater_elements {
     ///
     /// # Syntax
     ///
+    /// Property drawers are context-free.
+    ///
     /// ```text
     /// :PROPERTIES:
     /// CONTENTS
@@ -1062,6 +1068,8 @@ pub mod greater_elements {
     /// before the first headline.
     ///
     /// # Syntax
+    ///
+    /// Sections are context-free.
     ///
     /// A section contains directly any (greater) element. Only a [`Headline`] can contain a
     /// section. Also content before the first headline in a document belongs to a section.
