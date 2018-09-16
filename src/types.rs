@@ -309,7 +309,11 @@ pub mod elements {
     ///
     /// # Sematics
     ///
-    /// TODO
+    /// A clock element is used to track working time. When clocked in the timestamp part is only a
+    /// date and time. When clocked out the timestamp part is a datetime range. And the duration is
+    /// the duration of the range.
+    ///
+    /// The timestamps are usually inactive.
     ///
     /// # Syntax
     ///
@@ -317,9 +321,12 @@ pub mod elements {
     /// CLOCK: TIMESTAMP DURATION
     /// ```
     ///
-    /// `TIMESTAMP` and `DURATION` are optional. `TIMESTAMP` is a [`objects::Timestamp`]. `DURATION`
-    /// follows the pattern `=> HH:MM` where `HH` is a number containing any number of digits and
-    /// `MM` is a two digit number.
+    /// `CLOCK` is the literal word `CLOCK`.
+    ///
+    /// `TIMESTAMP` and `DURATION` are optional. `TIMESTAMP` is a [`objects::Timestamp`].
+    ///
+    /// `DURATION` follows the pattern `=> HH:MM` where `HH` is a number containing any number of
+    /// digits and `MM` is a two digit number.
     #[derive(Element, getters)]
     #[add_fields_for(SharedBehavior)]
     pub struct Clock {
