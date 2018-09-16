@@ -1843,13 +1843,10 @@ pub mod objects {
                 use self::TimestampRange::*;
 
                 match &self.kind {
-                    DiarySexp(_) => None, // TODO maybe this does have a start
-                    Active(TimestampData {date, time, ..}) => Some((&date, time.as_ref())),
-                    Inactive(TimestampData {date, time, ..}) => Some((&date, time.as_ref())),
-                    ActiveRange(TimeRange(TimestampDataWithTime {date, time, ..}, ..)) => Some((&date, Some(&time))),
-                    ActiveRange(DateRange(TimestampData {date, time, ..}, ..)) => Some((&date, time.as_ref())),
-                    InactiveRange(TimeRange(TimestampDataWithTime {date, time, ..}, ..)) => Some((&date, Some(&time))),
-                    InactiveRange(DateRange(TimestampData {date, time, ..}, ..)) => Some((&date, time.as_ref())),
+                    DiarySexp(_) => None,
+                    Single(_, TimestampData {date, time, ..}) |
+                    Range(_, DateRange(TimestampData {date, time, ..}, ..)) => Some((&date, time.as_ref())),
+                    Range(_, TimeRange(TimestampDataWithTime {date, time, ..}, ..)) => Some((&date, Some(&time))),
                 }
             }
             pub fn timestamp_end(&self) -> Option<(&Date, Option<&Time>)> {
@@ -1857,13 +1854,10 @@ pub mod objects {
                 use self::TimestampRange::*;
 
                 match &self.kind {
-                    DiarySexp(_) => None, // TODO maybe this does have an end
-                    Active(TimestampData {date, time, ..}) => Some((&date, time.as_ref())),
-                    Inactive(TimestampData {date, time, ..}) => Some((&date, time.as_ref())),
-                    ActiveRange(TimeRange(TimestampDataWithTime {date, ..}, time)) => Some((&date, Some(&time))),
-                    ActiveRange(DateRange(_, TimestampData {date, time, ..})) => Some((&date, time.as_ref())),
-                    InactiveRange(TimeRange(TimestampDataWithTime {date, ..}, time)) => Some((&date, Some(&time))),
-                    InactiveRange(DateRange(_, TimestampData {date, time, ..})) => Some((&date, time.as_ref())),
+                    DiarySexp(_) => None,
+                    Single(_, TimestampData {date, time, ..}) => Some((&date, time.as_ref())),
+                    Range(_, TimeRange(TimestampDataWithTime {date, ..}, time)) => Some((&date, Some(&time))),
+                    Range(_, DateRange(_, TimestampData {date, time, ..})) => Some((&date, time.as_ref())),
                 }
             }
             pub fn repeater(&self) -> Option<&Repeater> {
@@ -1871,13 +1865,10 @@ pub mod objects {
                 use self::TimestampRange::*;
 
                 match &self.kind {
-                    DiarySexp(_) => None, // TODO maybe this does have a repeater
-                    Active(TimestampData {repeater, ..}) => repeater.as_ref(),
-                    Inactive(TimestampData {repeater, ..}) => repeater.as_ref(),
-                    ActiveRange(TimeRange(TimestampDataWithTime {repeater, ..}, _)) => repeater.as_ref(),
-                    ActiveRange(DateRange(TimestampData {repeater, ..}, _)) => repeater.as_ref(),
-                    InactiveRange(TimeRange(TimestampDataWithTime {repeater, ..}, _)) => repeater.as_ref(),
-                    InactiveRange(DateRange(TimestampData {repeater, ..}, _)) => repeater.as_ref(),
+                    DiarySexp(_) => None,
+                    Single(_, TimestampData {repeater, ..}) |
+                    Range(_, TimeRange(TimestampDataWithTime {repeater, ..}, _)) |
+                    Range(_, DateRange(TimestampData {repeater, ..}, _)) => repeater.as_ref(),
                 }
             }
             pub fn warning(&self) -> Option<&Warning> {
@@ -1885,13 +1876,10 @@ pub mod objects {
                 use self::TimestampRange::*;
 
                 match &self.kind {
-                    DiarySexp(_) => None, // TODO maybe this does have a repeater
-                    Active(TimestampData {warning, ..}) => warning.as_ref(),
-                    Inactive(TimestampData {warning, ..}) => warning.as_ref(),
-                    ActiveRange(TimeRange(TimestampDataWithTime {warning, ..}, _)) => warning.as_ref(),
-                    ActiveRange(DateRange(TimestampData {warning, ..}, _)) => warning.as_ref(),
-                    InactiveRange(TimeRange(TimestampDataWithTime {warning, ..}, _)) => warning.as_ref(),
-                    InactiveRange(DateRange(TimestampData {warning, ..}, _)) => warning.as_ref(),
+                    DiarySexp(_) => None,
+                    Single(_, TimestampData {warning, ..}) |
+                    Range(_, TimeRange(TimestampDataWithTime {warning, ..}, _)) |
+                    Range(_, DateRange(TimestampData {warning, ..}, _)) => warning.as_ref(),
                 }
             }
         }
@@ -1899,10 +1887,16 @@ pub mod objects {
         /// The kind and date for a [`Timestamp`].
         pub enum TimestampKind {
             DiarySexp(String),
-            Active(TimestampData),
-            Inactive(TimestampData),
-            ActiveRange(TimestampRange),
-            InactiveRange(TimestampRange),
+            Single(TimestampStatus, TimestampData),
+            Range(TimestampStatus, TimestampRange),
+        }
+
+        /// The status of a [`Timestamp`].
+        pub enum TimestampStatus {
+            /// Timestamp in angle brackets (`<...>`).
+            Active,
+            /// Timestamp in square brackets (`[...]`).
+            Inactive,
         }
 
         /// The data for a [`TimestampKind`] with optional [`Time`].
