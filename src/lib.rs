@@ -23,8 +23,11 @@ extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 extern crate itertools;
+#[macro_use]
+extern crate lazy_static;
 
 pub mod types;
+pub mod entities;
 #[macro_use]
 pub mod macros;
 #[macro_use]
