@@ -28,9 +28,6 @@ pub mod elements;
 pub mod greater_elements;
 pub mod objects;
 
-// TODO using lazy_static
-#[allow(dead_code)]
-static ORG_ENTITIES: () = ();
 #[allow(dead_code)]
 static ORG_LINK_TYPES: () = ();
 

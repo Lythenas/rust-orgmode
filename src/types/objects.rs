@@ -16,7 +16,7 @@ use chrono::{NaiveDate, NaiveTime};
 /// \NAME POST
 /// ```
 ///
-/// `NAME` has to have a valid association in [`ORG_ENTITIES`] or in the used defined variable
+/// `NAME` has to have a valid association in [`entities`] or in the used defined variable
 /// `org_entities_user` which can be configured before parsing. It has to conform to the
 /// following regular expression: `(_ +)|(there4|frac[13][24]|[a-zA-Z]+)` (this restriction
 /// could be removed in the future).
@@ -24,9 +24,7 @@ use chrono::{NaiveDate, NaiveTime};
 /// `POST` is the end of line, the string `{}` or a non-alphabetical character (e.g. a
 /// whitespace). It isn't separated from `NAME` by any whitespace.
 ///
-/// TODO implement the org-entities list. See <https://orgmode.org/worg/org-symbols.org>. This
-/// list contains the name, the latex export, the html export, the ascii export, the latin1
-/// export and the utf-8 export.
+/// [`entities`]: ../../entities/index.html
 #[derive(Object, getters)]
 #[add_fields_for(Object)]
 pub struct Entity {
@@ -165,7 +163,7 @@ pub struct InlineSrcBlock {
 /// ```
 ///
 /// `NAME` can contain any alphabetical character and can end with an asterisk. `NAME` must not
-/// be on [`ORG_ENTITIES`] or the user defined `org_entities_user` variable otherwise it will
+/// be in [`entities`] or the user defined `org_entities_user` variable otherwise it will
 /// be parsed as a [`Entity`].
 ///
 /// `BRACKETS` is optional and is not separated from `NAME` with whitespace. It can contain any
@@ -188,6 +186,8 @@ pub struct InlineSrcBlock {
 /// `BODY` can contain any character except `$` and may not span over more than 3 lines.
 ///
 /// `BORDER2` is any non-whitespace character except `.`, `,` and `$`.
+///
+/// [`entities`]: ../../entities/index.html
 #[derive(Object, getters)]
 #[add_fields_for(Object)]
 pub struct LatexFragment {
