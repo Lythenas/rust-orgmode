@@ -17,8 +17,8 @@ use rust_orgmode_derive::add_fields_for;
 ///
 /// `FUNCTION` is the name of a [`SrcBlock`] to execute. `INSIDE-HEADER`, `ARGUEMENTS` and
 /// `END-HEADER` can contain everything except a newline (and their respective closing char).
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct BabelCall {
     /// The code block to call
     call: String,
@@ -49,8 +49,8 @@ pub struct BabelCall {
 ///
 /// `DURATION` follows the pattern `=> HH:MM` where `HH` is a number containing any number of
 /// digits and `MM` is a two digit number.
-#[derive(Element, getters)]
 #[add_fields_for(SharedBehavior)]
+#[derive(Element, getters)]
 pub struct Clock {
     timestamp: Option<objects::Timestamp>,
     duration: Option<(u64, u8)>,
@@ -90,8 +90,8 @@ pub enum ClockStatus {
 /// `CONTENTS` can be any string.
 ///
 /// Consecutive comment lines are accumulated into one comment.
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct Comment {
     value: String,
 }
@@ -112,8 +112,8 @@ pub struct Comment {
 ///
 /// `CONTENTS` can contain anything except a line `#+END_COMMENT` on its own. Lines beginning
 /// with stars must be quoted by a comma. `CONTENTS` will not be parsed.
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct CommentBlock {
     value: String,
 }
@@ -135,8 +135,8 @@ pub struct CommentBlock {
 ///
 /// `VALUE` can contain any character except a newline. The expression has to start at the
 /// beginning of the line.
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct DiarySexp {
     value: String,
 }
@@ -160,8 +160,8 @@ pub struct DiarySexp {
 /// contain labels with the pattern `(ref:LABEL)`. **Labels are not recognized.**
 ///
 /// `FLAGS` see [`BlockFlags`].
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct ExampleBlock {
     value: String,
     flags: BlockFlags,
@@ -219,8 +219,8 @@ pub enum NumberLinesFlag {
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 ///
 /// `BACKEND` can contain any alpha-numerical character. Case is ignored.
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct ExportBlock {
     value: String,
     /// Always lowercase.
@@ -239,8 +239,8 @@ pub struct ExportBlock {
 /// by whitespace.
 ///
 /// Consecutive fixed width lines are accumulated.
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct FixedWidth {
     value: String,
 }
@@ -258,8 +258,8 @@ pub struct FixedWidth {
 /// ```text
 /// -----
 /// ```
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct HorizontalRule {
 }
 
@@ -280,8 +280,8 @@ pub struct HorizontalRule {
 /// affiliated keyword.
 ///
 /// `VALUE` can contain any character except a newline.
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct Keyword {
     key: String,
     value: String,
@@ -298,8 +298,8 @@ pub struct Keyword {
 /// See [`Keyword`].
 ///
 /// `VALUE` is parsed as a [`SecondaryString`].
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct DocumentProperty {
     key: String,
     value: SecondaryString,
@@ -324,8 +324,8 @@ pub struct DocumentProperty {
 /// is only at the end.
 ///
 /// `CONTENT` can be anything except `\end{ENVIRONMENT}`.
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct LatexEnvironment {
     /// Contains everything including `\begin...` and `\end`.
     value: String,
@@ -350,8 +350,8 @@ pub struct LatexEnvironment {
 /// plus sign (`+`).
 ///
 /// `VALUE` can contain anything but a newline character.
-#[derive(Element, getters)]
 #[add_fields_for(SharedBehavior)]
+#[derive(Element, getters)]
 pub struct NodeProperty {
     name: String,
     value: String,
@@ -368,8 +368,8 @@ pub struct NodeProperty {
 ///
 /// Everything that is not another element is paragraph. Empty lines and other elements end
 /// paragraphs but all inner elements of the current paragraph must be closed first.
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct Paragraph {
     // TODO figure out how to actually handle secondary strings
 }
@@ -394,8 +394,8 @@ pub struct Paragraph {
 /// `TIMESTAMP` is a [`objects::Timestamp`].
 ///
 /// Consecutive planning items are aggregated into one.
-#[derive(Element, getters)]
 #[add_fields_for(SharedBehavior)]
+#[derive(Element, getters)]
 pub struct Planning {
     closed: Option<objects::Timestamp>,
     deadline: Option<objects::Timestamp>,
@@ -425,8 +425,8 @@ pub struct Planning {
 /// `FLAGS` see [`BlockFlags`].
 ///
 /// `ARGUMENTS` can contain any character except a newline.
-#[derive(Element, HasAffiliatedKeywords, getters)]
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
+#[derive(Element, HasAffiliatedKeywords, getters)]
 pub struct SrcBlock {
     language: String,
     flags: BlockFlags,

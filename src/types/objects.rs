@@ -25,8 +25,8 @@ use chrono::{NaiveDate, NaiveTime};
 /// whitespace). It isn't separated from `NAME` by any whitespace.
 ///
 /// [`entities`]: ../../entities/index.html
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct Entity {
     name: String,
     /// True if the entity ended with `{}`.
@@ -49,8 +49,8 @@ pub struct Entity {
 /// `BACKEND` can contain any alpha-numeric character and hyphens.
 ///
 /// `VALUE` can contain anything but the `@@` string.
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct ExportSnippet {
     backend: String,
     value: String,
@@ -76,8 +76,8 @@ pub struct ExportSnippet {
 /// `DEFINITION` can contain any character. Opening and closing square brackets must be
 /// balanced in it. It can contain the standard set of objects, even other footnote references.
 /// Will be parsed as a secondary string and can contain the standard set of objects.
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct FootnoteReference {
     // TODO extract enum to make this more type safe
     label: String,
@@ -111,8 +111,8 @@ pub enum FootnoteReferenceKind {
 /// `ARGUMENTS` can contain any character besides `)` and newline.
 ///
 /// Both `HEADER`s are optional. But then there are also no square brackets.
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct InlineBabelCall {
     call: String,
     inside_header: String,
@@ -137,8 +137,8 @@ pub struct InlineBabelCall {
 /// `OPTIONS` and `BODY` can contain any character but a newline.
 ///
 /// `OPTIONS` is optional. But then there are also not quote brackets.
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct InlineSrcBlock {
     lang: String,
     value: String,
@@ -188,8 +188,8 @@ pub struct InlineSrcBlock {
 /// `BORDER2` is any non-whitespace character except `.`, `,` and `$`.
 ///
 /// [`entities`]: ../../entities/index.html
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct LatexFragment {
     /// Contains the entire parsed string, except the `PRE` and `POST` parts.
     value: String,
@@ -209,8 +209,8 @@ pub struct LatexFragment {
 ///
 /// `SPACE` is zero or more whitespace characters followed by the end of line or end of
 /// document.
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct LineBreak {
 }
 
@@ -264,8 +264,8 @@ pub struct LineBreak {
 /// and a [`LineBreak`]. It also can't contain another link unless it is a plain or angle link.
 ///
 /// Whitespace and newlines in the link are replaced with a single space.
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct Link {
     link: LinkFormat,
 }
@@ -351,8 +351,8 @@ pub enum SearchOption {
 /// backslash directly before the comma it has to be escaped with another backslash).
 ///
 /// Multiple whitespace and newline characters in `ARGUMENTS` are replaced by a single space.
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct Macro {
     name: String,
     arguments: Vec<String>,
@@ -375,8 +375,8 @@ pub struct Macro {
 ///
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will be parsed as a [`SecondaryString`].
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct RadioTarget {
     target: SecondaryString,
 }
@@ -395,8 +395,8 @@ pub struct RadioTarget {
 /// - number: `[NUM1/NUM2]`
 ///
 /// `PERCENT`, `NUM1` and `NUM2` are numbers or an empty string.
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct StatisticsCookie {
     cookie: CookieKind,
 }
@@ -442,8 +442,8 @@ pub enum CookieKind {
 /// TODO this is recursive object. figure out how to handle recursive objects because some can
 /// only contain specific objects and therefore other recursive objects in them may contain
 /// less objects than they can usually contain
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct Subscript {
     used_brackets: bool,
     // content: SecondaryString, // can contain the standard set of objects.
@@ -462,8 +462,8 @@ pub struct Subscript {
 /// ```
 ///
 /// See [`Subscript`].
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct Superscript {
     used_brackets: bool,
     // content: SecondaryString, // can contain the standard set of objects.
@@ -490,8 +490,8 @@ pub struct Superscript {
 ///
 /// TODO recusrive object. can contain: export snippet, footnote reference, latex fragment,
 /// entity, link, macro, radio target, sub/superscript, target, text markup, timestamp
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct TableCell {
 }
 
@@ -512,8 +512,8 @@ pub struct TableCell {
 ///
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will not be parsed.
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct Target {
     target: String,
 }
@@ -555,8 +555,8 @@ pub struct Target {
 /// content of verbatim and code is not parsed.
 ///
 /// TODO recursive object
-#[derive(Object, getters)]
 #[add_fields_for(Object)]
+#[derive(Object, getters)]
 pub struct TextMarkup {
     kind: TextMarkupKind,
 }
@@ -615,8 +615,8 @@ pub mod timestamp {
     ///
     /// There can be two `REPEATERORYEAR` in the timestamp. One as a repeater and on as a warning
     /// delay.
-    #[derive(Object, getters)]
     #[add_fields_for(Object)]
+    #[derive(Object, getters)]
     pub struct Timestamp {
         kind: TimestampKind,
     }
