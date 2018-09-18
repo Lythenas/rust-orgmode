@@ -1,467 +1,488 @@
-use std::collections::HashMap;
+use phf;
 
-pub fn get(name: &str) -> Option<LookupValue> {
-    ORG_ENTITIES.0.get(name).map(|v| *v)
+/// Contains replacements for an entity in LaTeX, HTML, ASCII, Latin1 and UTF-8.
+pub struct EntityReplacement {
+    pub latex: &'static str,
+    pub requires_latex_math: bool,
+    pub html: &'static str,
+    pub ascii: &'static str,
+    pub latin1: &'static str,
+    pub utf8: &'static str,
 }
 
-struct EntityLookupManager(HashMap<&'static str, LookupValue>);
-
-//                   LaTeX,        LaTeX math?, html,         ascii,        latin1,       utf-8
-type LookupValue = (&'static str, bool,        &'static str, &'static str, &'static str, &'static str);
-
-lazy_static! {
-    // name, LaTeX, requires LaTeX math?, html, ascii, latin1, utf-8
-    static ref ORG_ENTITIES: EntityLookupManager = {
-        let mut m = HashMap::new();
-
-        // taken from lisp/org-entities.el in the org-mode repository
-
-        // Letters
-        // Latin
-        m.insert("Agrave", ("\\`{A}", false, "&Agrave;", "A", "À", "À"));
-        m.insert("agrave", ("\\`{a}", false, "&agrave;", "a", "à", "à"));
-        m.insert("Aacute", ("\\'{A}", false, "&Aacute;", "A", "Á", "Á"));
-        m.insert("aacute", ("\\'{a}", false, "&aacute;", "a", "á", "á"));
-        m.insert("Acirc", ("\\^{A}", false, "&Acirc;", "A", "Â", "Â"));
-        m.insert("acirc", ("\\^{a}", false, "&acirc;", "a", "â", "â"));
-        m.insert("Amacr", ("\\bar{A}", false, "&Amacr;", "A", "Ã", "Ã"));
-        m.insert("amacr", ("\\bar{a}", false, "&amacr;", "a", "ã", "ã"));
-        m.insert("Atilde", ("\\~{A}", false, "&Atilde;", "A", "Ã", "Ã"));
-        m.insert("atilde", ("\\~{a}", false, "&atilde;", "a", "ã", "ã"));
-        m.insert("Auml", ("\\\"{A}", false, "&Auml;", "Ae", "Ä", "Ä"));
-        m.insert("auml", ("\\\"{a}", false, "&auml;", "ae", "ä", "ä"));
-        m.insert("Aring", ("\\AA{}", false, "&Aring;", "A", "Å", "Å"));
-        m.insert("AA", ("\\AA{}", false, "&Aring;", "A", "Å", "Å"));
-        m.insert("aring", ("\\aa{}", false, "&aring;", "a", "å", "å"));
-        m.insert("AElig", ("\\AE{}", false, "&AElig;", "AE", "Æ", "Æ"));
-        m.insert("aelig", ("\\ae{}", false, "&aelig;", "ae", "æ", "æ"));
-        m.insert("Ccedil", ("\\c{C}", false, "&Ccedil;", "C", "Ç", "Ç"));
-        m.insert("ccedil", ("\\c{c}", false, "&ccedil;", "c", "ç", "ç"));
-        m.insert("Egrave", ("\\`{E}", false, "&Egrave;", "E", "È", "È"));
-        m.insert("egrave", ("\\`{e}", false, "&egrave;", "e", "è", "è"));
-        m.insert("Eacute", ("\\'{E}", false, "&Eacute;", "E", "É", "É"));
-        m.insert("eacute", ("\\'{e}", false, "&eacute;", "e", "é", "é"));
-        m.insert("Ecirc", ("\\^{E}", false, "&Ecirc;", "E", "Ê", "Ê"));
-        m.insert("ecirc", ("\\^{e}", false, "&ecirc;", "e", "ê", "ê"));
-        m.insert("Euml", ("\\\"{E}", false, "&Euml;", "E", "Ë", "Ë"));
-        m.insert("euml", ("\\\"{e}", false, "&euml;", "e", "ë", "ë"));
-        m.insert("Igrave", ("\\`{I}", false, "&Igrave;", "I", "Ì", "Ì"));
-        m.insert("igrave", ("\\`{i}", false, "&igrave;", "i", "ì", "ì"));
-        m.insert("Iacute", ("\\'{I}", false, "&Iacute;", "I", "Í", "Í"));
-        m.insert("iacute", ("\\'{i}", false, "&iacute;", "i", "í", "í"));
-        m.insert("Icirc", ("\\^{I}", false, "&Icirc;", "I", "Î", "Î"));
-        m.insert("icirc", ("\\^{i}", false, "&icirc;", "i", "î", "î"));
-        m.insert("Iuml", ("\\\"{I}", false, "&Iuml;", "I", "Ï", "Ï"));
-        m.insert("iuml", ("\\\"{i}", false, "&iuml;", "i", "ï", "ï"));
-        m.insert("Ntilde", ("\\~{N}", false, "&Ntilde;", "N", "Ñ", "Ñ"));
-        m.insert("ntilde", ("\\~{n}", false, "&ntilde;", "n", "ñ", "ñ"));
-        m.insert("Ograve", ("\\`{O}", false, "&Ograve;", "O", "Ò", "Ò"));
-        m.insert("ograve", ("\\`{o}", false, "&ograve;", "o", "ò", "ò"));
-        m.insert("Oacute", ("\\'{O}", false, "&Oacute;", "O", "Ó", "Ó"));
-        m.insert("oacute", ("\\'{o}", false, "&oacute;", "o", "ó", "ó"));
-        m.insert("Ocirc", ("\\^{O}", false, "&Ocirc;", "O", "Ô", "Ô"));
-        m.insert("ocirc", ("\\^{o}", false, "&ocirc;", "o", "ô", "ô"));
-        m.insert("Otilde", ("\\~{O}", false, "&Otilde;", "O", "Õ", "Õ"));
-        m.insert("otilde", ("\\~{o}", false, "&otilde;", "o", "õ", "õ"));
-        m.insert("Ouml", ("\\\"{O}", false, "&Ouml;", "Oe", "Ö", "Ö"));
-        m.insert("ouml", ("\\\"{o}", false, "&ouml;", "oe", "ö", "ö"));
-        m.insert("Oslash", ("\\O", false, "&Oslash;", "O", "Ø", "Ø"));
-        m.insert("oslash", ("\\o{}", false, "&oslash;", "o", "ø", "ø"));
-        m.insert("OElig", ("\\OE{}", false, "&OElig;", "OE", "OE", "Œ"));
-        m.insert("oelig", ("\\oe{}", false, "&oelig;", "oe", "oe", "œ"));
-        m.insert("Scaron", ("\\v{S}", false, "&Scaron;", "S", "S", "Š"));
-        m.insert("scaron", ("\\v{s}", false, "&scaron;", "s", "s", "š"));
-        m.insert("szlig", ("\\ss{}", false, "&szlig;", "ss", "ß", "ß"));
-        m.insert("Ugrave", ("\\`{U}", false, "&Ugrave;", "U", "Ù", "Ù"));
-        m.insert("ugrave", ("\\`{u}", false, "&ugrave;", "u", "ù", "ù"));
-        m.insert("Uacute", ("\\'{U}", false, "&Uacute;", "U", "Ú", "Ú"));
-        m.insert("uacute", ("\\'{u}", false, "&uacute;", "u", "ú", "ú"));
-        m.insert("Ucirc", ("\\^{U}", false, "&Ucirc;", "U", "Û", "Û"));
-        m.insert("ucirc", ("\\^{u}", false, "&ucirc;", "u", "û", "û"));
-        m.insert("Uuml", ("\\\"{U}", false, "&Uuml;", "Ue", "Ü", "Ü"));
-        m.insert("uuml", ("\\\"{u}", false, "&uuml;", "ue", "ü", "ü"));
-        m.insert("Yacute", ("\\'{Y}", false, "&Yacute;", "Y", "Ý", "Ý"));
-        m.insert("yacute", ("\\'{y}", false, "&yacute;", "y", "ý", "ý"));
-        m.insert("Yuml", ("\\\"{Y}", false, "&Yuml;", "Y", "Y", "Ÿ"));
-        m.insert("yuml", ("\\\"{y}", false, "&yuml;", "y", "ÿ", "ÿ"));
-
-        // Latin (special face)
-        m.insert("fnof", ("\\textit{f}", false, "&fnof;", "f", "f", "ƒ"));
-        m.insert("real", ("\\Re", true, "&real;", "R", "R", "ℜ"));
-        m.insert("image", ("\\Im", true, "&image;", "I", "I", "ℑ"));
-        m.insert("weierp", ("\\wp", true, "&weierp;", "P", "P", "℘"));
-        m.insert("ell", ("\\ell", true, "&ell;", "ell", "ell", "ℓ"));
-        m.insert("imath", ("\\imath", true, "&imath;", "[dotless i]", "dotless i", "ı"));
-        m.insert("jmath", ("\\jmath", true, "&jmath;", "[dotless j]", "dotless j", "ȷ"));
-
-        // Greek
-        m.insert("Alpha", ("A", false, "&Alpha;", "Alpha", "Alpha", "Α"));
-        m.insert("alpha", ("\\alpha", true, "&alpha;", "alpha", "alpha", "α"));
-        m.insert("Beta", ("B", false, "&Beta;", "Beta", "Beta", "Β"));
-        m.insert("beta", ("\\beta", true, "&beta;", "beta", "beta", "β"));
-        m.insert("Gamma", ("\\Gamma", true, "&Gamma;", "Gamma", "Gamma", "Γ"));
-        m.insert("gamma", ("\\gamma", true, "&gamma;", "gamma", "gamma", "γ"));
-        m.insert("Delta", ("\\Delta", true, "&Delta;", "Delta", "Delta", "Δ"));
-        m.insert("delta", ("\\delta", true, "&delta;", "delta", "delta", "δ"));
-        m.insert("Epsilon", ("E", false, "&Epsilon;", "Epsilon", "Epsilon", "Ε"));
-        m.insert("epsilon", ("\\epsilon", true, "&epsilon;", "epsilon", "epsilon", "ε"));
-        m.insert("varepsilon", ("\\varepsilon", true, "&epsilon;", "varepsilon", "varepsilon", "ε"));
-        m.insert("Zeta", ("Z", false, "&Zeta;", "Zeta", "Zeta", "Ζ"));
-        m.insert("zeta", ("\\zeta", true, "&zeta;", "zeta", "zeta", "ζ"));
-        m.insert("Eta", ("H", false, "&Eta;", "Eta", "Eta", "Η"));
-        m.insert("eta", ("\\eta", true, "&eta;", "eta", "eta", "η"));
-        m.insert("Theta", ("\\Theta", true, "&Theta;", "Theta", "Theta", "Θ"));
-        m.insert("theta", ("\\theta", true, "&theta;", "theta", "theta", "θ"));
-        m.insert("thetasym", ("\\vartheta", true, "&thetasym;", "theta", "theta", "ϑ"));
-        m.insert("vartheta", ("\\vartheta", true, "&thetasym;", "theta", "theta", "ϑ"));
-        m.insert("Iota", ("I", false, "&Iota;", "Iota", "Iota", "Ι"));
-        m.insert("iota", ("\\iota", true, "&iota;", "iota", "iota", "ι"));
-        m.insert("Kappa", ("K", false, "&Kappa;", "Kappa", "Kappa", "Κ"));
-        m.insert("kappa", ("\\kappa", true, "&kappa;", "kappa", "kappa", "κ"));
-        m.insert("Lambda", ("\\Lambda", true, "&Lambda;", "Lambda", "Lambda", "Λ"));
-        m.insert("lambda", ("\\lambda", true, "&lambda;", "lambda", "lambda", "λ"));
-        m.insert("Mu", ("M", false, "&Mu;", "Mu", "Mu", "Μ"));
-        m.insert("mu", ("\\mu", true, "&mu;", "mu", "mu", "μ"));
-        m.insert("nu", ("\\nu", true, "&nu;", "nu", "nu", "ν"));
-        m.insert("Nu", ("N", false, "&Nu;", "Nu", "Nu", "Ν"));
-        m.insert("Xi", ("\\Xi", true, "&Xi;", "Xi", "Xi", "Ξ"));
-        m.insert("xi", ("\\xi", true, "&xi;", "xi", "xi", "ξ"));
-        m.insert("Omicron", ("O", false, "&Omicron;", "Omicron", "Omicron", "Ο"));
-        m.insert("omicron", ("\\textit{o}", false, "&omicron;", "omicron", "omicron", "ο"));
-        m.insert("Pi", ("\\Pi", true, "&Pi;", "Pi", "Pi", "Π"));
-        m.insert("pi", ("\\pi", true, "&pi;", "pi", "pi", "π"));
-        m.insert("Rho", ("P", false, "&Rho;", "Rho", "Rho", "Ρ"));
-        m.insert("rho", ("\\rho", true, "&rho;", "rho", "rho", "ρ"));
-        m.insert("Sigma", ("\\Sigma", true, "&Sigma;", "Sigma", "Sigma", "Σ"));
-        m.insert("sigma", ("\\sigma", true, "&sigma;", "sigma", "sigma", "σ"));
-        m.insert("sigmaf", ("\\varsigma", true, "&sigmaf;", "sigmaf", "sigmaf", "ς"));
-        m.insert("varsigma", ("\\varsigma", true, "&sigmaf;", "varsigma", "varsigma", "ς"));
-        m.insert("Tau", ("T", false, "&Tau;", "Tau", "Tau", "Τ"));
-        m.insert("Upsilon", ("\\Upsilon", true, "&Upsilon;", "Upsilon", "Upsilon", "Υ"));
-        m.insert("upsih", ("\\Upsilon", true, "&upsih;", "upsilon", "upsilon", "ϒ"));
-        m.insert("upsilon", ("\\upsilon", true, "&upsilon;", "upsilon", "upsilon", "υ"));
-        m.insert("Phi", ("\\Phi", true, "&Phi;", "Phi", "Phi", "Φ"));
-        m.insert("phi", ("\\phi", true, "&phi;", "phi", "phi", "ɸ"));
-        m.insert("varphi", ("\\varphi", true, "&varphi;", "varphi", "varphi", "φ"));
-        m.insert("Chi", ("X", false, "&Chi;", "Chi", "Chi", "Χ"));
-        m.insert("chi", ("\\chi", true, "&chi;", "chi", "chi", "χ"));
-        m.insert("acutex", ("\\acute x", true, "&acute;x", "'x", "'x", "𝑥́"));
-        m.insert("Psi", ("\\Psi", true, "&Psi;", "Psi", "Psi", "Ψ"));
-        m.insert("psi", ("\\psi", true, "&psi;", "psi", "psi", "ψ"));
-        m.insert("tau", ("\\tau", true, "&tau;", "tau", "tau", "τ"));
-        m.insert("Omega", ("\\Omega", true, "&Omega;", "Omega", "Omega", "Ω"));
-        m.insert("omega", ("\\omega", true, "&omega;", "omega", "omega", "ω"));
-        m.insert("piv", ("\\varpi", true, "&piv;", "omega-pi", "omega-pi", "ϖ"));
-        m.insert("varpi", ("\\varpi", true, "&piv;", "omega-pi", "omega-pi", "ϖ"));
-        m.insert("partial", ("\\partial", true, "&part;", "[partial differential]", "[partial differential]", "∂"));
-
-        // Hebrew
-        m.insert("alefsym", ("\\aleph", true, "&alefsym;", "aleph", "aleph", "ℵ"));
-        m.insert("aleph", ("\\aleph", true, "&aleph;", "aleph", "aleph", "ℵ"));
-        m.insert("gimel", ("\\gimel", true, "&gimel;", "gimel", "gimel", "ℷ"));
-        m.insert("beth", ("\\beth", true, "&beth;", "beth", "beth", "ב"));
-        m.insert("dalet", ("\\daleth", true, "&daleth;", "dalet", "dalet", "ד"));
-
-        // Dead languages
-        m.insert("ETH", ("\\DH{}", false, "&ETH;", "D", "Ð", "Ð"));
-        m.insert("eth", ("\\dh{}", false, "&eth;", "dh", "ð", "ð"));
-        m.insert("THORN", ("\\TH{}", false, "&THORN;", "TH", "Þ", "Þ"));
-        m.insert("thorn", ("\\th{}", false, "&thorn;", "th", "þ", "þ"));
-
-        // Punctuation
-        // Dots and Marks
-        m.insert("dots", ("\\dots{}", false, "&hellip;", "...", "...", "…"));
-        m.insert("cdots", ("\\cdots{}", true, "&ctdot;", "...", "...", "⋯"));
-        m.insert("hellip", ("\\dots{}", false, "&hellip;", "...", "...", "…"));
-        m.insert("middot", ("\\textperiodcentered{}", false, "&middot;", ".", "·", "·"));
-        m.insert("iexcl", ("!`", false, "&iexcl;", "!", "¡", "¡"));
-        m.insert("iquest", ("?`", false, "&iquest;", "?", "¿", "¿"));
-
-        // Dash-like
-        m.insert("shy", ("\\-", false, "&shy;", "", "", ""));
-        m.insert("ndash", ("--", false, "&ndash;", "-", "-", "–"));
-        m.insert("mdash", ("---", false, "&mdash;", "--", "--", "—"));
-
-        // Quotations
-        m.insert("quot", ("\\textquotedbl{}", false, "&quot;", "\"", "\"", "\""));
-        m.insert("acute", ("\\textasciiacute{}", false, "&acute;", "'", "´", "´"));
-        m.insert("ldquo", ("\\textquotedblleft{}", false, "&ldquo;", "\"", "\"", "“"));
-        m.insert("rdquo", ("\\textquotedblright{}", false, "&rdquo;", "\"", "\"", "”"));
-        m.insert("bdquo", ("\\quotedblbase{}", false, "&bdquo;", "\"", "\"", "„"));
-        m.insert("lsquo", ("\\textquoteleft{}", false, "&lsquo;", "`", "`", "‘"));
-        m.insert("rsquo", ("\\textquoteright{}", false, "&rsquo;", "'", "'", "’"));
-        m.insert("sbquo", ("\\quotesinglbase{}", false, "&sbquo;", ",", ",", "‚"));
-        m.insert("laquo", ("\\guillemotleft{}", false, "&laquo;", "<<", "«", "«"));
-        m.insert("raquo", ("\\guillemotright{}", false, "&raquo;", ">>", "»", "»"));
-        m.insert("lsaquo", ("\\guilsinglleft{}", false, "&lsaquo;", "<", "<", "‹"));
-        m.insert("rsaquo", ("\\guilsinglright{}", false, "&rsaquo;", ">", ">", "›"));
-
-        // Other
-        // Misc. (often used)
-        m.insert("circ", ("\\^{}", false, "&circ;", "^", "^", "∘"));
-        m.insert("vert", ("\\vert{}", true, "&vert;", "|", "|", "|"));
-        m.insert("vbar", ("|", false, "|", "|", "|", "|"));
-        m.insert("brvbar", ("\\textbrokenbar{}", false, "&brvbar;", "|", "¦", "¦"));
-        m.insert("S", ("\\S", false, "&sect;", "paragraph", "§", "§"));
-        m.insert("sect", ("\\S", false, "&sect;", "paragraph", "§", "§"));
-        m.insert("amp", ("\\&", false, "&amp;", "&", "&", "&"));
-        m.insert("lt", ("\\textless{}", false, "&lt;", "<", "<", "<"));
-        m.insert("gt", ("\\textgreater{}", false, "&gt;", ">", ">", ">"));
-        m.insert("tilde", ("\\textasciitilde{}", false, "~", "~", "~", "~"));
-        m.insert("slash", ("/", false, "/", "/", "/", "/"));
-        m.insert("plus", ("+", false, "+", "+", "+", "+"));
-        m.insert("under", ("\\_", false, "_", "_", "_", "_"));
-        m.insert("equal", ("=", false, "=", "=", "=", "="));
-        m.insert("asciicirc", ("\\textasciicircum{}", false, "^", "^", "^", "^"));
-        m.insert("dagger", ("\\textdagger{}", false, "&dagger;", "[dagger]", "[dagger]", "†"));
-        m.insert("dag", ("\\dag{}", false, "&dagger;", "[dagger]", "[dagger]", "†"));
-        m.insert("Dagger", ("\\textdaggerdbl{}", false, "&Dagger;", "[doubledagger]", "[doubledagger]", "‡"));
-        m.insert("ddag", ("\\ddag{}", false, "&Dagger;", "[doubledagger]", "[doubledagger]", "‡"));
-
-        // Whitespace
-        m.insert("nbsp", ("~", false, "&nbsp;", " ", "\x00A0", "\x00A0"));
-        m.insert("ensp", ("\\hspace*{.5em}", false, "&ensp;", " ", " ", " "));
-        m.insert("emsp", ("\\hspace*{1em}", false, "&emsp;", " ", " ", " "));
-        m.insert("thinsp", ("\\hspace*{.2em}", false, "&thinsp;", " ", " ", " "));
-
-        // Currency
-        m.insert("curren", ("\\textcurrency{}", false, "&curren;", "curr.", "¤", "¤"));
-        m.insert("cent", ("\\textcent{}", false, "&cent;", "cent", "¢", "¢"));
-        m.insert("pound", ("\\pounds{}", false, "&pound;", "pound", "£", "£"));
-        m.insert("yen", ("\\textyen{}", false, "&yen;", "yen", "¥", "¥"));
-        m.insert("euro", ("\\texteuro{}", false, "&euro;", "EUR", "EUR", "€"));
-        m.insert("EUR", ("\\texteuro{}", false, "&euro;", "EUR", "EUR", "€"));
-        m.insert("dollar", ("\\$", false, "$", "$", "$", "$"));
-        m.insert("USD", ("\\$", false, "$", "$", "$", "$"));
-
-        // Property Marks
-        m.insert("copy", ("\\textcopyright{}", false, "&copy;", "(c)", "©", "©"));
-        m.insert("reg", ("\\textregistered{}", false, "&reg;", "(r)", "®", "®"));
-        m.insert("trade", ("\\texttrademark{}", false, "&trade;", "TM", "TM", "™"));
-
-        // Science et al.
-        m.insert("minus", ("\\minus", true, "&minus;", "-", "-", "−"));
-        m.insert("pm", ("\\textpm{}", false, "&plusmn;", "+-", "±", "±"));
-        m.insert("plusmn", ("\\textpm{}", false, "&plusmn;", "+-", "±", "±"));
-        m.insert("times", ("\\texttimes{}", false, "&times;", "*", "×", "×"));
-        m.insert("frasl", ("/", false, "&frasl;", "/", "/", "⁄"));
-        m.insert("colon", ("\\colon", true, ":", ":", ":", ":"));
-        m.insert("div", ("\\textdiv{}", false, "&divide;", "/", "÷", "÷"));
-        m.insert("frac12", ("\\textonehalf{}", false, "&frac12;", "1/2", "½", "½"));
-        m.insert("frac14", ("\\textonequarter{}", false, "&frac14;", "1/4", "¼", "¼"));
-        m.insert("frac34", ("\\textthreequarters{}", false, "&frac34;", "3/4", "¾", "¾"));
-        m.insert("permil", ("\\textperthousand{}", false, "&permil;", "per thousand", "per thousand", "‰"));
-        m.insert("sup1", ("\\textonesuperior{}", false, "&sup1;", "^1", "¹", "¹"));
-        m.insert("sup2", ("\\texttwosuperior{}", false, "&sup2;", "^2", "²", "²"));
-        m.insert("sup3", ("\\textthreesuperior{}", false, "&sup3;", "^3", "³", "³"));
-        m.insert("radic", ("\\sqrt{\\,}", true, "&radic;", "[square root]", "[square root]", "√"));
-        m.insert("sum", ("\\sum", true, "&sum;", "[sum]", "[sum]", "∑"));
-        m.insert("prod", ("\\prod", true, "&prod;", "[product]", "[n-ary product]", "∏"));
-        m.insert("micro", ("\\textmu{}", false, "&micro;", "micro", "µ", "µ"));
-        m.insert("macr", ("\\textasciimacron{}", false, "&macr;", "[macron]", "¯", "¯"));
-        m.insert("deg", ("\\textdegree{}", false, "&deg;", "degree", "°", "°"));
-        m.insert("prime", ("\\prime", true, "&prime;", "'", "'", "′"));
-        m.insert("Prime", ("\\prime{}\\prime", true, "&Prime;", "''", "''", "″"));
-        m.insert("infin", ("\\infty", true, "&infin;", "[infinity]", "[infinity]", "∞"));
-        m.insert("infty", ("\\infty", true, "&infin;", "[infinity]", "[infinity]", "∞"));
-        m.insert("prop", ("\\propto", true, "&prop;", "[proportional to]", "[proportional to]", "∝"));
-        m.insert("propto", ("\\propto", true, "&prop;", "[proportional to]", "[proportional to]", "∝"));
-        m.insert("not", ("\\textlnot{}", false, "&not;", "[angled dash]", "¬", "¬"));
-        m.insert("neg", ("\\neg{}", true, "&not;", "[angled dash]", "¬", "¬"));
-        m.insert("land", ("\\land", true, "&and;", "[logical and]", "[logical and]", "∧"));
-        m.insert("wedge", ("\\wedge", true, "&and;", "[logical and]", "[logical and]", "∧"));
-        m.insert("lor", ("\\lor", true, "&or;", "[logical or]", "[logical or]", "∨"));
-        m.insert("vee", ("\\vee", true, "&or;", "[logical or]", "[logical or]", "∨"));
-        m.insert("cap", ("\\cap", true, "&cap;", "[intersection]", "[intersection]", "∩"));
-        m.insert("cup", ("\\cup", true, "&cup;", "[union]", "[union]", "∪"));
-        m.insert("smile", ("\\smile", true, "&smile;", "[cup product]", "[cup product]", "⌣"));
-        m.insert("frown", ("\\frown", true, "&frown;", "[Cap product]", "[cap product]", "⌢"));
-        m.insert("int", ("\\int", true, "&int;", "[integral]", "[integral]", "∫"));
-        m.insert("therefore", ("\\therefore", true, "&there4;", "[therefore]", "[therefore]", "∴"));
-        m.insert("there4", ("\\therefore", true, "&there4;", "[therefore]", "[therefore]", "∴"));
-        m.insert("because", ("\\because", true, "&because;", "[because]", "[because]", "∵"));
-        m.insert("sim", ("\\sim", true, "&sim;", "~", "~", "∼"));
-        m.insert("cong", ("\\cong", true, "&cong;", "[approx. equal to]", "[approx. equal to]", "≅"));
-        m.insert("simeq", ("\\simeq", true, "&cong;",  "[approx. equal to]", "[approx. equal to]", "≅"));
-        m.insert("asymp", ("\\asymp", true, "&asymp;", "[almost equal to]", "[almost equal to]", "≈"));
-        m.insert("approx", ("\\approx", true, "&asymp;", "[almost equal to]", "[almost equal to]", "≈"));
-        m.insert("ne", ("\\ne", true, "&ne;", "[not equal to]", "[not equal to]", "≠"));
-        m.insert("neq", ("\\neq", true, "&ne;", "[not equal to]", "[not equal to]", "≠"));
-        m.insert("equiv", ("\\equiv", true, "&equiv;", "[identical to]", "[identical to]", "≡"));
-
-        m.insert("triangleq", ("\\triangleq", true, "&triangleq;", "[defined to]", "[defined to]", "≜"));
-        m.insert("le", ("\\le", true, "&le;", "<=", "<=", "≤"));
-        m.insert("leq", ("\\le", true, "&le;", "<=", "<=", "≤"));
-        m.insert("ge", ("\\ge", true, "&ge;", ">=", ">=", "≥"));
-        m.insert("geq", ("\\ge", true, "&ge;", ">=", ">=", "≥"));
-        m.insert("lessgtr", ("\\lessgtr", true, "&lessgtr;", "[less than or greater than]", "[less than or greater than]", "≶"));
-        m.insert("lesseqgtr", ("\\lesseqgtr", true, "&lesseqgtr;", "[less than or equal or greater than or equal]", "[less than or equal or greater than or equal]", "⋚"));
-        m.insert("ll", ("\\ll", true,  "&Lt;", "<<", "<<", "≪"));
-        m.insert("Ll", ("\\lll", true, "&Ll;", "<<<", "<<<", "⋘"));
-        m.insert("lll", ("\\lll", true, "&Ll;", "<<<", "<<<", "⋘"));
-        m.insert("gg", ("\\gg", true,  "&Gt;", ">>", ">>", "≫"));
-        m.insert("Gg", ("\\ggg", true, "&Gg;", ">>>", ">>>", "⋙"));
-        m.insert("ggg", ("\\ggg", true, "&Gg;", ">>>", ">>>", "⋙"));
-        m.insert("prec", ("\\prec", true, "&pr;", "[precedes]", "[precedes]", "≺"));
-        m.insert("preceq", ("\\preceq", true, "&prcue;", "[precedes or equal]", "[precedes or equal]", "≼"));
-        m.insert("preccurlyeq", ("\\preccurlyeq", true, "&prcue;", "[precedes or equal]", "[precedes or equal]", "≼"));
-        m.insert("succ", ("\\succ", true, "&sc;", "[succeeds]", "[succeeds]", "≻"));
-        m.insert("succeq", ("\\succeq", true, "&sccue;", "[succeeds or equal]", "[succeeds or equal]", "≽"));
-        m.insert("succcurlyeq", ("\\succcurlyeq", true, "&sccue;", "[succeeds or equal]", "[succeeds or equal]", "≽"));
-        m.insert("sub", ("\\subset", true, "&sub;", "[subset of]", "[subset of]", "⊂"));
-        m.insert("subset", ("\\subset", true, "&sub;", "[subset of]", "[subset of]", "⊂"));
-        m.insert("sup", ("\\supset", true, "&sup;", "[superset of]", "[superset of]", "⊃"));
-        m.insert("supset", ("\\supset", true, "&sup;", "[superset of]", "[superset of]", "⊃"));
-        m.insert("nsub", ("\\not\\subset", true, "&nsub;", "[not a subset of]", "[not a subset of", "⊄"));
-        m.insert("sube", ("\\subseteq", true, "&sube;", "[subset of or equal to]", "[subset of or equal to]", "⊆"));
-        m.insert("nsup", ("\\not\\supset", true, "&nsup;", "[not a superset of]", "[not a superset of]", "⊅"));
-        m.insert("supe", ("\\supseteq", true, "&supe;", "[superset of or equal to]", "[superset of or equal to]", "⊇"));
-        m.insert("setminus", ("\\setminus", true, "&setminus;", "\\", "\\", "⧵"));
-        m.insert("forall", ("\\forall", true, "&forall;", "[for all]", "[for all]", "∀"));
-        m.insert("exist", ("\\exists", true, "&exist;", "[there exists]", "[there exists]", "∃"));
-        m.insert("exists", ("\\exists", true, "&exist;", "[there exists]", "[there exists]", "∃"));
-        m.insert("nexist", ("\\nexists", true, "&exist;", "[there does not exists]", "[there does not  exists]", "∄"));
-        m.insert("nexists", ("\\nexists", true, "&exist;", "[there does not exists]", "[there does not  exists]", "∄"));
-        m.insert("empty", ("\\empty", true, "&empty;", "[empty set]", "[empty set]", "∅"));
-        m.insert("emptyset", ("\\emptyset", true, "&empty;", "[empty set]", "[empty set]", "∅"));
-        m.insert("isin", ("\\in", true, "&isin;", "[element of]", "[element of]", "∈"));
-        m.insert("in", ("\\in", true, "&isin;", "[element of]", "[element of]", "∈"));
-        m.insert("notin", ("\\notin", true, "&notin;", "[not an element of]", "[not an element of]", "∉"));
-        m.insert("ni", ("\\ni", true, "&ni;", "[contains as member]", "[contains as member]", "∋"));
-        m.insert("nabla", ("\\nabla", true, "&nabla;", "[nabla]", "[nabla]", "∇"));
-        m.insert("ang", ("\\angle", true, "&ang;", "[angle]", "[angle]", "∠"));
-        m.insert("angle", ("\\angle", true, "&ang;", "[angle]", "[angle]", "∠"));
-        m.insert("perp", ("\\perp", true, "&perp;", "[up tack]", "[up tack]", "⊥"));
-        m.insert("parallel", ("\\parallel", true, "&parallel;", "||", "||", "∥"));
-        m.insert("sdot", ("\\cdot", true, "&sdot;", "[dot]", "[dot]", "⋅"));
-        m.insert("cdot", ("\\cdot", true, "&sdot;", "[dot]", "[dot]", "⋅"));
-        m.insert("lceil", ("\\lceil", true, "&lceil;", "[left ceiling]", "[left ceiling]", "⌈"));
-        m.insert("rceil", ("\\rceil", true, "&rceil;", "[right ceiling]", "[right ceiling]", "⌉"));
-        m.insert("lfloor", ("\\lfloor", true, "&lfloor;", "[left floor]", "[left floor]", "⌊"));
-        m.insert("rfloor", ("\\rfloor", true, "&rfloor;", "[right floor]", "[right floor]", "⌋"));
-        m.insert("lang", ("\\langle", true, "&lang;", "<", "<", "⟨"));
-        m.insert("rang", ("\\rangle", true, "&rang;", ">", ">", "⟩"));
-        m.insert("langle", ("\\langle", true, "&lang;", "<", "<", "⟨"));
-        m.insert("rangle", ("\\rangle", true, "&rang;", ">", ">", "⟩"));
-        m.insert("hbar", ("\\hbar", true, "&hbar;", "hbar", "hbar", "ℏ"));
-        m.insert("mho", ("\\mho", true, "&mho;", "mho", "mho", "℧"));
-
-        // Arrows
-        m.insert("larr", ("\\leftarrow", true, "&larr;", "<-", "<-", "←"));
-        m.insert("leftarrow", ("\\leftarrow", true, "&larr;",  "<-", "<-", "←"));
-        m.insert("gets", ("\\gets", true, "&larr;",  "<-", "<-", "←"));
-        m.insert("lArr", ("\\Leftarrow", true, "&lArr;", "<=", "<=", "⇐"));
-        m.insert("Leftarrow", ("\\Leftarrow", true, "&lArr;", "<=", "<=", "⇐"));
-        m.insert("uarr", ("\\uparrow", true, "&uarr;", "[uparrow]", "[uparrow]", "↑"));
-        m.insert("uparrow", ("\\uparrow", true, "&uarr;", "[uparrow]", "[uparrow]", "↑"));
-        m.insert("uArr", ("\\Uparrow", true, "&uArr;", "[dbluparrow]", "[dbluparrow]", "⇑"));
-        m.insert("Uparrow", ("\\Uparrow", true, "&uArr;", "[dbluparrow]", "[dbluparrow]", "⇑"));
-        m.insert("rarr", ("\\rightarrow", true, "&rarr;", "->", "->", "→"));
-        m.insert("to", ("\\to", true, "&rarr;", "->", "->", "→"));
-        m.insert("rightarrow", ("\\rightarrow", true, "&rarr;",  "->", "->", "→"));
-        m.insert("rArr", ("\\Rightarrow", true, "&rArr;", "=>", "=>", "⇒"));
-        m.insert("Rightarrow", ("\\Rightarrow", true, "&rArr;", "=>", "=>", "⇒"));
-        m.insert("darr", ("\\downarrow", true, "&darr;", "[downarrow]", "[downarrow]", "↓"));
-        m.insert("downarrow", ("\\downarrow", true, "&darr;", "[downarrow]", "[downarrow]", "↓"));
-        m.insert("dArr", ("\\Downarrow", true, "&dArr;", "[dbldownarrow]", "[dbldownarrow]", "⇓"));
-        m.insert("Downarrow", ("\\Downarrow", true, "&dArr;", "[dbldownarrow]", "[dbldownarrow]", "⇓"));
-        m.insert("harr", ("\\leftrightarrow", true, "&harr;", "<->", "<->", "↔"));
-        m.insert("leftrightarrow", ("\\leftrightarrow", true, "&harr;",  "<->", "<->", "↔"));
-        m.insert("hArr", ("\\Leftrightarrow", true, "&hArr;", "<=>", "<=>", "⇔"));
-        m.insert("Leftrightarrow", ("\\Leftrightarrow", true, "&hArr;", "<=>", "<=>", "⇔"));
-        m.insert("crarr", ("\\hookleftarrow", true, "&crarr;", "<-'", "<-'", "↵"));
-        m.insert("hookleftarrow", ("\\hookleftarrow", true, "&crarr;",  "<-'", "<-'", "↵"));
-
-        // Function names
-        m.insert("arccos", ("\\arccos", true, "arccos", "arccos", "arccos", "arccos"));
-        m.insert("arcsin", ("\\arcsin", true, "arcsin", "arcsin", "arcsin", "arcsin"));
-        m.insert("arctan", ("\\arctan", true, "arctan", "arctan", "arctan", "arctan"));
-        m.insert("arg", ("\\arg", true, "arg", "arg", "arg", "arg"));
-        m.insert("cos", ("\\cos", true, "cos", "cos", "cos", "cos"));
-        m.insert("cosh", ("\\cosh", true, "cosh", "cosh", "cosh", "cosh"));
-        m.insert("cot", ("\\cot", true, "cot", "cot", "cot", "cot"));
-        m.insert("coth", ("\\coth", true, "coth", "coth", "coth", "coth"));
-        m.insert("csc", ("\\csc", true, "csc", "csc", "csc", "csc"));
-        m.insert("deg", ("\\deg", true, "&deg;", "deg", "deg", "deg"));
-        m.insert("det", ("\\det", true, "det", "det", "det", "det"));
-        m.insert("dim", ("\\dim", true, "dim", "dim", "dim", "dim"));
-        m.insert("exp", ("\\exp", true, "exp", "exp", "exp", "exp"));
-        m.insert("gcd", ("\\gcd", true, "gcd", "gcd", "gcd", "gcd"));
-        m.insert("hom", ("\\hom", true, "hom", "hom", "hom", "hom"));
-        m.insert("inf", ("\\inf", true, "inf", "inf", "inf", "inf"));
-        m.insert("ker", ("\\ker", true, "ker", "ker", "ker", "ker"));
-        m.insert("lg", ("\\lg", true, "lg", "lg", "lg", "lg"));
-        m.insert("lim", ("\\lim", true, "lim", "lim", "lim", "lim"));
-        m.insert("liminf", ("\\liminf", true, "liminf", "liminf", "liminf", "liminf"));
-        m.insert("limsup", ("\\limsup", true, "limsup", "limsup", "limsup", "limsup"));
-        m.insert("ln", ("\\ln", true, "ln", "ln", "ln", "ln"));
-        m.insert("log", ("\\log", true, "log", "log", "log", "log"));
-        m.insert("max", ("\\max", true, "max", "max", "max", "max"));
-        m.insert("min", ("\\min", true, "min", "min", "min", "min"));
-        m.insert("Pr", ("\\Pr", true, "Pr", "Pr", "Pr", "Pr"));
-        m.insert("sec", ("\\sec", true, "sec", "sec", "sec", "sec"));
-        m.insert("sin", ("\\sin", true, "sin", "sin", "sin", "sin"));
-        m.insert("sinh", ("\\sinh", true, "sinh", "sinh", "sinh", "sinh"));
-        m.insert("sup", ("\\sup", true, "&sup;", "sup", "sup", "sup"));
-        m.insert("tan", ("\\tan", true, "tan", "tan", "tan", "tan"));
-        m.insert("tanh", ("\\tanh", true, "tanh", "tanh", "tanh", "tanh"));
-
-        // Signs & Symbols
-        m.insert("bull", ("\\textbullet{}", false, "&bull;", "*", "*", "•"));
-        m.insert("bullet", ("\\textbullet{}", false, "&bull;", "*", "*", "•"));
-        m.insert("star", ("\\star", true, "*", "*", "*", "⋆"));
-        m.insert("lowast", ("\\ast", true, "&lowast;", "*", "*", "∗"));
-        m.insert("ast", ("\\ast", true, "&lowast;", "*", "*", "*"));
-        m.insert("odot", ("\\odot", true, "o", "[circled dot]", "[circled dot]", "ʘ"));
-        m.insert("oplus", ("\\oplus", true, "&oplus;", "[circled plus]", "[circled plus]", "⊕"));
-        m.insert("otimes", ("\\otimes", true, "&otimes;", "[circled times]", "[circled times]", "⊗"));
-        m.insert("check", ("\\checkmark", true, "&checkmark;", "[checkmark]", "[checkmark]", "✓"));
-        m.insert("checkmark", ("\\checkmark", true, "&check;", "[checkmark]", "[checkmark]", "✓"));
-
-        // Miscellaneous (seldom used)
-        m.insert("para", ("\\P{}", false, "&para;", "[pilcrow]", "¶", "¶"));
-        m.insert("ordf", ("\\textordfeminine{}", false, "&ordf;", "_a_", "ª", "ª"));
-        m.insert("ordm", ("\\textordmasculine{}", false, "&ordm;", "_o_", "º", "º"));
-        m.insert("cedil", ("\\c{}", false, "&cedil;", "[cedilla]", "¸", "¸"));
-        m.insert("oline", ("\\overline{~}", true, "&oline;", "[overline]", "¯", "‾"));
-        m.insert("uml", ("\\textasciidieresis{}", false, "&uml;", "[diaeresis]", "¨", "¨"));
-        m.insert("zwnj", ("\\/{}", false, "&zwnj;", "", "", "‌"));
-        m.insert("zwj", ("", false, "&zwj;", "", "", "‍"));
-        m.insert("lrm", ("", false, "&lrm;", "", "", "‎"));
-        m.insert("rlm", ("", false, "&rlm;", "", "", "‏"));
-
-        // Smilies
-        m.insert("smiley", ("\\ddot\\smile", true, "&#9786;", ":-)", ":-)", "☺"));
-        m.insert("blacksmile", ("\\ddot\\smile", true, "&#9787;", ":-)", ":-)", "☻"));
-        m.insert("sad", ("\\ddot\\frown", true, "&#9785;", ":-(", ":-(", "☹"));
-        m.insert("frowny", ("\\ddot\\frown", true, "&#9785;", ":-(", ":-(", "☹"));
-
-        // Suits
-        m.insert("clubs", ("\\clubsuit", true, "&clubs;", "[clubs]", "[clubs]", "♣"));
-        m.insert("clubsuit", ("\\clubsuit", true, "&clubs;", "[clubs]", "[clubs]", "♣"));
-        m.insert("spades", ("\\spadesuit", true, "&spades;", "[spades]", "[spades]", "♠"));
-        m.insert("spadesuit", ("\\spadesuit", true, "&spades;", "[spades]", "[spades]", "♠"));
-        m.insert("hearts", ("\\heartsuit", true, "&hearts;", "[hearts]", "[hearts]", "♥"));
-        m.insert("heartsuit", ("\\heartsuit", true, "&heartsuit;", "[hearts]", "[hearts]", "♥"));
-        m.insert("diams", ("\\diamondsuit", true, "&diams;", "[diamonds]", "[diamonds]", "◆"));
-        m.insert("diamondsuit", ("\\diamondsuit", true, "&diams;", "[diamonds]", "[diamonds]", "◆"));
-        m.insert("diamond", ("\\diamondsuit", true, "&diamond;", "[diamond]", "[diamond]", "◆"));
-        m.insert("Diamond", ("\\diamondsuit", true, "&diamond;", "[diamond]", "[diamond]", "◆"));
-        m.insert("loz", ("\\lozenge", true, "&loz;", "[lozenge]", "[lozenge]", "⧫"));
-
-        // Spaces ("\_ ")
-        // (let (space-entities html-spaces (entity "_"))
-        //   (dolist (n (number-sequence 1 20) (nreverse space-entities))
-        //     (let ((spaces (make-string n ?\s)))
-        //   (push (list (setq entity (concat entity " "))
-        //         (format "\\hspace*{%sem}" (* n .5))
-        //         nil
-        //         (setq html-spaces (concat "&ensp;" html-spaces))
-        //         spaces
-        //         spaces
-        //         (make-string n ?\x2002))
-        //       space-entities))))
-
-        EntityLookupManager(m)
-    };
+const fn make(latex: &'static str, requires_latex_math: bool, html: &'static str, ascii: &'static str, latin1: &'static str, utf8: &'static str) -> EntityReplacement {
+    EntityReplacement {
+        latex,
+        requires_latex_math,
+        html,
+        ascii,
+        latin1,
+        utf8,
+    }
 }
+
+/// This is a map of entity names to their replacement in the LaTeX, HTML, ASCII, Latin1 and UTF-8
+/// exporters.
+///
+/// This list is taken from lisp/org-entities.el in the org-mode repository.
+pub static ORG_ENTITIES: phf::Map<
+    &'static str,
+    EntityReplacement,
+    //(
+    //    &'static str,
+    //    bool,
+    //    &'static str,
+    //    &'static str,
+    //    &'static str,
+    //    &'static str,
+    //),
+> = phf_map! {
+    // name => LaTeX, requires LaTeX math?, html, ascii, latin1, utf-8
+
+    // Letters
+    // Latin
+    "Agrave" => make("\\`{A}", false, "&Agrave;", "A", "À", "À"),
+    "agrave" => make("\\`{a}", false, "&agrave;", "a", "à", "à"),
+    "Aacute" => make("\\'{A}", false, "&Aacute;", "A", "Á", "Á"),
+    "aacute" => make("\\'{a}", false, "&aacute;", "a", "á", "á"),
+    "Acirc" => make("\\^{A}", false, "&Acirc;", "A", "Â", "Â"),
+    "acirc" => make("\\^{a}", false, "&acirc;", "a", "â", "â"),
+    "Amacr" => make("\\bar{A}", false, "&Amacr;", "A", "Ã", "Ã"),
+    "amacr" => make("\\bar{a}", false, "&amacr;", "a", "ã", "ã"),
+    "Atilde" => make("\\~{A}", false, "&Atilde;", "A", "Ã", "Ã"),
+    "atilde" => make("\\~{a}", false, "&atilde;", "a", "ã", "ã"),
+    "Auml" => make("\\\"{A}", false, "&Auml;", "Ae", "Ä", "Ä"),
+    "auml" => make("\\\"{a}", false, "&auml;", "ae", "ä", "ä"),
+    "Aring" => make("\\AA{}", false, "&Aring;", "A", "Å", "Å"),
+    "AA" => make("\\AA{}", false, "&Aring;", "A", "Å", "Å"),
+    "aring" => make("\\aa{}", false, "&aring;", "a", "å", "å"),
+    "AElig" => make("\\AE{}", false, "&AElig;", "AE", "Æ", "Æ"),
+    "aelig" => make("\\ae{}", false, "&aelig;", "ae", "æ", "æ"),
+    "Ccedil" => make("\\c{C}", false, "&Ccedil;", "C", "Ç", "Ç"),
+    "ccedil" => make("\\c{c}", false, "&ccedil;", "c", "ç", "ç"),
+    "Egrave" => make("\\`{E}", false, "&Egrave;", "E", "È", "È"),
+    "egrave" => make("\\`{e}", false, "&egrave;", "e", "è", "è"),
+    "Eacute" => make("\\'{E}", false, "&Eacute;", "E", "É", "É"),
+    "eacute" => make("\\'{e}", false, "&eacute;", "e", "é", "é"),
+    "Ecirc" => make("\\^{E}", false, "&Ecirc;", "E", "Ê", "Ê"),
+    "ecirc" => make("\\^{e}", false, "&ecirc;", "e", "ê", "ê"),
+    "Euml" => make("\\\"{E}", false, "&Euml;", "E", "Ë", "Ë"),
+    "euml" => make("\\\"{e}", false, "&euml;", "e", "ë", "ë"),
+    "Igrave" => make("\\`{I}", false, "&Igrave;", "I", "Ì", "Ì"),
+    "igrave" => make("\\`{i}", false, "&igrave;", "i", "ì", "ì"),
+    "Iacute" => make("\\'{I}", false, "&Iacute;", "I", "Í", "Í"),
+    "iacute" => make("\\'{i}", false, "&iacute;", "i", "í", "í"),
+    "Icirc" => make("\\^{I}", false, "&Icirc;", "I", "Î", "Î"),
+    "icirc" => make("\\^{i}", false, "&icirc;", "i", "î", "î"),
+    "Iuml" => make("\\\"{I}", false, "&Iuml;", "I", "Ï", "Ï"),
+    "iuml" => make("\\\"{i}", false, "&iuml;", "i", "ï", "ï"),
+    "Ntilde" => make("\\~{N}", false, "&Ntilde;", "N", "Ñ", "Ñ"),
+    "ntilde" => make("\\~{n}", false, "&ntilde;", "n", "ñ", "ñ"),
+    "Ograve" => make("\\`{O}", false, "&Ograve;", "O", "Ò", "Ò"),
+    "ograve" => make("\\`{o}", false, "&ograve;", "o", "ò", "ò"),
+    "Oacute" => make("\\'{O}", false, "&Oacute;", "O", "Ó", "Ó"),
+    "oacute" => make("\\'{o}", false, "&oacute;", "o", "ó", "ó"),
+    "Ocirc" => make("\\^{O}", false, "&Ocirc;", "O", "Ô", "Ô"),
+    "ocirc" => make("\\^{o}", false, "&ocirc;", "o", "ô", "ô"),
+    "Otilde" => make("\\~{O}", false, "&Otilde;", "O", "Õ", "Õ"),
+    "otilde" => make("\\~{o}", false, "&otilde;", "o", "õ", "õ"),
+    "Ouml" => make("\\\"{O}", false, "&Ouml;", "Oe", "Ö", "Ö"),
+    "ouml" => make("\\\"{o}", false, "&ouml;", "oe", "ö", "ö"),
+    "Oslash" => make("\\O", false, "&Oslash;", "O", "Ø", "Ø"),
+    "oslash" => make("\\o{}", false, "&oslash;", "o", "ø", "ø"),
+    "OElig" => make("\\OE{}", false, "&OElig;", "OE", "OE", "Œ"),
+    "oelig" => make("\\oe{}", false, "&oelig;", "oe", "oe", "œ"),
+    "Scaron" => make("\\v{S}", false, "&Scaron;", "S", "S", "Š"),
+    "scaron" => make("\\v{s}", false, "&scaron;", "s", "s", "š"),
+    "szlig" => make("\\ss{}", false, "&szlig;", "ss", "ß", "ß"),
+    "Ugrave" => make("\\`{U}", false, "&Ugrave;", "U", "Ù", "Ù"),
+    "ugrave" => make("\\`{u}", false, "&ugrave;", "u", "ù", "ù"),
+    "Uacute" => make("\\'{U}", false, "&Uacute;", "U", "Ú", "Ú"),
+    "uacute" => make("\\'{u}", false, "&uacute;", "u", "ú", "ú"),
+    "Ucirc" => make("\\^{U}", false, "&Ucirc;", "U", "Û", "Û"),
+    "ucirc" => make("\\^{u}", false, "&ucirc;", "u", "û", "û"),
+    "Uuml" => make("\\\"{U}", false, "&Uuml;", "Ue", "Ü", "Ü"),
+    "uuml" => make("\\\"{u}", false, "&uuml;", "ue", "ü", "ü"),
+    "Yacute" => make("\\'{Y}", false, "&Yacute;", "Y", "Ý", "Ý"),
+    "yacute" => make("\\'{y}", false, "&yacute;", "y", "ý", "ý"),
+    "Yuml" => make("\\\"{Y}", false, "&Yuml;", "Y", "Y", "Ÿ"),
+    "yuml" => make("\\\"{y}", false, "&yuml;", "y", "ÿ", "ÿ"),
+
+    // Latin (special face)
+    "fnof" => make("\\textit{f}", false, "&fnof;", "f", "f", "ƒ"),
+    "real" => make("\\Re", true, "&real;", "R", "R", "ℜ"),
+    "image" => make("\\Im", true, "&image;", "I", "I", "ℑ"),
+    "weierp" => make("\\wp", true, "&weierp;", "P", "P", "℘"),
+    "ell" => make("\\ell", true, "&ell;", "ell", "ell", "ℓ"),
+    "imath" => make("\\imath", true, "&imath;", "[dotless i]", "dotless i", "ı"),
+    "jmath" => make("\\jmath", true, "&jmath;", "[dotless j]", "dotless j", "ȷ"),
+
+    // Greek
+    "Alpha" => make("A", false, "&Alpha;", "Alpha", "Alpha", "Α"),
+    "alpha" => make("\\alpha", true, "&alpha;", "alpha", "alpha", "α"),
+    "Beta" => make("B", false, "&Beta;", "Beta", "Beta", "Β"),
+    "beta" => make("\\beta", true, "&beta;", "beta", "beta", "β"),
+    "Gamma" => make("\\Gamma", true, "&Gamma;", "Gamma", "Gamma", "Γ"),
+    "gamma" => make("\\gamma", true, "&gamma;", "gamma", "gamma", "γ"),
+    "Delta" => make("\\Delta", true, "&Delta;", "Delta", "Delta", "Δ"),
+    "delta" => make("\\delta", true, "&delta;", "delta", "delta", "δ"),
+    "Epsilon" => make("E", false, "&Epsilon;", "Epsilon", "Epsilon", "Ε"),
+    "epsilon" => make("\\epsilon", true, "&epsilon;", "epsilon", "epsilon", "ε"),
+    "varepsilon" => make("\\varepsilon", true, "&epsilon;", "varepsilon", "varepsilon", "ε"),
+    "Zeta" => make("Z", false, "&Zeta;", "Zeta", "Zeta", "Ζ"),
+    "zeta" => make("\\zeta", true, "&zeta;", "zeta", "zeta", "ζ"),
+    "Eta" => make("H", false, "&Eta;", "Eta", "Eta", "Η"),
+    "eta" => make("\\eta", true, "&eta;", "eta", "eta", "η"),
+    "Theta" => make("\\Theta", true, "&Theta;", "Theta", "Theta", "Θ"),
+    "theta" => make("\\theta", true, "&theta;", "theta", "theta", "θ"),
+    "thetasym" => make("\\vartheta", true, "&thetasym;", "theta", "theta", "ϑ"),
+    "vartheta" => make("\\vartheta", true, "&thetasym;", "theta", "theta", "ϑ"),
+    "Iota" => make("I", false, "&Iota;", "Iota", "Iota", "Ι"),
+    "iota" => make("\\iota", true, "&iota;", "iota", "iota", "ι"),
+    "Kappa" => make("K", false, "&Kappa;", "Kappa", "Kappa", "Κ"),
+    "kappa" => make("\\kappa", true, "&kappa;", "kappa", "kappa", "κ"),
+    "Lambda" => make("\\Lambda", true, "&Lambda;", "Lambda", "Lambda", "Λ"),
+    "lambda" => make("\\lambda", true, "&lambda;", "lambda", "lambda", "λ"),
+    "Mu" => make("M", false, "&Mu;", "Mu", "Mu", "Μ"),
+    "mu" => make("\\mu", true, "&mu;", "mu", "mu", "μ"),
+    "nu" => make("\\nu", true, "&nu;", "nu", "nu", "ν"),
+    "Nu" => make("N", false, "&Nu;", "Nu", "Nu", "Ν"),
+    "Xi" => make("\\Xi", true, "&Xi;", "Xi", "Xi", "Ξ"),
+    "xi" => make("\\xi", true, "&xi;", "xi", "xi", "ξ"),
+    "Omicron" => make("O", false, "&Omicron;", "Omicron", "Omicron", "Ο"),
+    "omicron" => make("\\textit{o}", false, "&omicron;", "omicron", "omicron", "ο"),
+    "Pi" => make("\\Pi", true, "&Pi;", "Pi", "Pi", "Π"),
+    "pi" => make("\\pi", true, "&pi;", "pi", "pi", "π"),
+    "Rho" => make("P", false, "&Rho;", "Rho", "Rho", "Ρ"),
+    "rho" => make("\\rho", true, "&rho;", "rho", "rho", "ρ"),
+    "Sigma" => make("\\Sigma", true, "&Sigma;", "Sigma", "Sigma", "Σ"),
+    "sigma" => make("\\sigma", true, "&sigma;", "sigma", "sigma", "σ"),
+    "sigmaf" => make("\\varsigma", true, "&sigmaf;", "sigmaf", "sigmaf", "ς"),
+    "varsigma" => make("\\varsigma", true, "&sigmaf;", "varsigma", "varsigma", "ς"),
+    "Tau" => make("T", false, "&Tau;", "Tau", "Tau", "Τ"),
+    "Upsilon" => make("\\Upsilon", true, "&Upsilon;", "Upsilon", "Upsilon", "Υ"),
+    "upsih" => make("\\Upsilon", true, "&upsih;", "upsilon", "upsilon", "ϒ"),
+    "upsilon" => make("\\upsilon", true, "&upsilon;", "upsilon", "upsilon", "υ"),
+    "Phi" => make("\\Phi", true, "&Phi;", "Phi", "Phi", "Φ"),
+    "phi" => make("\\phi", true, "&phi;", "phi", "phi", "ɸ"),
+    "varphi" => make("\\varphi", true, "&varphi;", "varphi", "varphi", "φ"),
+    "Chi" => make("X", false, "&Chi;", "Chi", "Chi", "Χ"),
+    "chi" => make("\\chi", true, "&chi;", "chi", "chi", "χ"),
+    "acutex" => make("\\acute x", true, "&acute;x", "'x", "'x", "𝑥́"),
+    "Psi" => make("\\Psi", true, "&Psi;", "Psi", "Psi", "Ψ"),
+    "psi" => make("\\psi", true, "&psi;", "psi", "psi", "ψ"),
+    "tau" => make("\\tau", true, "&tau;", "tau", "tau", "τ"),
+    "Omega" => make("\\Omega", true, "&Omega;", "Omega", "Omega", "Ω"),
+    "omega" => make("\\omega", true, "&omega;", "omega", "omega", "ω"),
+    "piv" => make("\\varpi", true, "&piv;", "omega-pi", "omega-pi", "ϖ"),
+    "varpi" => make("\\varpi", true, "&piv;", "omega-pi", "omega-pi", "ϖ"),
+    "partial" => make("\\partial", true, "&part;", "[partial differential]", "[partial differential]", "∂"),
+
+    // Hebrew
+    "alefsym" => make("\\aleph", true, "&alefsym;", "aleph", "aleph", "ℵ"),
+    "aleph" => make("\\aleph", true, "&aleph;", "aleph", "aleph", "ℵ"),
+    "gimel" => make("\\gimel", true, "&gimel;", "gimel", "gimel", "ℷ"),
+    "beth" => make("\\beth", true, "&beth;", "beth", "beth", "ב"),
+    "dalet" => make("\\daleth", true, "&daleth;", "dalet", "dalet", "ד"),
+
+    // Dead languages
+    "ETH" => make("\\DH{}", false, "&ETH;", "D", "Ð", "Ð"),
+    "eth" => make("\\dh{}", false, "&eth;", "dh", "ð", "ð"),
+    "THORN" => make("\\TH{}", false, "&THORN;", "TH", "Þ", "Þ"),
+    "thorn" => make("\\th{}", false, "&thorn;", "th", "þ", "þ"),
+
+    // Punctuation
+    // Dots and Marks
+    "dots" => make("\\dots{}", false, "&hellip;", "...", "...", "…"),
+    "cdots" => make("\\cdots{}", true, "&ctdot;", "...", "...", "⋯"),
+    "hellip" => make("\\dots{}", false, "&hellip;", "...", "...", "…"),
+    "middot" => make("\\textperiodcentered{}", false, "&middot;", ".", "·", "·"),
+    "iexcl" => make("!`", false, "&iexcl;", "!", "¡", "¡"),
+    "iquest" => make("?`", false, "&iquest;", "?", "¿", "¿"),
+
+    // Dash-like
+    "shy" => make("\\-", false, "&shy;", "", "", ""),
+    "ndash" => make("--", false, "&ndash;", "-", "-", "–"),
+    "mdash" => make("---", false, "&mdash;", "--", "--", "—"),
+
+    // Quotations
+    "quot" => make("\\textquotedbl{}", false, "&quot;", "\"", "\"", "\""),
+    "acute" => make("\\textasciiacute{}", false, "&acute;", "'", "´", "´"),
+    "ldquo" => make("\\textquotedblleft{}", false, "&ldquo;", "\"", "\"", "“"),
+    "rdquo" => make("\\textquotedblright{}", false, "&rdquo;", "\"", "\"", "”"),
+    "bdquo" => make("\\quotedblbase{}", false, "&bdquo;", "\"", "\"", "„"),
+    "lsquo" => make("\\textquoteleft{}", false, "&lsquo;", "`", "`", "‘"),
+    "rsquo" => make("\\textquoteright{}", false, "&rsquo;", "'", "'", "’"),
+    "sbquo" => make("\\quotesinglbase{}", false, "&sbquo;", ",", ",", "‚"),
+    "laquo" => make("\\guillemotleft{}", false, "&laquo;", "<<", "«", "«"),
+    "raquo" => make("\\guillemotright{}", false, "&raquo;", ">>", "»", "»"),
+    "lsaquo" => make("\\guilsinglleft{}", false, "&lsaquo;", "<", "<", "‹"),
+    "rsaquo" => make("\\guilsinglright{}", false, "&rsaquo;", ">", ">", "›"),
+
+    // Other
+    // Misc. (often used)
+    "circ" => make("\\^{}", false, "&circ;", "^", "^", "∘"),
+    "vert" => make("\\vert{}", true, "&vert;", "|", "|", "|"),
+    "vbar" => make("|", false, "|", "|", "|", "|"),
+    "brvbar" => make("\\textbrokenbar{}", false, "&brvbar;", "|", "¦", "¦"),
+    "S" => make("\\S", false, "&sect;", "paragraph", "§", "§"),
+    "sect" => make("\\S", false, "&sect;", "paragraph", "§", "§"),
+    "amp" => make("\\&", false, "&amp;", "&", "&", "&"),
+    "lt" => make("\\textless{}", false, "&lt;", "<", "<", "<"),
+    "gt" => make("\\textgreater{}", false, "&gt;", ">", ">", ">"),
+    "tilde" => make("\\textasciitilde{}", false, "~", "~", "~", "~"),
+    "slash" => make("/", false, "/", "/", "/", "/"),
+    "plus" => make("+", false, "+", "+", "+", "+"),
+    "under" => make("\\_", false, "_", "_", "_", "_"),
+    "equal" => make("=", false, "=", "=", "=", "="),
+    "asciicirc" => make("\\textasciicircum{}", false, "^", "^", "^", "^"),
+    "dagger" => make("\\textdagger{}", false, "&dagger;", "[dagger]", "[dagger]", "†"),
+    "dag" => make("\\dag{}", false, "&dagger;", "[dagger]", "[dagger]", "†"),
+    "Dagger" => make("\\textdaggerdbl{}", false, "&Dagger;", "[doubledagger]", "[doubledagger]", "‡"),
+    "ddag" => make("\\ddag{}", false, "&Dagger;", "[doubledagger]", "[doubledagger]", "‡"),
+
+    // Whitespace
+    "nbsp" => make("~", false, "&nbsp;", " ", "\x00A0", "\x00A0"),
+    "ensp" => make("\\hspace*{.5em}", false, "&ensp;", " ", " ", " "),
+    "emsp" => make("\\hspace*{1em}", false, "&emsp;", " ", " ", " "),
+    "thinsp" => make("\\hspace*{.2em}", false, "&thinsp;", " ", " ", " "),
+
+    // Currency
+    "curren" => make("\\textcurrency{}", false, "&curren;", "curr.", "¤", "¤"),
+    "cent" => make("\\textcent{}", false, "&cent;", "cent", "¢", "¢"),
+    "pound" => make("\\pounds{}", false, "&pound;", "pound", "£", "£"),
+    "yen" => make("\\textyen{}", false, "&yen;", "yen", "¥", "¥"),
+    "euro" => make("\\texteuro{}", false, "&euro;", "EUR", "EUR", "€"),
+    "EUR" => make("\\texteuro{}", false, "&euro;", "EUR", "EUR", "€"),
+    "dollar" => make("\\$", false, "$", "$", "$", "$"),
+    "USD" => make("\\$", false, "$", "$", "$", "$"),
+
+    // Property Marks
+    "copy" => make("\\textcopyright{}", false, "&copy;", "(c)", "©", "©"),
+    "reg" => make("\\textregistered{}", false, "&reg;", "(r)", "®", "®"),
+    "trade" => make("\\texttrademark{}", false, "&trade;", "TM", "TM", "™"),
+
+    // Science et al.
+    "minus" => make("\\minus", true, "&minus;", "-", "-", "−"),
+    "pm" => make("\\textpm{}", false, "&plusmn;", "+-", "±", "±"),
+    "plusmn" => make("\\textpm{}", false, "&plusmn;", "+-", "±", "±"),
+    "times" => make("\\texttimes{}", false, "&times;", "*", "×", "×"),
+    "frasl" => make("/", false, "&frasl;", "/", "/", "⁄"),
+    "colon" => make("\\colon", true, ":", ":", ":", ":"),
+    "div" => make("\\textdiv{}", false, "&divide;", "/", "÷", "÷"),
+    "frac12" => make("\\textonehalf{}", false, "&frac12;", "1/2", "½", "½"),
+    "frac14" => make("\\textonequarter{}", false, "&frac14;", "1/4", "¼", "¼"),
+    "frac34" => make("\\textthreequarters{}", false, "&frac34;", "3/4", "¾", "¾"),
+    "permil" => make("\\textperthousand{}", false, "&permil;", "per thousand", "per thousand", "‰"),
+    "sup1" => make("\\textonesuperior{}", false, "&sup1;", "^1", "¹", "¹"),
+    "sup2" => make("\\texttwosuperior{}", false, "&sup2;", "^2", "²", "²"),
+    "sup3" => make("\\textthreesuperior{}", false, "&sup3;", "^3", "³", "³"),
+    "radic" => make("\\sqrt{\\,}", true, "&radic;", "[square root]", "[square root]", "√"),
+    "sum" => make("\\sum", true, "&sum;", "[sum]", "[sum]", "∑"),
+    "prod" => make("\\prod", true, "&prod;", "[product]", "[n-ary product]", "∏"),
+    "micro" => make("\\textmu{}", false, "&micro;", "micro", "µ", "µ"),
+    "macr" => make("\\textasciimacron{}", false, "&macr;", "[macron]", "¯", "¯"),
+    "deg" => make("\\textdegree{}", false, "&deg;", "degree", "°", "°"),
+    "prime" => make("\\prime", true, "&prime;", "'", "'", "′"),
+    "Prime" => make("\\prime{}\\prime", true, "&Prime;", "''", "''", "″"),
+    "infin" => make("\\infty", true, "&infin;", "[infinity]", "[infinity]", "∞"),
+    "infty" => make("\\infty", true, "&infin;", "[infinity]", "[infinity]", "∞"),
+    "prop" => make("\\propto", true, "&prop;", "[proportional to]", "[proportional to]", "∝"),
+    "propto" => make("\\propto", true, "&prop;", "[proportional to]", "[proportional to]", "∝"),
+    "not" => make("\\textlnot{}", false, "&not;", "[angled dash]", "¬", "¬"),
+    "neg" => make("\\neg{}", true, "&not;", "[angled dash]", "¬", "¬"),
+    "land" => make("\\land", true, "&and;", "[logical and]", "[logical and]", "∧"),
+    "wedge" => make("\\wedge", true, "&and;", "[logical and]", "[logical and]", "∧"),
+    "lor" => make("\\lor", true, "&or;", "[logical or]", "[logical or]", "∨"),
+    "vee" => make("\\vee", true, "&or;", "[logical or]", "[logical or]", "∨"),
+    "cap" => make("\\cap", true, "&cap;", "[intersection]", "[intersection]", "∩"),
+    "cup" => make("\\cup", true, "&cup;", "[union]", "[union]", "∪"),
+    "smile" => make("\\smile", true, "&smile;", "[cup product]", "[cup product]", "⌣"),
+    "frown" => make("\\frown", true, "&frown;", "[Cap product]", "[cap product]", "⌢"),
+    "int" => make("\\int", true, "&int;", "[integral]", "[integral]", "∫"),
+    "therefore" => make("\\therefore", true, "&there4;", "[therefore]", "[therefore]", "∴"),
+    "there4" => make("\\therefore", true, "&there4;", "[therefore]", "[therefore]", "∴"),
+    "because" => make("\\because", true, "&because;", "[because]", "[because]", "∵"),
+    "sim" => make("\\sim", true, "&sim;", "~", "~", "∼"),
+    "cong" => make("\\cong", true, "&cong;", "[approx. equal to]", "[approx. equal to]", "≅"),
+    "simeq" => make("\\simeq", true, "&cong;",  "[approx. equal to]", "[approx. equal to]", "≅"),
+    "asymp" => make("\\asymp", true, "&asymp;", "[almost equal to]", "[almost equal to]", "≈"),
+    "approx" => make("\\approx", true, "&asymp;", "[almost equal to]", "[almost equal to]", "≈"),
+    "ne" => make("\\ne", true, "&ne;", "[not equal to]", "[not equal to]", "≠"),
+    "neq" => make("\\neq", true, "&ne;", "[not equal to]", "[not equal to]", "≠"),
+    "equiv" => make("\\equiv", true, "&equiv;", "[identical to]", "[identical to]", "≡"),
+
+    "triangleq" => make("\\triangleq", true, "&triangleq;", "[defined to]", "[defined to]", "≜"),
+    "le" => make("\\le", true, "&le;", "<=", "<=", "≤"),
+    "leq" => make("\\le", true, "&le;", "<=", "<=", "≤"),
+    "ge" => make("\\ge", true, "&ge;", ">=", ">=", "≥"),
+    "geq" => make("\\ge", true, "&ge;", ">=", ">=", "≥"),
+    "lessgtr" => make("\\lessgtr", true, "&lessgtr;", "[less than or greater than]", "[less than or greater than]", "≶"),
+    "lesseqgtr" => make("\\lesseqgtr", true, "&lesseqgtr;", "[less than or equal or greater than or equal]", "[less than or equal or greater than or equal]", "⋚"),
+    "ll" => make("\\ll", true,  "&Lt;", "<<", "<<", "≪"),
+    "Ll" => make("\\lll", true, "&Ll;", "<<<", "<<<", "⋘"),
+    "lll" => make("\\lll", true, "&Ll;", "<<<", "<<<", "⋘"),
+    "gg" => make("\\gg", true,  "&Gt;", ">>", ">>", "≫"),
+    "Gg" => make("\\ggg", true, "&Gg;", ">>>", ">>>", "⋙"),
+    "ggg" => make("\\ggg", true, "&Gg;", ">>>", ">>>", "⋙"),
+    "prec" => make("\\prec", true, "&pr;", "[precedes]", "[precedes]", "≺"),
+    "preceq" => make("\\preceq", true, "&prcue;", "[precedes or equal]", "[precedes or equal]", "≼"),
+    "preccurlyeq" => make("\\preccurlyeq", true, "&prcue;", "[precedes or equal]", "[precedes or equal]", "≼"),
+    "succ" => make("\\succ", true, "&sc;", "[succeeds]", "[succeeds]", "≻"),
+    "succeq" => make("\\succeq", true, "&sccue;", "[succeeds or equal]", "[succeeds or equal]", "≽"),
+    "succcurlyeq" => make("\\succcurlyeq", true, "&sccue;", "[succeeds or equal]", "[succeeds or equal]", "≽"),
+    "sub" => make("\\subset", true, "&sub;", "[subset of]", "[subset of]", "⊂"),
+    "subset" => make("\\subset", true, "&sub;", "[subset of]", "[subset of]", "⊂"),
+    "sup" => make("\\supset", true, "&sup;", "[superset of]", "[superset of]", "⊃"),
+    "supset" => make("\\supset", true, "&sup;", "[superset of]", "[superset of]", "⊃"),
+    "nsub" => make("\\not\\subset", true, "&nsub;", "[not a subset of]", "[not a subset of", "⊄"),
+    "sube" => make("\\subseteq", true, "&sube;", "[subset of or equal to]", "[subset of or equal to]", "⊆"),
+    "nsup" => make("\\not\\supset", true, "&nsup;", "[not a superset of]", "[not a superset of]", "⊅"),
+    "supe" => make("\\supseteq", true, "&supe;", "[superset of or equal to]", "[superset of or equal to]", "⊇"),
+    "setminus" => make("\\setminus", true, "&setminus;", "\\", "\\", "⧵"),
+    "forall" => make("\\forall", true, "&forall;", "[for all]", "[for all]", "∀"),
+    "exist" => make("\\exists", true, "&exist;", "[there exists]", "[there exists]", "∃"),
+    "exists" => make("\\exists", true, "&exist;", "[there exists]", "[there exists]", "∃"),
+    "nexist" => make("\\nexists", true, "&exist;", "[there does not exists]", "[there does not  exists]", "∄"),
+    "nexists" => make("\\nexists", true, "&exist;", "[there does not exists]", "[there does not  exists]", "∄"),
+    "empty" => make("\\empty", true, "&empty;", "[empty set]", "[empty set]", "∅"),
+    "emptyset" => make("\\emptyset", true, "&empty;", "[empty set]", "[empty set]", "∅"),
+    "isin" => make("\\in", true, "&isin;", "[element of]", "[element of]", "∈"),
+    "in" => make("\\in", true, "&isin;", "[element of]", "[element of]", "∈"),
+    "notin" => make("\\notin", true, "&notin;", "[not an element of]", "[not an element of]", "∉"),
+    "ni" => make("\\ni", true, "&ni;", "[contains as member]", "[contains as member]", "∋"),
+    "nabla" => make("\\nabla", true, "&nabla;", "[nabla]", "[nabla]", "∇"),
+    "ang" => make("\\angle", true, "&ang;", "[angle]", "[angle]", "∠"),
+    "angle" => make("\\angle", true, "&ang;", "[angle]", "[angle]", "∠"),
+    "perp" => make("\\perp", true, "&perp;", "[up tack]", "[up tack]", "⊥"),
+    "parallel" => make("\\parallel", true, "&parallel;", "||", "||", "∥"),
+    "sdot" => make("\\cdot", true, "&sdot;", "[dot]", "[dot]", "⋅"),
+    "cdot" => make("\\cdot", true, "&sdot;", "[dot]", "[dot]", "⋅"),
+    "lceil" => make("\\lceil", true, "&lceil;", "[left ceiling]", "[left ceiling]", "⌈"),
+    "rceil" => make("\\rceil", true, "&rceil;", "[right ceiling]", "[right ceiling]", "⌉"),
+    "lfloor" => make("\\lfloor", true, "&lfloor;", "[left floor]", "[left floor]", "⌊"),
+    "rfloor" => make("\\rfloor", true, "&rfloor;", "[right floor]", "[right floor]", "⌋"),
+    "lang" => make("\\langle", true, "&lang;", "<", "<", "⟨"),
+    "rang" => make("\\rangle", true, "&rang;", ">", ">", "⟩"),
+    "langle" => make("\\langle", true, "&lang;", "<", "<", "⟨"),
+    "rangle" => make("\\rangle", true, "&rang;", ">", ">", "⟩"),
+    "hbar" => make("\\hbar", true, "&hbar;", "hbar", "hbar", "ℏ"),
+    "mho" => make("\\mho", true, "&mho;", "mho", "mho", "℧"),
+
+    // Arrows
+    "larr" => make("\\leftarrow", true, "&larr;", "<-", "<-", "←"),
+    "leftarrow" => make("\\leftarrow", true, "&larr;",  "<-", "<-", "←"),
+    "gets" => make("\\gets", true, "&larr;",  "<-", "<-", "←"),
+    "lArr" => make("\\Leftarrow", true, "&lArr;", "<=", "<=", "⇐"),
+    "Leftarrow" => make("\\Leftarrow", true, "&lArr;", "<=", "<=", "⇐"),
+    "uarr" => make("\\uparrow", true, "&uarr;", "[uparrow]", "[uparrow]", "↑"),
+    "uparrow" => make("\\uparrow", true, "&uarr;", "[uparrow]", "[uparrow]", "↑"),
+    "uArr" => make("\\Uparrow", true, "&uArr;", "[dbluparrow]", "[dbluparrow]", "⇑"),
+    "Uparrow" => make("\\Uparrow", true, "&uArr;", "[dbluparrow]", "[dbluparrow]", "⇑"),
+    "rarr" => make("\\rightarrow", true, "&rarr;", "->", "->", "→"),
+    "to" => make("\\to", true, "&rarr;", "->", "->", "→"),
+    "rightarrow" => make("\\rightarrow", true, "&rarr;",  "->", "->", "→"),
+    "rArr" => make("\\Rightarrow", true, "&rArr;", "=>", "=>", "⇒"),
+    "Rightarrow" => make("\\Rightarrow", true, "&rArr;", "=>", "=>", "⇒"),
+    "darr" => make("\\downarrow", true, "&darr;", "[downarrow]", "[downarrow]", "↓"),
+    "downarrow" => make("\\downarrow", true, "&darr;", "[downarrow]", "[downarrow]", "↓"),
+    "dArr" => make("\\Downarrow", true, "&dArr;", "[dbldownarrow]", "[dbldownarrow]", "⇓"),
+    "Downarrow" => make("\\Downarrow", true, "&dArr;", "[dbldownarrow]", "[dbldownarrow]", "⇓"),
+    "harr" => make("\\leftrightarrow", true, "&harr;", "<->", "<->", "↔"),
+    "leftrightarrow" => make("\\leftrightarrow", true, "&harr;",  "<->", "<->", "↔"),
+    "hArr" => make("\\Leftrightarrow", true, "&hArr;", "<=>", "<=>", "⇔"),
+    "Leftrightarrow" => make("\\Leftrightarrow", true, "&hArr;", "<=>", "<=>", "⇔"),
+    "crarr" => make("\\hookleftarrow", true, "&crarr;", "<-'", "<-'", "↵"),
+    "hookleftarrow" => make("\\hookleftarrow", true, "&crarr;",  "<-'", "<-'", "↵"),
+
+    // Function names
+    "arccos" => make("\\arccos", true, "arccos", "arccos", "arccos", "arccos"),
+    "arcsin" => make("\\arcsin", true, "arcsin", "arcsin", "arcsin", "arcsin"),
+    "arctan" => make("\\arctan", true, "arctan", "arctan", "arctan", "arctan"),
+    "arg" => make("\\arg", true, "arg", "arg", "arg", "arg"),
+    "cos" => make("\\cos", true, "cos", "cos", "cos", "cos"),
+    "cosh" => make("\\cosh", true, "cosh", "cosh", "cosh", "cosh"),
+    "cot" => make("\\cot", true, "cot", "cot", "cot", "cot"),
+    "coth" => make("\\coth", true, "coth", "coth", "coth", "coth"),
+    "csc" => make("\\csc", true, "csc", "csc", "csc", "csc"),
+    //"deg" => make("\\deg", true, "&deg;", "deg", "deg", "deg"), // duplicate key
+    "det" => make("\\det", true, "det", "det", "det", "det"),
+    "dim" => make("\\dim", true, "dim", "dim", "dim", "dim"),
+    "exp" => make("\\exp", true, "exp", "exp", "exp", "exp"),
+    "gcd" => make("\\gcd", true, "gcd", "gcd", "gcd", "gcd"),
+    "hom" => make("\\hom", true, "hom", "hom", "hom", "hom"),
+    "inf" => make("\\inf", true, "inf", "inf", "inf", "inf"),
+    "ker" => make("\\ker", true, "ker", "ker", "ker", "ker"),
+    "lg" => make("\\lg", true, "lg", "lg", "lg", "lg"),
+    "lim" => make("\\lim", true, "lim", "lim", "lim", "lim"),
+    "liminf" => make("\\liminf", true, "liminf", "liminf", "liminf", "liminf"),
+    "limsup" => make("\\limsup", true, "limsup", "limsup", "limsup", "limsup"),
+    "ln" => make("\\ln", true, "ln", "ln", "ln", "ln"),
+    "log" => make("\\log", true, "log", "log", "log", "log"),
+    "max" => make("\\max", true, "max", "max", "max", "max"),
+    "min" => make("\\min", true, "min", "min", "min", "min"),
+    "Pr" => make("\\Pr", true, "Pr", "Pr", "Pr", "Pr"),
+    "sec" => make("\\sec", true, "sec", "sec", "sec", "sec"),
+    "sin" => make("\\sin", true, "sin", "sin", "sin", "sin"),
+    "sinh" => make("\\sinh", true, "sinh", "sinh", "sinh", "sinh"),
+    //"sup" => make("\\sup", true, "&sup;", "sup", "sup", "sup"), // duplicate key
+    "tan" => make("\\tan", true, "tan", "tan", "tan", "tan"),
+    "tanh" => make("\\tanh", true, "tanh", "tanh", "tanh", "tanh"),
+
+    // Signs & Symbols
+    "bull" => make("\\textbullet{}", false, "&bull;", "*", "*", "•"),
+    "bullet" => make("\\textbullet{}", false, "&bull;", "*", "*", "•"),
+    "star" => make("\\star", true, "*", "*", "*", "⋆"),
+    "lowast" => make("\\ast", true, "&lowast;", "*", "*", "∗"),
+    "ast" => make("\\ast", true, "&lowast;", "*", "*", "*"),
+    "odot" => make("\\odot", true, "o", "[circled dot]", "[circled dot]", "ʘ"),
+    "oplus" => make("\\oplus", true, "&oplus;", "[circled plus]", "[circled plus]", "⊕"),
+    "otimes" => make("\\otimes", true, "&otimes;", "[circled times]", "[circled times]", "⊗"),
+    "check" => make("\\checkmark", true, "&checkmark;", "[checkmark]", "[checkmark]", "✓"),
+    "checkmark" => make("\\checkmark", true, "&check;", "[checkmark]", "[checkmark]", "✓"),
+
+    // Miscellaneous (seldom used)
+    "para" => make("\\P{}", false, "&para;", "[pilcrow]", "¶", "¶"),
+    "ordf" => make("\\textordfeminine{}", false, "&ordf;", "_a_", "ª", "ª"),
+    "ordm" => make("\\textordmasculine{}", false, "&ordm;", "_o_", "º", "º"),
+    "cedil" => make("\\c{}", false, "&cedil;", "[cedilla]", "¸", "¸"),
+    "oline" => make("\\overline{~}", true, "&oline;", "[overline]", "¯", "‾"),
+    "uml" => make("\\textasciidieresis{}", false, "&uml;", "[diaeresis]", "¨", "¨"),
+    "zwnj" => make("\\/{}", false, "&zwnj;", "", "", "‌"),
+    "zwj" => make("", false, "&zwj;", "", "", "‍"),
+    "lrm" => make("", false, "&lrm;", "", "", "‎"),
+    "rlm" => make("", false, "&rlm;", "", "", "‏"),
+
+    // Smilies
+    "smiley" => make("\\ddot\\smile", true, "&#9786;", ":-)", ":-)", "☺"),
+    "blacksmile" => make("\\ddot\\smile", true, "&#9787;", ":-)", ":-)", "☻"),
+    "sad" => make("\\ddot\\frown", true, "&#9785;", ":-(", ":-(", "☹"),
+    "frowny" => make("\\ddot\\frown", true, "&#9785;", ":-(", ":-(", "☹"),
+
+    // Suits
+    "clubs" => make("\\clubsuit", true, "&clubs;", "[clubs]", "[clubs]", "♣"),
+    "clubsuit" => make("\\clubsuit", true, "&clubs;", "[clubs]", "[clubs]", "♣"),
+    "spades" => make("\\spadesuit", true, "&spades;", "[spades]", "[spades]", "♠"),
+    "spadesuit" => make("\\spadesuit", true, "&spades;", "[spades]", "[spades]", "♠"),
+    "hearts" => make("\\heartsuit", true, "&hearts;", "[hearts]", "[hearts]", "♥"),
+    "heartsuit" => make("\\heartsuit", true, "&heartsuit;", "[hearts]", "[hearts]", "♥"),
+    "diams" => make("\\diamondsuit", true, "&diams;", "[diamonds]", "[diamonds]", "◆"),
+    "diamondsuit" => make("\\diamondsuit", true, "&diams;", "[diamonds]", "[diamonds]", "◆"),
+    "diamond" => make("\\diamondsuit", true, "&diamond;", "[diamond]", "[diamond]", "◆"),
+    "Diamond" => make("\\diamondsuit", true, "&diamond;", "[diamond]", "[diamond]", "◆"),
+    "loz" => make("\\lozenge", true, "&loz;", "[lozenge]", "[lozenge]", "⧫"),
+
+    // TODO needs build script to include at compile time
+    // Spaces ("\_ ")
+    // (let (space-entities html-spaces (entity "_"))
+    //   (dolist (n (number-sequence 1 20) (nreverse space-entities))
+    //     (let ((spaces (make-string n ?\s)))
+    //   (push (list (setq entity (concat entity " "))
+    //         (format "\\hspace*{%sem}" (* n .5))
+    //         nil
+    //         (setq html-spaces (concat "&ensp;" html-spaces))
+    //         spaces
+    //         spaces
+    //         (make-string n ?\x2002))
+    //       space-entities))))
+};

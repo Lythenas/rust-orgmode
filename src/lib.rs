@@ -12,6 +12,9 @@
 //!
 //! Currently only parsing of the major outline and timestamp is supported.
 #![feature(custom_attribute)]
+#![feature(plugin)]
+#![feature(min_const_fn)]
+#![plugin(phf_macros)]
 
 #[macro_use]
 extern crate rust_orgmode_derive;
@@ -25,6 +28,7 @@ extern crate failure_derive;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
+extern crate phf;
 
 pub mod types;
 pub mod entities;
