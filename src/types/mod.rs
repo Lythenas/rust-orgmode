@@ -26,6 +26,7 @@ pub mod elements;
 pub mod greater_elements;
 pub mod objects;
 
+// TODO
 #[allow(dead_code)]
 static ORG_LINK_TYPES: () = ();
 
@@ -56,12 +57,8 @@ pub trait SharedBehavior {
         &self.shared_behavior_data().span
     }
 
-    fn post_blank(&self) -> &u32 {
-        &self.shared_behavior_data().post_blank
-    }
-
-    fn parent(&self) -> &Option<ParentId> {
-        &self.shared_behavior_data().parent
+    fn post_blank(&self) -> u32 {
+        self.shared_behavior_data().post_blank
     }
 }
 
@@ -72,7 +69,6 @@ pub trait SharedBehavior {
 pub struct SharedBehaviorData {
     span: Span,
     post_blank: u32,
-    parent: Option<ParentId>,
 }
 
 /// Represents where in the file the a object or element is.
@@ -82,27 +78,15 @@ pub struct SharedBehaviorData {
 /// This is useful for warning/error messages and modifying the file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Span {
-    start: u64,
-    end: u64,
+    pub start: u64,
+    pub end: u64,
 }
 
 impl Span {
     pub fn new(start: u64, end: u64) -> Self {
         Span { start, end }
     }
-
-    pub fn start(&self) -> u64 {
-        self.start
-    }
-
-    pub fn end(&self) -> u64 {
-        self.end
-    }
 }
-
-/// This represents a parent in the storage engine (TODO).
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParentId;
 
 /// Some greater elements, elements and objects can contain other objects.
 ///
@@ -130,7 +114,7 @@ pub trait ContainsObjects: SharedBehavior {
         &self.content_data().span
     }
 
-    fn content(&self) -> &Vec<ObjectId> {
+    fn content(&self) -> &[ObjectId] {
         &self.content_data().content
     }
 }
@@ -242,19 +226,13 @@ pub struct AffiliatedKeywords {
 /// Represents a value and its position in an org file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SpannedValue<T> {
-    span: Span,
-    value: T,
+    pub span: Span,
+    pub value: T,
 }
 
 impl<T> SpannedValue<T> {
     pub fn new(span: Span, value: T) -> Self {
         SpannedValue { span, value }
-    }
-    pub fn span(&self) -> &Span {
-        &self.span
-    }
-    pub fn value(&self) -> &T {
-        &self.value
     }
 }
 
