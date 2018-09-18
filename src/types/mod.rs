@@ -22,8 +22,6 @@
 //! [`ContainsObjects`]: trait.ContainsObjects.html
 //! [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
 
-use std::collections::HashMap;
-
 pub mod elements;
 pub mod greater_elements;
 pub mod objects;
@@ -70,6 +68,7 @@ pub trait SharedBehavior {
 /// Helper struct that contains the data for the shared behavior. See [`SharedBehavior`].
 ///
 /// [`SharedBehavior`]: trait.SharedBehavior.html
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SharedBehaviorData {
     span: Span,
     post_blank: u32,
@@ -81,6 +80,7 @@ pub struct SharedBehaviorData {
 /// It contains a start and an end. `end` is always bigger than or equal to `start`.
 ///
 /// This is useful for warning/error messages and modifying the file.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Span {
     start: u64,
     end: u64,
@@ -101,6 +101,7 @@ impl Span {
 }
 
 /// This represents a parent in the storage engine (TODO).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParentId;
 
 /// Some greater elements, elements and objects can contain other objects.
@@ -140,12 +141,14 @@ pub trait ContainsObjects: SharedBehavior {
 /// See [`ContainsObjects`].
 ///
 /// [`ContainsObjects`]: trait.ContainsObjects.html
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ContentData {
     span: Span,
     content: Vec<ObjectId>,
 }
 
 /// This is an id in the storage engine (TODO).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ObjectId;
 
 /// Some greater elements and elements can have affiliated keywords.
@@ -184,6 +187,7 @@ pub trait HasAffiliatedKeywords: Element {
 /// See [`HasAffiliatedKeywords`].
 ///
 /// [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AffiliatedKeywordsData {
     affiliated_keywords: AffiliatedKeywords,
     span: Span,
@@ -200,6 +204,7 @@ pub struct AffiliatedKeywordsData {
 /// - `#+KEY: VALUE`
 /// - `#+KEY[OPTIONAL]: VALUE`
 /// - `#+ATTR_BACKEND: VALUE`
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AffiliatedKeywords {
     /// Parsed from: `#+CAPTION[OPTIONAL]: VALUE`.
     ///
@@ -231,10 +236,11 @@ pub struct AffiliatedKeywords {
     /// Parsed from: `#+ATTR_BACKEND: VALUE`.
     ///
     /// The attr keywords for one backend can occur more than once.
-    pub attrs: HashMap<String, Vec<SpannedValue<String>>>,
+    pub attrs: Vec<(String, Vec<SpannedValue<String>>)>,
 }
 
 /// Represents a value and its position in an org file.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SpannedValue<T> {
     span: Span,
     value: T,
@@ -255,6 +261,7 @@ impl<T> SpannedValue<T> {
 /// A secondary string is a list of raw strings and objects.
 ///
 /// It is used for attributes of elements that can contain objects.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SecondaryString(Vec<ObjectId>);
 
 /// Marker trait for objects in an org file.

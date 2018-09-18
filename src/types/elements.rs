@@ -19,6 +19,7 @@ use rust_orgmode_derive::add_fields_for;
 /// `END-HEADER` can contain everything except a newline (and their respective closing char).
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BabelCall {
     /// The code block to call
     call: String,
@@ -51,6 +52,7 @@ pub struct BabelCall {
 /// digits and `MM` is a two digit number.
 #[add_fields_for(SharedBehavior)]
 #[derive(Element, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Clock {
     timestamp: Option<objects::Timestamp>,
     duration: Option<(u64, u8)>,
@@ -65,6 +67,7 @@ impl Clock {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ClockStatus {
     Running,
     Closed,
@@ -92,6 +95,7 @@ pub enum ClockStatus {
 /// Consecutive comment lines are accumulated into one comment.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Comment {
     value: String,
 }
@@ -114,6 +118,7 @@ pub struct Comment {
 /// with stars must be quoted by a comma. `CONTENTS` will not be parsed.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CommentBlock {
     value: String,
 }
@@ -137,6 +142,7 @@ pub struct CommentBlock {
 /// beginning of the line.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DiarySexp {
     value: String,
 }
@@ -162,6 +168,7 @@ pub struct DiarySexp {
 /// `FLAGS` see [`BlockFlags`].
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExampleBlock {
     value: String,
     flags: BlockFlags,
@@ -185,6 +192,7 @@ pub struct ExampleBlock {
 ///
 /// `FMT` can contain everything except `"` and newlines.
 #[derive(getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BlockFlags {
     number_lines: Option<NumberLinesFlag>,
     /// Default: false
@@ -196,6 +204,7 @@ pub struct BlockFlags {
     label_fmt: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum NumberLinesFlag {
     Continued(Option<u64>),
     New(Option<u64>),
@@ -221,6 +230,7 @@ pub enum NumberLinesFlag {
 /// `BACKEND` can contain any alpha-numerical character. Case is ignored.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportBlock {
     value: String,
     /// Always lowercase.
@@ -241,6 +251,7 @@ pub struct ExportBlock {
 /// Consecutive fixed width lines are accumulated.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FixedWidth {
     value: String,
 }
@@ -260,6 +271,7 @@ pub struct FixedWidth {
 /// ```
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HorizontalRule {
 }
 
@@ -282,6 +294,7 @@ pub struct HorizontalRule {
 /// `VALUE` can contain any character except a newline.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyword {
     key: String,
     value: String,
@@ -300,6 +313,7 @@ pub struct Keyword {
 /// `VALUE` is parsed as a [`SecondaryString`].
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentProperty {
     key: String,
     value: SecondaryString,
@@ -326,6 +340,7 @@ pub struct DocumentProperty {
 /// `CONTENT` can be anything except `\end{ENVIRONMENT}`.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexEnvironment {
     /// Contains everything including `\begin...` and `\end`.
     value: String,
@@ -352,6 +367,7 @@ pub struct LatexEnvironment {
 /// `VALUE` can contain anything but a newline character.
 #[add_fields_for(SharedBehavior)]
 #[derive(Element, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NodeProperty {
     name: String,
     value: String,
@@ -370,6 +386,7 @@ pub struct NodeProperty {
 /// paragraphs but all inner elements of the current paragraph must be closed first.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Paragraph {
     // TODO figure out how to actually handle secondary strings
 }
@@ -396,6 +413,7 @@ pub struct Paragraph {
 /// Consecutive planning items are aggregated into one.
 #[add_fields_for(SharedBehavior)]
 #[derive(Element, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Planning {
     closed: Option<objects::Timestamp>,
     deadline: Option<objects::Timestamp>,
@@ -427,6 +445,7 @@ pub struct Planning {
 /// `ARGUMENTS` can contain any character except a newline.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SrcBlock {
     language: String,
     flags: BlockFlags,

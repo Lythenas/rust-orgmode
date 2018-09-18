@@ -27,6 +27,7 @@ use chrono::{NaiveDate, NaiveTime};
 /// [`entities`]: ../../entities/index.html
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Entity {
     name: String,
     /// True if the entity ended with `{}`.
@@ -51,6 +52,7 @@ pub struct Entity {
 /// `VALUE` can contain anything but the `@@` string.
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportSnippet {
     backend: String,
     value: String,
@@ -78,6 +80,7 @@ pub struct ExportSnippet {
 /// Will be parsed as a secondary string and can contain the standard set of objects.
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteReference {
     // TODO extract enum to make this more type safe
     label: String,
@@ -86,6 +89,7 @@ pub struct FootnoteReference {
 }
 
 /// The kind of a [`FootnoteReference`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FootnoteReferenceKind {
     Normal,
     Inline,
@@ -113,6 +117,7 @@ pub enum FootnoteReferenceKind {
 /// Both `HEADER`s are optional. But then there are also no square brackets.
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineBabelCall {
     call: String,
     inside_header: String,
@@ -139,6 +144,7 @@ pub struct InlineBabelCall {
 /// `OPTIONS` is optional. But then there are also not quote brackets.
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineSrcBlock {
     lang: String,
     value: String,
@@ -190,6 +196,7 @@ pub struct InlineSrcBlock {
 /// [`entities`]: ../../entities/index.html
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexFragment {
     /// Contains the entire parsed string, except the `PRE` and `POST` parts.
     value: String,
@@ -211,6 +218,7 @@ pub struct LatexFragment {
 /// document.
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LineBreak {
 }
 
@@ -266,11 +274,13 @@ pub struct LineBreak {
 /// Whitespace and newlines in the link are replaced with a single space.
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Link {
     link: LinkFormat,
 }
 
 /// The format with the actual link data of a [`Link`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LinkFormat {
     Radio(ObjectId), // TODO only allow RadioTargets
     Angle(String),
@@ -282,6 +292,7 @@ pub enum LinkFormat {
 }
 
 /// The kind and data of a bracket link in [`LinkFormat`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LinkPath {
     File(String),
     Id(String),
@@ -291,6 +302,7 @@ pub enum LinkPath {
 }
 
 /// The search option of bracket [`LinkFormat`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SearchOption {
     /// Jump to line.
     Line(u64),
@@ -353,6 +365,7 @@ pub enum SearchOption {
 /// Multiple whitespace and newline characters in `ARGUMENTS` are replaced by a single space.
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Macro {
     name: String,
     arguments: Vec<String>,
@@ -377,6 +390,7 @@ pub struct Macro {
 /// a whitespace character. It will be parsed as a [`SecondaryString`].
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RadioTarget {
     target: SecondaryString,
 }
@@ -397,11 +411,13 @@ pub struct RadioTarget {
 /// `PERCENT`, `NUM1` and `NUM2` are numbers or an empty string.
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StatisticsCookie {
     cookie: CookieKind,
 }
 
 /// This is the kind and data of a [`StatisticsCookie`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CookieKind {
     Percent(Option<u32>),
     Number(Option<u32>, Option<u32>),
@@ -444,6 +460,7 @@ pub enum CookieKind {
 /// less objects than they can usually contain
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
     used_brackets: bool,
     // content: SecondaryString, // can contain the standard set of objects.
@@ -464,6 +481,7 @@ pub struct Subscript {
 /// See [`Subscript`].
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
     used_brackets: bool,
     // content: SecondaryString, // can contain the standard set of objects.
@@ -492,6 +510,7 @@ pub struct Superscript {
 /// entity, link, macro, radio target, sub/superscript, target, text markup, timestamp
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableCell {
 }
 
@@ -514,6 +533,7 @@ pub struct TableCell {
 /// a whitespace character. It will not be parsed.
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Target {
     target: String,
 }
@@ -557,6 +577,7 @@ pub struct Target {
 /// TODO recursive object
 #[add_fields_for(Object)]
 #[derive(Object, getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TextMarkup {
     kind: TextMarkupKind,
 }
@@ -564,6 +585,7 @@ pub struct TextMarkup {
 /// The kind and content of a [`TextMarkup`] object.
 ///
 /// Only code and verbatim can't contain other objects.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TextMarkupKind {
     Bold(SecondaryString),
     Italic(SecondaryString),
@@ -617,6 +639,7 @@ pub mod timestamp {
     /// delay.
     #[add_fields_for(Object)]
     #[derive(Object, getters)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Timestamp {
         kind: TimestampKind,
     }
@@ -669,6 +692,7 @@ pub mod timestamp {
     }
 
     /// The kind and date for a [`Timestamp`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub enum TimestampKind {
         DiarySexp(String),
         Single(TimestampStatus, TimestampData),
@@ -676,6 +700,7 @@ pub mod timestamp {
     }
 
     /// The status of a [`Timestamp`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub enum TimestampStatus {
         /// Timestamp in angle brackets (`<...>`).
         Active,
@@ -684,6 +709,7 @@ pub mod timestamp {
     }
 
     /// The data for a [`TimestampKind`] with optional [`Time`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct TimestampData {
         pub date: Date,
         pub time: Option<Time>,
@@ -694,16 +720,19 @@ pub mod timestamp {
     /// A date.
     ///
     /// This is a wrapper around [`chrono::NaiveDate`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Date(NaiveDate);
 
     /// A time.
     ///
     /// This is a wrapper around [`chrono::NaiveTime`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Time(NaiveTime);
 
     /// The repeater of a timestamp.
     ///
     /// See [`TimestampData`] and [`TimestampDataWithTime`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Repeater {
         pub period: TimePeriod,
         pub strategy: RepeatStrategy,
@@ -712,18 +741,21 @@ pub mod timestamp {
     /// The warning delay of a timestamp.
     ///
     /// See [`TimestampData`] and [`TimestampDataWithTime`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Warning {
         pub delay: TimePeriod,
         pub strategy: WarningStrategy,
     }
 
     /// The time period (with unit) of a [`Repeater`] or [`Warning`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct TimePeriod {
         pub value: u32,
         pub unit: TimeUnit,
     }
 
     /// The strategy of a [`Repeater`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub enum RepeatStrategy {
         /// Add the repeat duration to the task date once.
         Cumulative,
@@ -735,6 +767,7 @@ pub mod timestamp {
     }
 
     /// The strategy of a [`Warning`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub enum WarningStrategy {
         /// Warns for all (repeated) date. Represented as `-` in the org file.
         All,
@@ -743,6 +776,7 @@ pub mod timestamp {
     }
 
     /// The unit of a [`TimePeriod`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub enum TimeUnit {
         Year,
         Month,
@@ -754,6 +788,7 @@ pub mod timestamp {
     /// The data for a timestamp range.
     ///
     /// See [`TimestampKind`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub enum TimestampRange {
         /// `<DATE TIME-TIME REPEATER-OR-DELAY>` or
         /// `[DATE TIME-TIME REPEATER-OR-DELAY]`
@@ -766,6 +801,7 @@ pub mod timestamp {
     /// The data for a timestamp with a time.
     ///
     /// See [`TimestampRange`].
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct TimestampDataWithTime {
         pub date: Date,
         pub time: Time,
