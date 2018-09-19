@@ -26,7 +26,8 @@ pub mod elements;
 pub mod greater_elements;
 pub mod objects;
 
-use std::marker::PhantomData;
+use std::fmt::Debug;
+use std::collections::HashMap;
 
 use mopa::Any;
 
@@ -35,80 +36,100 @@ use mopa::Any;
 static ORG_LINK_TYPES: () = ();
 
 // TODO change the vec to something else
+#[derive(Debug, Default)]
 pub struct Storage {
-    objects: Vec<Box<Object>>,
-    elements: Vec<Box<Element>>,
-    greater_elements: Vec<Box<GreaterElement>>,
+    next_object_id: usize,
+    next_element_id: usize,
+    next_greater_element_id: usize,
+    objects: HashMap<ObjectId, Box<Object>>,
+    elements: HashMap<ElementId, Box<Element>>,
+    greater_elements: HashMap<GreaterElementId, Box<GreaterElement>>,
 }
 
 impl Storage {
-    pub fn insert_object<T>(&mut self, object: T) -> Id<T>
+    pub fn new() -> Self {
+        Storage::default()
+    }
+
+    pub fn insert_object<T>(&mut self, object: T) -> ObjectId
     where T: Object + 'static {
-        self.objects.push(Box::new(object));
-        Id::object(self.objects.len() - 1)
+        let key = ObjectId(self.next_object_id);
+        self.next_object_id += 1;
+        self.objects.insert(key, Box::new(object));
+        key
     }
-    pub fn insert_element<T>(&mut self, element: T) -> Id<T>
+    pub fn insert_element<T>(&mut self, element: T) -> ElementId
     where T: Element + 'static {
-        self.elements.push(Box::new(element));
-        Id::element(self.elements.len() - 1)
+        let key = ElementId(self.next_element_id);
+        self.next_element_id += 1;
+        self.elements.insert(key, Box::new(element));
+        key
     }
-    pub fn insert_greater_element<T>(&mut self, greater_element: T) -> Id<T>
+    pub fn insert_greater_element<T>(&mut self, greater_element: T) -> GreaterElementId
     where T: GreaterElement + 'static {
-        self.greater_elements.push(Box::new(greater_element));
-        Id::greater_element(self.greater_elements.len() - 1)
+        let key = GreaterElementId(self.next_greater_element_id);
+        self.next_greater_element_id += 1;
+        self.greater_elements.insert(key, Box::new(greater_element));
+        key
     }
 
-    pub fn get_object<T>(&self, id: Id<T>) -> Option<&T>
+    pub fn get_object<T>(&self, id: ObjectId) -> Option<&T>
     where T: Object {
-        self.objects.get(id.id).and_then(|object| {
-            object.downcast_ref::<T>()
+        self.objects.get(&id).and_then(|x| {
+            x.downcast_ref::<T>()
         })
     }
-    pub fn get_element<T>(&self, id: Id<T>) -> Option<&T>
+    pub fn get_element<T>(&self, id: ElementId) -> Option<&T>
     where T: Element {
-        self.elements.get(id.id).and_then(|element| {
-            element.downcast_ref::<T>()
+        self.elements.get(&id).and_then(|x| {
+            x.downcast_ref::<T>()
         })
     }
-    pub fn get_greater_element<T>(&self, id: Id<T>) -> Option<&T>
+    pub fn get_greater_element<T>(&self, id: GreaterElementId) -> Option<&T>
     where T: GreaterElement {
-        self.greater_elements.get(id.id).and_then(|greater_element| {
-            greater_element.downcast_ref::<T>()
+        self.greater_elements.get(&id).and_then(|x| {
+            x.downcast_ref::<T>()
         })
     }
-}
 
-pub struct Id<'a, T: SharedBehavior> {
-    phantom: PhantomData<&'a T>,
-    id: usize,
-}
-
-impl<'a, T: Object> Id<'a, T> {
-    fn object(id: usize) -> Self {
-        Id {
-            phantom: PhantomData,
-            id,
+    pub fn remove_object<T>(&mut self, id: ObjectId) -> Option<T>
+    where T: Object {
+        // check if we have an object with id and it is of the required type
+        if let None = self.objects.get(&id).and_then(|x| x.downcast_ref::<T>()) {
+            return None;
         }
+
+        // actually remove and return the object
+        self.objects.remove(&id).and_then(|x| x.downcast::<T>().ok()).map(|x| *x)
+    }
+    pub fn remove_element<T>(&mut self, id: ElementId) -> Option<T>
+    where T: Element {
+        // check if we have an object with id and it is of the required type
+        if let None = self.elements.get(&id).and_then(|x| x.downcast_ref::<T>()) {
+            return None;
+        }
+
+        // actually remove and return the object
+        self.elements.remove(&id).and_then(|x| x.downcast::<T>().ok()).map(|x| *x)
+    }
+    pub fn remove_greater_element<T>(&mut self, id: GreaterElementId) -> Option<T>
+    where T: GreaterElement {
+        // check if we have an object with id and it is of the required type
+        if let None = self.greater_elements.get(&id).and_then(|x| x.downcast_ref::<T>()) {
+            return None;
+        }
+
+        // actually remove and return the object
+        self.greater_elements.remove(&id).and_then(|x| x.downcast::<T>().ok()).map(|x| *x)
     }
 }
 
-impl<'a, T: Element> Id<'a, T> {
-    fn element(id: usize) -> Self {
-        Id {
-            phantom: PhantomData,
-            id,
-        }
-    }
-}
-
-impl<'a, T: GreaterElement> Id<'a, T> {
-    fn greater_element(id: usize) -> Self {
-        Id {
-            phantom: PhantomData,
-            id,
-        }
-    }
-}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ObjectId(usize);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ElementId(usize);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct GreaterElementId(usize);
 
 /// All greater elements, elements and objects share some shared behavior.
 ///
@@ -124,7 +145,7 @@ impl<'a, T: GreaterElement> Id<'a, T> {
 /// getters for the fields of the `SharedBehaviorData` struct.
 ///
 /// [`SharedBehaviorData`]: struct.SharedBehaviorData.html
-pub trait SharedBehavior: Any {
+pub trait SharedBehavior: Any + Debug {
     /// Returns a reference to the data of the shared behavior.
     ///
     /// You should most likely not use this method. It is just a proxy for the other methods on
@@ -145,7 +166,7 @@ pub trait SharedBehavior: Any {
 /// Helper struct that contains the data for the shared behavior. See [`SharedBehavior`].
 ///
 /// [`SharedBehavior`]: trait.SharedBehavior.html
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct SharedBehaviorData {
     span: Span,
     post_blank: u32,
@@ -156,7 +177,7 @@ pub struct SharedBehaviorData {
 /// It contains a start and an end. `end` is always bigger than or equal to `start`.
 ///
 /// This is useful for warning/error messages and modifying the file.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct Span {
     pub start: u64,
     pub end: u64,
@@ -210,10 +231,6 @@ pub struct ContentData {
     span: Span,
     content: Vec<ObjectId>,
 }
-
-/// This is an id in the storage engine (TODO).
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ObjectId(usize);
 
 /// Some greater elements and elements can have affiliated keywords.
 ///
