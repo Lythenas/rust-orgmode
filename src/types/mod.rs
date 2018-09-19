@@ -26,9 +26,89 @@ pub mod elements;
 pub mod greater_elements;
 pub mod objects;
 
+use std::marker::PhantomData;
+
+use mopa::Any;
+
 // TODO
 #[allow(dead_code)]
 static ORG_LINK_TYPES: () = ();
+
+// TODO change the vec to something else
+pub struct Storage {
+    objects: Vec<Box<Object>>,
+    elements: Vec<Box<Element>>,
+    greater_elements: Vec<Box<GreaterElement>>,
+}
+
+impl Storage {
+    pub fn insert_object<T>(&mut self, object: T) -> Id<T>
+    where T: Object + 'static {
+        self.objects.push(Box::new(object));
+        Id::object(self.objects.len() - 1)
+    }
+    pub fn insert_element<T>(&mut self, element: T) -> Id<T>
+    where T: Element + 'static {
+        self.elements.push(Box::new(element));
+        Id::element(self.elements.len() - 1)
+    }
+    pub fn insert_greater_element<T>(&mut self, greater_element: T) -> Id<T>
+    where T: GreaterElement + 'static {
+        self.greater_elements.push(Box::new(greater_element));
+        Id::greater_element(self.greater_elements.len() - 1)
+    }
+
+    pub fn get_object<T>(&self, id: Id<T>) -> Option<&T>
+    where T: Object {
+        self.objects.get(id.id).and_then(|object| {
+            object.downcast_ref::<T>()
+        })
+    }
+    pub fn get_element<T>(&self, id: Id<T>) -> Option<&T>
+    where T: Element {
+        self.elements.get(id.id).and_then(|element| {
+            element.downcast_ref::<T>()
+        })
+    }
+    pub fn get_greater_element<T>(&self, id: Id<T>) -> Option<&T>
+    where T: GreaterElement {
+        self.greater_elements.get(id.id).and_then(|greater_element| {
+            greater_element.downcast_ref::<T>()
+        })
+    }
+}
+
+pub struct Id<'a, T: SharedBehavior> {
+    phantom: PhantomData<&'a T>,
+    id: usize,
+}
+
+impl<'a, T: Object> Id<'a, T> {
+    fn object(id: usize) -> Self {
+        Id {
+            phantom: PhantomData,
+            id,
+        }
+    }
+}
+
+impl<'a, T: Element> Id<'a, T> {
+    fn element(id: usize) -> Self {
+        Id {
+            phantom: PhantomData,
+            id,
+        }
+    }
+}
+
+impl<'a, T: GreaterElement> Id<'a, T> {
+    fn greater_element(id: usize) -> Self {
+        Id {
+            phantom: PhantomData,
+            id,
+        }
+    }
+}
 
 /// All greater elements, elements and objects share some shared behavior.
 ///
@@ -44,7 +124,7 @@ static ORG_LINK_TYPES: () = ();
 /// getters for the fields of the `SharedBehaviorData` struct.
 ///
 /// [`SharedBehaviorData`]: struct.SharedBehaviorData.html
-pub trait SharedBehavior {
+pub trait SharedBehavior: Any {
     /// Returns a reference to the data of the shared behavior.
     ///
     /// You should most likely not use this method. It is just a proxy for the other methods on
@@ -133,7 +213,7 @@ pub struct ContentData {
 
 /// This is an id in the storage engine (TODO).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ObjectId;
+pub struct ObjectId(usize);
 
 /// Some greater elements and elements can have affiliated keywords.
 ///
@@ -246,6 +326,7 @@ pub struct SecondaryString(Vec<ObjectId>);
 ///
 /// Objects are the smallest units and represent the content of the org file.
 pub trait Object: SharedBehavior {}
+mopafy!(Object);
 
 /// Marker trait for the elements in an org file.
 ///
@@ -253,6 +334,7 @@ pub trait Object: SharedBehavior {}
 ///
 /// See [`elements`] module for all available elements.
 pub trait Element: SharedBehavior {}
+mopafy!(Element);
 
 /// Marker trait for the greater elements in an org file.
 ///
@@ -261,4 +343,5 @@ pub trait Element: SharedBehavior {}
 ///
 /// See [`greater_elements`] module for all available greater elements.
 pub trait GreaterElement: Element + ContainsObjects {}
+mopafy!(GreaterElement);
 

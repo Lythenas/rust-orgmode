@@ -29,6 +29,8 @@ extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
 extern crate phf;
+#[macro_use]
+extern crate mopa;
 
 pub mod types;
 pub mod entities;
