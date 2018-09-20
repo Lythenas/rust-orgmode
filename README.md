@@ -6,25 +6,20 @@ A rust library for parsing [org files](https://orgmode.org/).
 
 **This library is currently not usable as not all necessary functions are implemented.**
 
-## Basic features
+I'm currently working to replace the existing types and how they are parsed. So probably
+everything will be change.
 
-- [x] Parsing
-    - [x] Timestamp
-    - [x] Headlines
-    - [x] Affiliated Keywords
-- [ ] *Graceful* parsing (report errors but don't abort parsing)
-- [ ] Analyzing
-    - [ ] Inheritance
-    - [ ] Searching API (e.g. for tags, properties, etc.)
-    - [ ] Grouping and sorting (e.g. by tags, category, date)
-    - [ ] Resolving attachments
-- [ ] Error correction
-- [ ] Exporting
+## Planned features
 
-## Planned (future) features
+- Parsing
+- *Graceful* parsing (errors don't abort the parsing)
+- Analyzing (warning reporting)
+- Error/Warning correction
 
-- Org-mode agenda
-- Content syntax parsing (e.g. to extract tables, links or images)
+## Maybe future features
+
+- Creating agenda
+- Exporting
 
 ## References used for this library
 
@@ -36,4 +31,4 @@ A rust library for parsing [org files](https://orgmode.org/).
     - https://github.com/fniessen/refcard-org-mode
     - http://ehneilsen.net/notebook/orgExamples/org-examples.html
     - https://raw.githubusercontent.com/novoid/org-mode-workshop/master/featureshow/org-mode-teaser.org
-    - my own files
+    - my own org files
