@@ -32,6 +32,7 @@ extern crate phf;
 #[macro_use]
 extern crate mopa;
 
+pub mod storage;
 pub mod types;
 pub mod entities;
 #[macro_use]
