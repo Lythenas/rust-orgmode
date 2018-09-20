@@ -33,7 +33,6 @@ extern crate phf;
 extern crate mopa;
 
 pub mod entities;
-pub mod storage;
 pub mod types;
 #[macro_use]
 pub mod macros;

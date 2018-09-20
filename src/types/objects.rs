@@ -4,6 +4,26 @@ use super::*;
 use chrono::{NaiveDate, NaiveTime};
 use rust_orgmode_derive::add_fields_for;
 
+/// TODO
+pub enum ObjectType {
+    Entity(Entity),
+    ExportSnippet(ExportSnippet),
+    FootnoteReference(FootnoteReference),
+    InlineBabelCall(InlineBabelCall),
+    InlineSrcBlock(InlineSrcBlock),
+    LatexFragment(LatexFragment),
+    LineBreak(LineBreak),
+    Link(Link),
+    Macro(Macro),
+    RadioTarget(RadioTarget),
+    StatisticsCookie(StatisticsCookie),
+    Subscript(Subscript),
+    Superscript(Superscript),
+    TableCell(TableCell),
+    Target(Target),
+    TextMarkup(TextMarkup),
+}
+
 /// An entity.
 ///
 /// # Semantics
@@ -273,7 +293,7 @@ pub struct Link {
 /// The format with the actual link data of a [`Link`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LinkFormat {
-    Radio(ObjectId), // TODO only allow RadioTargets
+    Radio(String),
     Angle(String),
     Plain(String),
     /// The secondary string can contain: export snippet, inline babel call, inline src block,

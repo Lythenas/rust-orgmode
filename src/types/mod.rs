@@ -29,8 +29,6 @@ pub mod objects;
 use mopa::Any;
 use std::fmt::Debug;
 
-use storage::ObjectId;
-
 // TODO
 #[allow(dead_code)]
 static ORG_LINK_TYPES: () = ();
@@ -66,6 +64,7 @@ pub trait SharedBehavior: Any + Debug {
         self.shared_behavior_data().post_blank
     }
 }
+mopafy!(SharedBehavior);
 
 /// Helper struct that contains the data for the shared behavior. See [`SharedBehavior`].
 ///
@@ -93,7 +92,7 @@ impl Span {
     }
 }
 
-/// Some greater elements, elements and objects can contain other objects.
+/// Some greater elements, elements and objects can contain other objects or elements.
 ///
 /// These elements and objects have the following additional properties:
 ///
@@ -106,34 +105,35 @@ impl Span {
 /// of the `ContentData` struct.
 ///
 /// [`ContentData`]: struct.ContentData.html
-pub trait ContainsObjects: SharedBehavior {
+pub trait HasContent<T: 'static>: SharedBehavior {
     /// Returns a reference to the data needed to contain objects.
     ///
     /// You should most likely not use this method. It is just a proxy for the other methods on
     /// this trait.
     ///
     /// Wenn implementing this method you should simply return the field that stores this data.
-    fn content_data(&self) -> &ContentData;
+    fn content_data(&self) -> &ContentData<T>;
 
     fn content_span(&self) -> &Span {
         &self.content_data().span
     }
 
-    fn content(&self) -> &[ObjectId] {
+    fn content(&self) -> &[T] {
         &self.content_data().content
     }
 }
 
+
 /// Helper struct that contains the data for the elements and objects that can contain other
 /// objects.
 ///
-/// See [`ContainsObjects`].
+/// See [`HasContent`].
 ///
-/// [`ContainsObjects`]: trait.ContainsObjects.html
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ContentData {
+/// [`HasContent`]: trait.HasContent.html
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+pub struct ContentData<T> {
     span: Span,
-    content: Vec<ObjectId>,
+    content: Vec<T>,
 }
 
 /// Some greater elements and elements can have affiliated keywords.
@@ -241,13 +241,12 @@ impl<T> SpannedValue<T> {
 ///
 /// It is used for attributes of elements that can contain objects.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SecondaryString(Vec<ObjectId>);
+pub struct SecondaryString(Vec<()>); // TODO make this similar to HasContent
 
 /// Marker trait for objects in an org file.
 ///
 /// Objects are the smallest units and represent the content of the org file.
 pub trait Object: SharedBehavior {}
-mopafy!(Object);
 
 /// Marker trait for the elements in an org file.
 ///
@@ -255,7 +254,6 @@ mopafy!(Object);
 ///
 /// See [`elements`] module for all available elements.
 pub trait Element: SharedBehavior {}
-mopafy!(Element);
 
 /// Marker trait for the greater elements in an org file.
 ///
@@ -263,5 +261,4 @@ mopafy!(Element);
 /// contain themselfes (see the specific element for more details).
 ///
 /// See [`greater_elements`] module for all available greater elements.
-pub trait GreaterElement: Element + ContainsObjects {}
-mopafy!(GreaterElement);
+pub trait GreaterElement<T: 'static>: Element + HasContent<T> {}

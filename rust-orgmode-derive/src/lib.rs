@@ -12,7 +12,7 @@ use syn::spanned::Spanned;
 use syn::token::Colon;
 use syn::{
     Attribute, Data, DataEnum, DataUnion, DeriveInput, Field, Fields, FieldsNamed, Generics, Ident,
-    Path, Type, TypePath, Visibility,
+    Path, Type, TypePath, Visibility, PathArguments,
 };
 
 struct FieldsToAdd {
@@ -63,10 +63,9 @@ where
 ///
 /// - `SharedBehavior`
 /// - `HasAffiliatedKeywords`
-/// - `ContainsObjects`
+/// - `HasContent`
 /// - `Element` (same as `SharedBehavior`)
 /// - `Object` (same as `SharedBehavior`)
-/// - `GreaterElement` (same as `SharedBehavior` and `ContainsObjects`)
 ///
 /// **Note:** You need to enable the `custom_attribute` feature because we annotate all fields with
 /// `#[no_getter]` so the [`getters_derive`] does not generate unneded getters.
@@ -78,9 +77,8 @@ where
 /// use rust_orgmode_derive::add_fields_for;
 ///
 /// # struct SharedBehaviorData;
-/// # struct ContentData;
 /// #
-/// #[add_fields_for(GreaterElement)]
+/// #[add_fields_for(Element)]
 /// struct SomeStruct {}
 /// ```
 ///
@@ -88,11 +86,9 @@ where
 ///
 /// ```
 /// # struct SharedBehaviorData;
-/// # struct ContentData;
 /// #
 /// struct SomeStruct {
 ///     shared_behavior_data: SharedBehaviorData,
-///     content_data: ContentData,
 /// }
 /// ```
 ///
@@ -130,8 +126,6 @@ pub fn add_fields_for(
             let fields = match field_name.as_ref() {
                 "SharedBehavior" | "Element" | "Object" => vec![shared_behavior_field()],
                 "HasAffiliatedKeywords" => vec![has_affiliated_keywords_field()],
-                "ContainsObjects" => vec![contains_objects_field()],
-                "GreaterElement" => vec![shared_behavior_field(), contains_objects_field()],
                 _ => {
                     field
                         .span()
@@ -158,9 +152,6 @@ fn has_affiliated_keywords_field() -> Field {
         make_path!(AffiliatedKeywordsData),
         "affiliated_keywords_data",
     )
-}
-fn contains_objects_field() -> Field {
-    make_field(make_path!(ContentData), "content_data")
 }
 
 /// Creates the field with the given path and name.
@@ -268,31 +259,7 @@ fn impl_element(input: &DeriveInput) -> TokenStream {
     }
 }
 
-/// Derive the impl for `ContainsObjects`.
-#[proc_macro_derive(ContainsObjects)]
-pub fn contains_objects_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    let expanded = impl_contains_objects(&input);
-    proc_macro::TokenStream::from(expanded)
-}
-
-/// Implements the `ContainsObjects` trait.
-fn impl_contains_objects(input: &DeriveInput) -> TokenStream {
-    let name = &input.ident;
-    let field = get_field("ContainsObjects", "content_data", &input.data);
-
-    quote_spanned! { field.span()=>
-        impl ContainsObjects for #name {
-            fn content_data(&self) -> &ContentData {
-                &self.content_data
-            }
-        }
-    }
-}
-
 /// Derive the impl for `GreaterElement`.
-///
-/// Also implements `Element` and `SharedBehavior`.
 #[proc_macro_derive(GreaterElement)]
 pub fn greater_element_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -303,14 +270,46 @@ pub fn greater_element_derive(input: proc_macro::TokenStream) -> proc_macro::Tok
 /// Implements the `GreaterElement`, `Element` and `SharedBehavior` traits.
 fn impl_greater_element(input: &DeriveInput) -> TokenStream {
     let name = &input.ident;
-    let element_impl = impl_element(&input);
-    let contains_objects_impl = impl_contains_objects(&input);
+    let field = get_field("HasContent", "content_data", &input.data);
+    let ty = get_generics_of_field(&field);
 
     quote! {
-        #element_impl
-        #contains_objects_impl
+        impl GreaterElement#ty for #name {}
+    }
+}
 
-        impl GreaterElement for #name {}
+fn get_generics_of_field(field: &Field) -> &syn::AngleBracketedGenericArguments {
+    match &field.ty {
+        Type::Path(ty) => {
+            match ty.path.segments.last().unwrap().value().arguments {
+                PathArguments::AngleBracketed(ref ty_args) => ty_args,
+                _ => panic!(),
+            }
+        },
+        _ => panic!(),
+    }
+}
+
+/// Derive the impl for `HasContent`.
+#[proc_macro_derive(HasContent)]
+pub fn has_content_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let expanded = impl_has_content(&input);
+    proc_macro::TokenStream::from(expanded)
+}
+
+/// Implements the `HasContent` trait.
+fn impl_has_content(input: &DeriveInput) -> TokenStream {
+    let name = &input.ident;
+    let field = get_field("HasContent", "content_data", &input.data);
+    let ty = get_generics_of_field(&field);
+
+    quote_spanned! { field.span()=>
+        impl HasContent#ty for #name {
+            fn content_data(&self) -> &ContentData#ty {
+                &self.content_data
+            }
+        }
     }
 }
 
