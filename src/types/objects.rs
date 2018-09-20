@@ -4,26 +4,6 @@ use super::*;
 use chrono::{NaiveDate, NaiveTime};
 use rust_orgmode_derive::add_fields_for;
 
-/// TODO
-pub enum ObjectType {
-    Entity(Entity),
-    ExportSnippet(ExportSnippet),
-    FootnoteReference(FootnoteReference),
-    InlineBabelCall(InlineBabelCall),
-    InlineSrcBlock(InlineSrcBlock),
-    LatexFragment(LatexFragment),
-    LineBreak(LineBreak),
-    Link(Link),
-    Macro(Macro),
-    RadioTarget(RadioTarget),
-    StatisticsCookie(StatisticsCookie),
-    Subscript(Subscript),
-    Superscript(Superscript),
-    TableCell(TableCell),
-    Target(Target),
-    TextMarkup(TextMarkup),
-}
-
 /// An entity.
 ///
 /// # Semantics

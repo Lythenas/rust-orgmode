@@ -262,3 +262,51 @@ pub trait Element: SharedBehavior {}
 ///
 /// See [`greater_elements`] module for all available greater elements.
 pub trait GreaterElement<T: 'static>: Element + HasContent<T> {}
+
+/// TODO
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum AllObjects {
+    Entity(objects::Entity),
+    ExportSnippet(objects::ExportSnippet),
+    FootnoteReference(objects::FootnoteReference),
+    InlineBabelCall(objects::InlineBabelCall),
+    InlineSrcBlock(objects::InlineSrcBlock),
+    LatexFragment(objects::LatexFragment),
+    LineBreak(objects::LineBreak),
+    Link(objects::Link),
+    Macro(objects::Macro),
+    RadioTarget(objects::RadioTarget),
+    StatisticsCookie(objects::StatisticsCookie),
+    Subscript(objects::Subscript),
+    Superscript(objects::Superscript),
+    TableCell(objects::TableCell),
+    Target(objects::Target),
+    TextMarkup(objects::TextMarkup),
+    Timestamp(objects::Timestamp),
+}
+
+/// TODO
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum StandardSet {
+    Entity(objects::Entity),
+    ExportSnippet(objects::ExportSnippet),
+    FootnoteReference(objects::FootnoteReference),
+    InlineBabelCall(objects::InlineBabelCall),
+    InlineSrcBlock(objects::InlineSrcBlock),
+    LatexFragment(objects::LatexFragment),
+    LineBreak(objects::LineBreak),
+    Link(objects::Link),
+    Macro(objects::Macro),
+    RadioTarget(objects::RadioTarget),
+    StatisticsCookie(objects::StatisticsCookie),
+    Subscript(objects::Subscript),
+    Superscript(objects::Superscript),
+    Target(objects::Target),
+    TextMarkup(objects::TextMarkup),
+    Timestamp(objects::Timestamp),
+}
+
+// TODO add the other list of objects/elements that can be sub nodes of other objects/elements
+// TODO add the correct objects/elements to greater elements content
+// TODO figure out how to handle the Paragraph
+// should this be an actual object or is this just the list of objects and strings in a section
