@@ -16,6 +16,10 @@
 #![feature(min_const_fn)]
 #![plugin(phf_macros)]
 
+#[cfg(test)]
+#[macro_use]
+extern crate pretty_assertions;
+
 #[macro_use]
 extern crate rust_orgmode_derive;
 extern crate chrono;
