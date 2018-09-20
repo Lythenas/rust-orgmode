@@ -22,7 +22,7 @@ use rust_orgmode_derive::add_fields_for;
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CenterBlock {
-    content_data: ContentData<()>, // TODO only allow the standard set of elements
+    content_data: ContentData<()>, // TODO only allow the standard set of ELEMENTS
 }
 
 /// A drawer to hide content.
@@ -48,7 +48,7 @@ pub struct CenterBlock {
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Drawer {
-    content_data: ContentData<()>,
+    content_data: ContentData<()>, // TODO
     name: String,
     // hiddenp: bool,
 }
@@ -76,10 +76,12 @@ pub struct Drawer {
 ///
 /// `PARAMETERS` can contain any character and can be omitted. They are usually of the format
 /// `:name value` or `:name`.
+///
+/// TODO not sure if this is actually a greater element
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DynamicBlock {
-    content_data: ContentData<()>,
+    content_data: ContentData<()>, // TODO
     /// The name of the function that can update this block.
     name: String,
     /// The parameters to pass to the function updating this block.
@@ -112,9 +114,9 @@ pub struct DynamicBlock {
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteDefinition {
-    content_data: ContentData<()>,
+    content_data: ContentData<()>, // TODO
     label: String,
-    // pre_blank: u32 // blank lines after `[LABEL]`
+    // pre_blank: u32 // TODO (maybe) blank lines after `[LABEL]`
 }
 
 /// A headline.
@@ -159,21 +161,33 @@ pub struct FootnoteDefinition {
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Headline {
-    content_data: ContentData<()>,
+    content_data: ContentData<()>, // TODO
     level: u32,
     todo_keyword: Option<TodoKeyword>,
     priority: Option<char>, // TODO maybe make separate struct
     title: Option<SecondaryString>,
     tags: Vec<String>,
-    // TODO add reference to the associated planning element
-    archived: bool,
-    commented: bool,
-    footnote_section: bool,
-    // TODO add reference to the property drawer
-
+    planning: Option<elements::Planning>,
+    property_drawer: Option<PropertyDrawer>,
     // quotedp ?
     // hiddenp: bool,
-    // pre_blank: u32 // blank lines before the content starts
+    // pre_blank: u32 // TODO (maybe) blank lines before the content starts
+}
+
+impl Headline {
+    pub fn is_footnote_section(&self) -> bool {
+        // TODO does not compile maybe implement PartialEq<String> for SecondaryString
+        //self.title.map(|title| title == "org-footnote-section").unwrap_or(false)
+        unimplemented!()
+    }
+    pub fn is_commented(&self) -> bool {
+        // TODO does not compile create a method named starts_with for SecondaryString
+        //self.title.map(|title| title.starts_with("COMMENT")).unwrap_or(false)
+        unimplemented!()
+    }
+    pub fn is_archived(&self) -> bool {
+        self.tags.contains(&"ARCHIVE".to_string())
+    }
 }
 
 /// A todo keyword of a [`Headline`] or [`Inlinetask`].
@@ -207,9 +221,9 @@ pub enum TodoKeyword {
 #[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inlinetask {
-    content_data: ContentData<()>,
+    content_data: ContentData<()>, // TODO
     todo_keyword: Option<TodoKeyword>,
-    priority: Option<char>, // TODO maybe make separate struct
+    priority: Option<char>, // TODO maybe make separate struct (maybe use old enum)
     title: Option<SecondaryString>,
     tags: Vec<String>,
     // hiddenp: bool,
@@ -225,7 +239,7 @@ pub struct Inlinetask {
 /// # Syntax
 ///
 /// ```text
-/// BULLET [@COUNTER] [CHECKBOX] TAG
+/// BULLET [@COUNTER] [CHECKBOX] TAG CONTENT
 /// ```
 ///
 /// `BULLET` is either an asterisk, a hyphen, a plus sign (for unordered lists) or follows the
@@ -237,7 +251,10 @@ pub struct Inlinetask {
 /// `CHECKBOX` is either a single whitespace, a `X` or a hyphen.
 ///
 /// `TAG` follows the pattern `TAG-TEXT ::` where `TAG-TEXT` can contain any character except a
-/// newline.
+/// newline. Only parsed as the description in unordered lists. Then the list is a description
+/// list.
+///
+/// `CONTENT` is parsed as
 ///
 /// An item ends before the next item, the first line that is less or equally indented that its
 /// starting line or two consecutive empty lines. Indentation of lines within other greater
@@ -245,26 +262,66 @@ pub struct Inlinetask {
 #[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Item {
-    content_data: ContentData<()>,
-    // TODO move all of this to an enum to make more typesafe
-    bullet: String, // TODO make struct
+    content_data: ContentData<()>, // TODO Can contain greater elements. All or just some?
+    kind: ItemKind,
     checkbox: Option<Checkbox>,
-    counter: Option<String>, // TODO make struct
-    tag: Option<String>,
     // structure ?
     // hiddenp: bool
 }
 
-// TODO find better names for the variants
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ItemKind {
+    Unordered {
+        bullet: UnorderedBullet,
+    },
+    Ordered {
+        bullet: OrderedBullet,
+        counter: Counter,
+    },
+    Description {
+        bullet: UnorderedBullet,
+        tag: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum UnorderedBullet {
+    Minus,
+    Plus,
+    Star,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct OrderedBullet {
+    pub counter: Counter,
+    pub delimiter: CounterDelimiter,
+}
+
+/// A counter of an ordered [`Item`].
+///
+/// See [`ItemKind`] and [`OrderedBullet`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Counter {
+    Number(u64),
+    Letter(char),
+}
+
+/// A delimiter after a [`Counter`] in an [`OrderedBullet`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum CounterDelimiter {
+    Period,
+    Parenthesis,
+}
+
 /// Checkbox of an [`Item`] in a list.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Checkbox {
     /// A space. (Empty checkbox)
-    Off,
-    /// A `X`. (Checked checkbox)
-    X,
-    /// A `-`. (Half checked checkbox? or disabled checkbox?)
-    Trans,
+    Unchecked,
+    /// `X`. (Checked checkbox)
+    Checked,
+    /// `-`. (Some children of this list item are unchecked and some are checked)
+    Partial,
 }
 
 /// A plain list.
@@ -284,15 +341,14 @@ pub enum Checkbox {
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PlainList {
-    content_data: ContentData<()>,
-    // TODO content is only items
-// structure ?
+    content_data: ContentData<Item>,
+    // structure ?
 }
 
 impl PlainList {
     pub fn kind(&self) -> ListKind {
-        // find first item if any
-        // get kind of item and return it
+        // find first item and get kind of item
+        // TODO not sure if this is the best way
         unimplemented!()
     }
 }
@@ -301,9 +357,8 @@ impl PlainList {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ListKind {
     Unordered,
-    UnorderedDescriptive,
     Ordered,
-    OrderedDescriptive,
+    Description,
 }
 
 /// A property drawer.
@@ -326,9 +381,8 @@ pub enum ListKind {
 #[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PropertyDrawer {
-    content_data: ContentData<()>,
-    // TODO make this so only node properties are allowed in the content
-// hiddenp: bool
+    content_data: ContentData<elements::NodeProperty>,
+    // hiddenp: bool
 }
 
 /// A quote.
@@ -352,7 +406,7 @@ pub struct PropertyDrawer {
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QuoteBlock {
-    content_data: ContentData<()>,
+    content_data: ContentData<()>, // TODO only allow the standard set of ELEMENTS
     // hiddenp: bool
 }
 
@@ -451,20 +505,24 @@ pub struct SpecialBlock {
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Table {
-    content_data: ContentData<()>,
-    // TODO maybe make this a bit more type safe
+    content_data: ContentData<TableContent>,
     kind: TableKind,
-    /// Empty if this is a org table.
-    formulas: Vec<String>,
-    /// `None` if this is a org table.
-    value: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TableContent {
+    Org(TableRow),
+    TableEl(()),
 }
 
 /// The kind of a [`Table`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TableKind {
     Org,
-    TableEl,
+    TableEl {
+        formulas: Vec<String>,
+        value: Option<String>,
+    }
 }
 
 /// A row in a [`Table`][`Table`].
@@ -489,7 +547,7 @@ pub enum TableKind {
 #[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableRow {
     kind: TableRowKind,
-    content_data: ContentData<()>, // TODO only allow TableCells
+    content_data: ContentData<objects::TableCell>,
 }
 
 /// The kind of a [`TableRow`].
@@ -519,5 +577,5 @@ pub enum TableRowKind {
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VerseBlock {
-    content_data: ContentData<()>, // TODO only allow the standard set of objects
+    content_data: ContentData<StandardSetOfObjects>,
 }

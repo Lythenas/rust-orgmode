@@ -65,6 +65,7 @@ impl Clock {
     }
 }
 
+/// The status of a [`Clock`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ClockStatus {
     Running,
@@ -207,7 +208,7 @@ pub enum NumberLinesFlag {
 ///
 /// # Semantics
 ///
-/// TODO
+/// This block will only be exported in the specified backend.
 ///
 /// # Syntax
 ///
@@ -367,12 +368,17 @@ pub struct NodeProperty {
 ///
 /// # Syntax
 ///
-/// Everything that is not another element is paragraph. Empty lines and other elements end
+/// Everything that is not another element is a paragraph. Empty lines and other elements end
 /// paragraphs but all inner elements of the current paragraph must be closed first.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Paragraph {
-    // TODO figure out how to actually handle secondary strings
+    /// The content of the paragraph.
+    ///
+    /// Newlines are ignored and are not stored here.
+    ///
+    /// TODO also store the ignored newlines somewhere/somehow.
+    content: SecondaryString,
 }
 
 /// A planning element.

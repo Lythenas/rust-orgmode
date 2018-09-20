@@ -79,18 +79,22 @@ pub struct ExportSnippet {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteReference {
-    // TODO extract enum to make this more type safe
-    label: String,
     kind: FootnoteReferenceKind,
-    definition: Option<SecondaryString>,
 }
 
 /// The kind of a [`FootnoteReference`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FootnoteReferenceKind {
-    Normal,
-    Inline,
-    Anonymous,
+    Normal {
+        label: String,
+    },
+    Inline {
+        label: String,
+        definition: SecondaryString,
+    },
+    Anonymous {
+        definition: SecondaryString,
+    },
 }
 
 /// An inline babe call.
@@ -212,7 +216,9 @@ pub struct LatexFragment {
 /// document.
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LineBreak {}
+pub struct LineBreak {
+    spaces: u64,
+}
 
 /// A link.
 ///
@@ -279,7 +285,7 @@ pub enum LinkFormat {
     /// The secondary string can contain: export snippet, inline babel call, inline src block,
     /// latex fragment, entity, macro, plain link, statistics cookie, sub/superscript,
     /// text markup.
-    Bracket(LinkPath, Option<SearchOption>, SecondaryString),
+    Bracket(LinkPath, Option<SearchOption>, Option<SecondaryString>),
 }
 
 /// The kind and data of a bracket link in [`LinkFormat`].
@@ -337,8 +343,7 @@ pub enum SearchOption {
 ///   ACTION is anything else the counter is reset to 1. You can reset the default timer by
 ///   leaving NAME empty.
 ///
-///   TODO: None of these are implemented yet. Also exporting isn't implemented (and may never
-///   be).
+///   TODO: Implement these macros when implementing exporting.
 ///
 /// # Syntax
 ///
@@ -388,7 +393,8 @@ pub struct RadioTarget {
 ///
 /// # Semantics
 ///
-/// TODO
+/// Used in [`Headline`]s, [`Inlinetask`]s and the first [`Item`] of [`PlainList`]s to represent
+/// the amount of done tasks or checked items.
 ///
 /// # Syntax
 ///
@@ -398,6 +404,11 @@ pub struct RadioTarget {
 /// - number: `[NUM1/NUM2]`
 ///
 /// `PERCENT`, `NUM1` and `NUM2` are numbers or an empty string.
+///
+/// [`Headline`]: `greater_elements::Headline`
+/// [`Inlinetask`]: `greater_elements::Inlinetask`
+/// [`Item`]: `greater_elements::Item`
+/// [`PlainList`]: `greater_elements::PlainList`
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StatisticsCookie {
@@ -450,7 +461,7 @@ pub enum CookieKind {
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
     used_brackets: bool,
-    // content: SecondaryString, // can contain the standard set of objects.
+    content: SecondaryString, // can contain the standard set of objects.
 }
 
 /// A superscript.
@@ -470,7 +481,7 @@ pub struct Subscript {
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
     used_brackets: bool,
-    // content: SecondaryString, // can contain the standard set of objects.
+    content: SecondaryString, // can contain the standard set of objects.
 }
 
 /// A table cell in a [`greater_elements::TableRow`].
@@ -556,8 +567,6 @@ pub struct Target {
 /// The part `BORDER BODY BORDER` is parsed as a [`SecondaryString`] and can contain the
 /// standard set of objects when the markup is bold, italic, strike through or udnerline. The
 /// content of verbatim and code is not parsed.
-///
-/// TODO recursive object
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TextMarkup {

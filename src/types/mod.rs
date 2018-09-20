@@ -56,6 +56,7 @@ pub trait SharedBehavior: Any + Debug {
     /// Wenn implementing this method you should simply return the field that stores this data.
     fn shared_behavior_data(&self) -> &SharedBehaviorData;
 
+    /// Returns the span of the object or element in the file.
     fn span(&self) -> &Span {
         &self.shared_behavior_data().span
     }
@@ -265,29 +266,7 @@ pub trait GreaterElement<T: 'static>: Element + HasContent<T> {}
 
 /// TODO
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum AllObjects {
-    Entity(objects::Entity),
-    ExportSnippet(objects::ExportSnippet),
-    FootnoteReference(objects::FootnoteReference),
-    InlineBabelCall(objects::InlineBabelCall),
-    InlineSrcBlock(objects::InlineSrcBlock),
-    LatexFragment(objects::LatexFragment),
-    LineBreak(objects::LineBreak),
-    Link(objects::Link),
-    Macro(objects::Macro),
-    RadioTarget(objects::RadioTarget),
-    StatisticsCookie(objects::StatisticsCookie),
-    Subscript(objects::Subscript),
-    Superscript(objects::Superscript),
-    TableCell(objects::TableCell),
-    Target(objects::Target),
-    TextMarkup(objects::TextMarkup),
-    Timestamp(objects::Timestamp),
-}
-
-/// TODO
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum StandardSet {
+pub enum StandardSetOfObjects {
     Entity(objects::Entity),
     ExportSnippet(objects::ExportSnippet),
     FootnoteReference(objects::FootnoteReference),
