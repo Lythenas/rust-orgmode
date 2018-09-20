@@ -11,7 +11,13 @@
 //! This library is aimed to support most org mode features. But org mode is very comprehensive.
 //!
 //! Currently only parsing of the major outline and timestamp is supported.
+#![feature(custom_attribute)]
+#![feature(plugin)]
+#![feature(min_const_fn)]
+#![plugin(phf_macros)]
 
+#[macro_use]
+extern crate rust_orgmode_derive;
 extern crate chrono;
 #[macro_use]
 extern crate nom;
@@ -20,7 +26,15 @@ extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 extern crate itertools;
+#[macro_use]
+extern crate lazy_static;
+extern crate phf;
+#[macro_use]
+extern crate mopa;
 
+pub mod entities;
+pub mod storage;
+pub mod types;
 #[macro_use]
 pub mod macros;
 #[macro_use]
@@ -404,10 +418,10 @@ impl Timestamp {
     ///
     /// ```
     /// # extern crate chrono;
-    /// # extern crate orgmode;
+    /// # extern crate rust_orgmode;
     /// # use chrono::NaiveDate;
-    /// # use orgmode::Timestamp;
-    /// # use orgmode::TimestampData;
+    /// # use rust_orgmode::Timestamp;
+    /// # use rust_orgmode::TimestampData;
     /// #
     /// let ts = Timestamp::Active(
     ///     TimestampData::new(NaiveDate::from_ymd(2018, 04, 28))

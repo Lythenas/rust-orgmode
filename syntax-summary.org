@@ -89,7 +89,7 @@ the block. If name is none of the above mentioned it is a [[#special-block][spec
 Lines beginning with stars must be quoted by a comma. ~CONTENTS~ will not be
 parsed except for [[#verse-block][verse block]].
 
-** Babel call
+** Babel call                                         :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: babel-call
 :END:
@@ -123,7 +123,7 @@ This is a guess of the syntax and meaning based on the parse code.
 - post-affiliated
 - and all affiliated keywords
 
-** Center block
+** Center block                       :greater-element:affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: center-block
 :END:
@@ -172,7 +172,7 @@ number of digits. ~MM~ is a two digit number.
 - post-blank
 - post-affiliated = begin
 
-** Comment
+** Comment                                            :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: comment
 :END:
@@ -201,7 +201,7 @@ Consecutive comment lines are accumulated into one comment (without leading
 - post-affiliated
 - and all affiliated keywords
 
-** Comment block
+** Comment block                                      :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: comment-block
 :END:
@@ -219,7 +219,7 @@ See [[#blocks][blocks]].
 - post-affiliated
 - and any affiliated keywords
 
-** Diary sexp
+** Diary sexp                                         :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: diary-sexp
 :END:
@@ -242,7 +242,7 @@ start at column 0.
 - post-affiliated
 - and any affiliated keywords
 
-** Drawer
+** Drawer                             :greater-element:affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: drawer
 :END:
@@ -271,7 +271,7 @@ start at column 0.
 - post-affiliated
 - and all affiliated keywords
 
-** Dynamic block
+** Dynamic block                      :greater-element:affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: dynamic-block
 :END:
@@ -304,7 +304,7 @@ missing.
 - post-affiliated
 - and all affiliated keywords
 
-** Example block
+** Example block                                      :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: example-block
 :END:
@@ -337,7 +337,7 @@ See [[#blocks][blocks]].
 - post-affiliated
 - and any affiliated keywords
 
-** Export block
+** Export block                                       :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: export-block
 :END:
@@ -358,7 +358,7 @@ Where the ~PARAMETERS~ string is the backend (case is ignored).
 - post-affiliated
 - and all affiliated keywords
 
-** Fixed width
+** Fixed width                                        :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: fixed-width
 :END:
@@ -378,7 +378,7 @@ optional whitespace.
 - post-affiliated
 - and all affiliated keywords
 
-** Footnote definition
+** Footnote definition                :greater-element:affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: footnote-definition
 :END:
@@ -408,7 +408,7 @@ or the end of buffer.
 - post-affiliated
 - and all affiliated keywords
 
-** Headline
+** Headline                           :greater-element:affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: headline
 :END:
@@ -471,7 +471,7 @@ specified column.
 - and all properties (names in upper case) of the property drawer
 - post-affiliated
 
-** Horizontal rule
+** Horizontal rule                                    :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: horizontal-rule
 :END:
@@ -488,7 +488,7 @@ A line of at least 5 consecutive hyphens (~-----~). Can be indented.
 - post-affiliated
 - and all affiliated keywords
 
-** Inlinetask
+** Inlinetask                                         :greater-element:
 :PROPERTIES:
 :CUSTOM_ID: inlinetask
 :END:
@@ -525,9 +525,9 @@ required), followed by a sapce and the ~END~ string.
 - closed
 - post-blank
 - and all properties (names in upper case) of the property drawer
-- post-affiliated
+- post-affiliated = begin
 
-** Item
+** Item                                               :greater-element:
 :PROPERTIES:
 :CUSTOM_ID: item
 :END:
@@ -579,9 +579,9 @@ list will be an *ordered plain list*. If it contains a tag, it will be a
 - structure
 - hiddenp
 - post-blank
-- post-affiliated
+- post-affiliated = begin
 
-** Keyword
+** Keyword                                            :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: keyword
 :END:
@@ -614,7 +614,7 @@ If ~KEY~ is a [[#document-properties][document property]], ~VALUE~ can contain o
 - post-affiliated
 - and all affiliated keywords
 
-** Latex environment
+** Latex environment                                  :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: latex-environment
 :END:
@@ -668,10 +668,10 @@ sign. It cannot be an empty string.
 - value
 - begin
 - end
-- post-blank
-- post-affiliated
+- post-blank = 0
+- post-affiliated = begin
 
-** Paragraph
+** Paragraph                                          :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: paragraph
 :END:
@@ -693,7 +693,7 @@ but all inner elements must be closed first.
 - post-affiliated
 - and all affiliated keywords
 
-** Plain list
+** Plain list                         :greater-element:affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: plain-list
 :END:
@@ -742,7 +742,7 @@ repeated but one keyword can only be used once.
 - post-blank
 - post-affiliated = begin
 
-** Property drawer
+** Property drawer                                    :greater-element:
 :PROPERTIES:
 :CUSTOM_ID: property-drawer
 :END:
@@ -768,9 +768,9 @@ existent). Its syntax is similar to [[#drawer][drawers]].
 - contents-begin
 - contents-end
 - post-blank
-- post-affiliated
+- post-affiliated = begin
 
-** Quote block
+** Quote block                        :greater-element:affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: quote-block
 :END:
@@ -790,7 +790,7 @@ See [[#blocks][blocks]].
 - post-affiliated
 - and all affiliated keywords
 
-** Section
+** Section                                            :greater-element:
 :PROPERTIES:
 :CUSTOM_ID: section
 :END:
@@ -810,8 +810,9 @@ A section ends at the beginning of the next headline or the end of the file.
 - contents-begin
 - contents-end
 - post-blank
+- post-affiliated = begin
 
-** Special block
+** Special block                      :greater-element:affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: special-block
 :END:
@@ -832,7 +833,7 @@ See [[#blocks][blocks]].
 - post-affiliated
 - and all affiliated keywords
 
-** Src block
+** Src block                                          :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: src-block
 :END:
@@ -874,7 +875,7 @@ See [[#blocks][blocks]].
 - post-affiliated
 - and all affiliated keywords
 
-** Table
+** Table                              :greater-element:affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: table
 :END:
@@ -962,10 +963,10 @@ A table rule has no content (content-begin = content-end).
 - contents-begin
 - contents-end
 - type: either ~rule~ or ~standard~
-- post-blank
+- post-blank = 0
 - post-affiliated = begin
 
-** Verse block
+** Verse block                                        :affiliated-keywords:
 :PROPERTIES:
 :CUSTOM_ID: verse-block
 :END:
@@ -1004,6 +1005,7 @@ Elements containing other elements are called greater elements. These are:
 - Quote block
 - Section
 - Special block
+- Table
 
 With the exception of headline and item greater elements can not contain
 greater elements of the same type.
@@ -1061,7 +1063,7 @@ There can also be user defined entities which are configured in emacs.
 - latex-math-p
 - html
 - ascii
-- altin1
+- latin1
 - utf-8
 - begin
 - end
@@ -1088,13 +1090,13 @@ latex, latex-math-p, html, ascii, latin1 and utf-8 is defined in
 
 *** Properties
 
-- back-end
+- backend
 - value
 - begin
 - end
 - post-blank
 
-** Footnote reference
+** Footnote reference								:recursive:
 :PROPERTIES:
 :CUSTOM_ID: footnote-reference
 :END:
@@ -1261,7 +1263,7 @@ lines.
 - end
 - post-blank = 0
 
-** Link
+** Link										:recursive:
 :PROPERTIES:
 :CUSTOM_ID: link
 :END:
@@ -1363,7 +1365,7 @@ single space.
 - end
 - post-blank
 
-** Radio target
+** Radio target									:recursive:
 :PROPERTIES:
 :CUSTOM_ID: radio-target
 :END:
@@ -1409,7 +1411,7 @@ objects.
 - value
 - post-blank
 
-** Sub/Superscript
+** Sub/Superscript								:recursive:
 :PROPERTIES:
 :CUSTOM_ID: sub-superscript
 :END:
@@ -1450,7 +1452,7 @@ There is no whitespace between ~SIGN~, ~CHARS~ and ~FINAL~.
 - contents-end
 - post-blank
 
-** Table cell
+** Table cell									:recursive:
 :PROPERTIES:
 :CUSTOM_ID: table-cell
 :END:
@@ -1502,7 +1504,7 @@ start or end with a whitespace character. It cannot contain any objects.
 - value
 - post-blank
 
-** Text markup
+** Text markup									:recursive:
 :PROPERTIES:
 :CUSTOM_ID: text-markup
 :END:
@@ -1576,7 +1578,7 @@ start with 0.
   MARK VALUE UNIT
 #+END_SRC
 
-~MARK~ is ~+~ (mumulate type), ~++~ (catch-up type) or ~.+~ (restart type)
+~MARK~ is ~+~ (cumulate type), ~++~ (catch-up type) or ~.+~ (restart type)
 for a repeater and ~-~ (all type) or ~--~ (first type) for warning delays.
 
 ~VALUE~ is a number.
@@ -1642,7 +1644,6 @@ The following affiliated keywords are recognized:
 - ~NAME~
 - ~PLOT~
 - ~RESULTS~
-- ~SOURCE~
 - and ~ATTR_~ followed by any string consisting of alpha-numeric characters,
   hyphens and underscores
 

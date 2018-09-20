@@ -1,13 +1,18 @@
 [package]
-name = "orgmode"
+name = "rust-orgmode"
 version = "0.1.0"
 authors = ["Matthias Seiffert <lythenas@hotmail.de>"]
 
 [dependencies]
-lazy_static = "1.0"
+lazy_static = "1.1"
+phf = "0.7"
+phf_macros = "0.7"
 chrono = "0.4"
 regex = "0.2"
 failure = "0.1"
 failure_derive = "0.1"
 nom = "4.0"
 itertools = "0.7"
+mopa = "0.2"
+
+rust-orgmode-derive = { path = "rust-orgmode-derive" }

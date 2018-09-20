@@ -32,7 +32,7 @@ where
 /// # #[macro_use] extern crate nom;
 /// # extern crate failure;
 /// # #[macro_use] extern crate failure_derive;
-/// # #[macro_use] extern crate orgmode;
+/// # #[macro_use] extern crate rust_orgmode;
 /// # use nom::IResult;
 /// # use nom::Context;
 /// # use nom::Err;
@@ -77,7 +77,7 @@ macro_rules! to_failure (
 /// # Example
 /// ```
 /// # #[macro_use] extern crate nom;
-/// # #[macro_use] extern crate orgmode;
+/// # #[macro_use] extern crate rust_orgmode;
 /// # fn main() {
 ///  named!(x, take_until_or_eof!("foo"));
 ///  let r = x(&b"abcd foo efgh"[..]);
