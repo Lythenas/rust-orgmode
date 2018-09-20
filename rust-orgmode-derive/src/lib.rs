@@ -32,7 +32,7 @@ impl Parse for FieldsToAdd {
                 break;
             }
         }
-        return Ok(FieldsToAdd { fields });
+        Ok(FieldsToAdd { fields })
     }
 }
 
@@ -208,7 +208,7 @@ fn get_field<'a>(trait_name: &str, field_name: &str, data: &'a Data) -> &'a Fiel
                 .named
                 .iter()
                 .find(|ref field| field.ident.as_ref().unwrap() == field_name)
-                .expect(&format!(
+                .unwrap_or_else(|| panic!(
                     "{} needs a field named \"{}\".",
                     trait_name, field_name
                 )),
@@ -428,7 +428,7 @@ fn impl_getters(name: &Ident, fields: &FieldsNamed, generics: &Generics) -> Toke
 }
 
 fn contains_attr<'a>(mut attrs: impl Iterator<Item = &'a Attribute>, name: &str) -> bool {
-    attrs.any(|attr| attr.interpret_meta().unwrap().name().to_string() == name)
+    attrs.any(|attr| attr.interpret_meta().unwrap().name() == name)
 }
 
 fn impl_one_getter(field: &Field) -> TokenStream {
