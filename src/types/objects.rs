@@ -1,8 +1,8 @@
 //! Contains all objects.
 
 use super::*;
-use rust_orgmode_derive::add_fields_for;
 use chrono::{NaiveDate, NaiveTime};
+use rust_orgmode_derive::add_fields_for;
 
 /// An entity.
 ///
@@ -26,8 +26,7 @@ use chrono::{NaiveDate, NaiveTime};
 ///
 /// [`entities`]: ../../entities/index.html
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Entity {
     name: String,
     /// True if the entity ended with `{}`.
@@ -51,8 +50,7 @@ pub struct Entity {
 ///
 /// `VALUE` can contain anything but the `@@` string.
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportSnippet {
     backend: String,
     value: String,
@@ -79,8 +77,7 @@ pub struct ExportSnippet {
 /// balanced in it. It can contain the standard set of objects, even other footnote references.
 /// Will be parsed as a secondary string and can contain the standard set of objects.
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteReference {
     // TODO extract enum to make this more type safe
     label: String,
@@ -116,8 +113,7 @@ pub enum FootnoteReferenceKind {
 ///
 /// Both `HEADER`s are optional. But then there are also no square brackets.
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineBabelCall {
     call: String,
     inside_header: String,
@@ -143,8 +139,7 @@ pub struct InlineBabelCall {
 ///
 /// `OPTIONS` is optional. But then there are also not quote brackets.
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineSrcBlock {
     lang: String,
     value: String,
@@ -195,8 +190,7 @@ pub struct InlineSrcBlock {
 ///
 /// [`entities`]: ../../entities/index.html
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexFragment {
     /// Contains the entire parsed string, except the `PRE` and `POST` parts.
     value: String,
@@ -217,10 +211,8 @@ pub struct LatexFragment {
 /// `SPACE` is zero or more whitespace characters followed by the end of line or end of
 /// document.
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LineBreak {
-}
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LineBreak {}
 
 /// A link.
 ///
@@ -273,8 +265,7 @@ pub struct LineBreak {
 ///
 /// Whitespace and newlines in the link are replaced with a single space.
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Link {
     link: LinkFormat,
 }
@@ -364,8 +355,7 @@ pub enum SearchOption {
 ///
 /// Multiple whitespace and newline characters in `ARGUMENTS` are replaced by a single space.
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Macro {
     name: String,
     arguments: Vec<String>,
@@ -389,8 +379,7 @@ pub struct Macro {
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will be parsed as a [`SecondaryString`].
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RadioTarget {
     target: SecondaryString,
 }
@@ -410,8 +399,7 @@ pub struct RadioTarget {
 ///
 /// `PERCENT`, `NUM1` and `NUM2` are numbers or an empty string.
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StatisticsCookie {
     cookie: CookieKind,
 }
@@ -459,8 +447,7 @@ pub enum CookieKind {
 /// only contain specific objects and therefore other recursive objects in them may contain
 /// less objects than they can usually contain
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
     used_brackets: bool,
     // content: SecondaryString, // can contain the standard set of objects.
@@ -480,8 +467,7 @@ pub struct Subscript {
 ///
 /// See [`Subscript`].
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
     used_brackets: bool,
     // content: SecondaryString, // can contain the standard set of objects.
@@ -509,10 +495,8 @@ pub struct Superscript {
 /// TODO recusrive object. can contain: export snippet, footnote reference, latex fragment,
 /// entity, link, macro, radio target, sub/superscript, target, text markup, timestamp
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TableCell {
-}
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TableCell {}
 
 /// A target.
 ///
@@ -532,8 +516,7 @@ pub struct TableCell {
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will not be parsed.
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Target {
     target: String,
 }
@@ -576,8 +559,7 @@ pub struct Target {
 ///
 /// TODO recursive object
 #[add_fields_for(Object)]
-#[derive(Object, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TextMarkup {
     kind: TextMarkupKind,
 }
@@ -638,8 +620,7 @@ pub mod timestamp {
     /// There can be two `REPEATERORYEAR` in the timestamp. One as a repeater and on as a warning
     /// delay.
     #[add_fields_for(Object)]
-    #[derive(Object, getters)]
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Timestamp {
         kind: TimestampKind,
     }
@@ -651,9 +632,13 @@ pub mod timestamp {
 
             match &self.kind {
                 DiarySexp(_) => None,
-                Single(_, TimestampData {date, time, ..}) |
-                Range(_, DateRange(TimestampData {date, time, ..}, ..)) => Some((&date, time.as_ref())),
-                Range(_, TimeRange(TimestampDataWithTime {date, time, ..}, ..)) => Some((&date, Some(&time))),
+                Single(_, TimestampData { date, time, .. })
+                | Range(_, DateRange(TimestampData { date, time, .. }, ..)) => {
+                    Some((&date, time.as_ref()))
+                }
+                Range(_, TimeRange(TimestampDataWithTime { date, time, .. }, ..)) => {
+                    Some((&date, Some(&time)))
+                }
             }
         }
         pub fn timestamp_end(&self) -> Option<(&Date, Option<&Time>)> {
@@ -662,9 +647,13 @@ pub mod timestamp {
 
             match &self.kind {
                 DiarySexp(_) => None,
-                Single(_, TimestampData {date, time, ..}) => Some((&date, time.as_ref())),
-                Range(_, TimeRange(TimestampDataWithTime {date, ..}, time)) => Some((&date, Some(&time))),
-                Range(_, DateRange(_, TimestampData {date, time, ..})) => Some((&date, time.as_ref())),
+                Single(_, TimestampData { date, time, .. }) => Some((&date, time.as_ref())),
+                Range(_, TimeRange(TimestampDataWithTime { date, .. }, time)) => {
+                    Some((&date, Some(&time)))
+                }
+                Range(_, DateRange(_, TimestampData { date, time, .. })) => {
+                    Some((&date, time.as_ref()))
+                }
             }
         }
         pub fn repeater(&self) -> Option<&Repeater> {
@@ -673,9 +662,9 @@ pub mod timestamp {
 
             match &self.kind {
                 DiarySexp(_) => None,
-                Single(_, TimestampData {repeater, ..}) |
-                Range(_, TimeRange(TimestampDataWithTime {repeater, ..}, _)) |
-                Range(_, DateRange(TimestampData {repeater, ..}, _)) => repeater.as_ref(),
+                Single(_, TimestampData { repeater, .. })
+                | Range(_, TimeRange(TimestampDataWithTime { repeater, .. }, _))
+                | Range(_, DateRange(TimestampData { repeater, .. }, _)) => repeater.as_ref(),
             }
         }
         pub fn warning(&self) -> Option<&Warning> {
@@ -684,9 +673,9 @@ pub mod timestamp {
 
             match &self.kind {
                 DiarySexp(_) => None,
-                Single(_, TimestampData {warning, ..}) |
-                Range(_, TimeRange(TimestampDataWithTime {warning, ..}, _)) |
-                Range(_, DateRange(TimestampData {warning, ..}, _)) => warning.as_ref(),
+                Single(_, TimestampData { warning, .. })
+                | Range(_, TimeRange(TimestampDataWithTime { warning, .. }, _))
+                | Range(_, DateRange(TimestampData { warning, .. }, _)) => warning.as_ref(),
             }
         }
     }
@@ -810,4 +799,3 @@ pub mod timestamp {
     }
 
 }
-

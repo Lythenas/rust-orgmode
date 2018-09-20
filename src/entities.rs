@@ -10,7 +10,14 @@ pub struct EntityReplacement {
     pub utf8: &'static str,
 }
 
-const fn make(latex: &'static str, requires_latex_math: bool, html: &'static str, ascii: &'static str, latin1: &'static str, utf8: &'static str) -> EntityReplacement {
+const fn make(
+    latex: &'static str,
+    requires_latex_math: bool,
+    html: &'static str,
+    ascii: &'static str,
+    latin1: &'static str,
+    utf8: &'static str,
+) -> EntityReplacement {
     EntityReplacement {
         latex,
         requires_latex_math,

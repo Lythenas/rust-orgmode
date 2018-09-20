@@ -20,8 +20,7 @@ use rust_orgmode_derive::add_fields_for;
 /// `CONTENTS` can contain anything except a line `#+END_CENTER` on its own. Lines beginning
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CenterBlock {
     content_data: ContentData, // TODO only allow the standard set of elements
 }
@@ -47,8 +46,7 @@ pub struct CenterBlock {
 ///
 /// Drawers can be indented.
 #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Drawer {
     name: String,
     // hiddenp: bool,
@@ -78,8 +76,7 @@ pub struct Drawer {
 /// `PARAMETERS` can contain any character and can be omitted. They are usually of the format
 /// `:name value` or `:name`.
 #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DynamicBlock {
     /// The name of the function that can update this block.
     name: String,
@@ -89,7 +86,7 @@ pub struct DynamicBlock {
     ///
     /// If the function needs the current content of the block add a parameter `:content`.
     parameters: String, // TODO maybe parse this as a list
-    // hiddenp: bool
+                        // hiddenp: bool
 }
 
 /// A footnote definition.
@@ -111,8 +108,7 @@ pub struct DynamicBlock {
 /// It ends at the next footnote definition, headline, with two consecutive empty lines or the
 /// end of the buffer.
 #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteDefinition {
     label: String,
     // pre_blank: u32 // blank lines after `[LABEL]`
@@ -158,8 +154,7 @@ pub struct FootnoteDefinition {
 /// arbitraty amount of whitespace (except newlines) between `TITLE` and `TAGS`. Tags are
 /// usually right aligned at a specified column by the editor.
 #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Headline {
     level: u32,
     todo_keyword: Option<TodoKeyword>,
@@ -206,14 +201,12 @@ pub enum TodoKeyword {
 /// space and the string `END`. This should start at the beginning of a line but that is not
 /// required.
 #[add_fields_for(GreaterElement)]
-#[derive(GreaterElement, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inlinetask {
     todo_keyword: Option<TodoKeyword>,
     priority: Option<char>, // TODO maybe make separate struct
     title: Option<SecondaryString>,
     tags: Vec<String>,
-
     // hiddenp: bool,
     // pre_blank: u32 // blank lines before the content starts
 }
@@ -245,8 +238,7 @@ pub struct Inlinetask {
 /// starting line or two consecutive empty lines. Indentation of lines within other greater
 /// elements including inlinetask boundaries are ignored.
 #[add_fields_for(GreaterElement)]
-#[derive(GreaterElement, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Item {
     // TODO move all of this to an enum to make more typesafe
     bullet: String, // TODO make struct
@@ -284,11 +276,10 @@ pub enum Checkbox {
 /// list*. If it contains a tag it is be a *descriptive list*. Otherwise it is be an
 /// *unordered list*.
 #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PlainList {
     // TODO content is only items
-    // structure ?
+// structure ?
 }
 
 impl PlainList {
@@ -326,11 +317,10 @@ pub enum ListKind {
 ///
 /// `CONTENTS` consists of zero or more [`elements::NodeProperty`].
 #[add_fields_for(GreaterElement)]
-#[derive(GreaterElement, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PropertyDrawer {
     // TODO make this so only node properties are allowed in the content
-    // hiddenp: bool
+// hiddenp: bool
 }
 
 /// A quote.
@@ -352,8 +342,7 @@ pub struct PropertyDrawer {
 ///
 /// TODO not sure if this is actually a greater element
 #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QuoteBlock {
     // hiddenp: bool
 }
@@ -374,10 +363,8 @@ pub struct QuoteBlock {
 ///
 /// A section ends at the beginning of the next headline or the end of the file.
 #[add_fields_for(GreaterElement)]
-#[derive(GreaterElement, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Section {
-}
+#[derive(GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Section {}
 
 /// A special block.
 ///
@@ -400,8 +387,7 @@ pub struct Section {
 ///
 /// TODO not sure if this is actually a greater element
 #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SpecialBlock {
     kind: String,
     // hiddenp: bool
@@ -451,8 +437,7 @@ pub struct SpecialBlock {
 /// +------+------+------+
 /// ```
 #[add_fields_for(GreaterElement, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Table {
     // TODO maybe make this a bit more type safe
     kind: TableKind,
@@ -488,8 +473,7 @@ pub enum TableKind {
 ///   |--------|
 ///   ```
 #[add_fields_for(SharedBehavior)]
-#[derive(GreaterElement, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableRow {
     kind: TableRowKind,
     content_data: ContentData, // TODO only allow TableCells
@@ -520,9 +504,7 @@ pub enum TableRowKind {
 /// `CONTENTS` can contain anything except a line `#+END_VERSE` on its own. Lines beginning
 /// with stars must be quoted by comma. `CONTENTS` will be parsed as objects.
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
-#[derive(GreaterElement, HasAffiliatedKeywords, getters)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VerseBlock {
     content_data: ContentData, // TODO only allow the standard set of objects
 }
-

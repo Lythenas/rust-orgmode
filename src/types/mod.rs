@@ -26,15 +26,14 @@ pub mod elements;
 pub mod greater_elements;
 pub mod objects;
 
-use std::fmt::Debug;
 use mopa::Any;
+use std::fmt::Debug;
 
 use storage::ObjectId;
 
 // TODO
 #[allow(dead_code)]
 static ORG_LINK_TYPES: () = ();
-
 
 /// All greater elements, elements and objects share some shared behavior.
 ///
@@ -266,4 +265,3 @@ mopafy!(Element);
 /// See [`greater_elements`] module for all available greater elements.
 pub trait GreaterElement: Element + ContainsObjects {}
 mopafy!(GreaterElement);
-
