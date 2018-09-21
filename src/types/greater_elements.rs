@@ -20,7 +20,18 @@ use rust_orgmode_derive::add_fields_for;
 /// `CONTENTS` can contain anything except a line `#+END_CENTER` on its own. Lines beginning
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct CenterBlock {
     content_data: ContentData<()>, // TODO only allow the standard set of ELEMENTS
 }
@@ -46,7 +57,18 @@ pub struct CenterBlock {
 ///
 /// Drawers can be indented.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct Drawer {
     content_data: ContentData<()>, // TODO
     name: String,
@@ -79,7 +101,18 @@ pub struct Drawer {
 ///
 /// TODO not sure if this is actually a greater element
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct DynamicBlock {
     content_data: ContentData<()>, // TODO
     /// The name of the function that can update this block.
@@ -112,7 +145,18 @@ pub struct DynamicBlock {
 /// It ends at the next footnote definition, headline, with two consecutive empty lines or the
 /// end of the buffer.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct FootnoteDefinition {
     content_data: ContentData<()>, // TODO
     label: String,
@@ -159,7 +203,18 @@ pub struct FootnoteDefinition {
 /// arbitraty amount of whitespace (except newlines) between `TITLE` and `TAGS`. Tags are
 /// usually right aligned at a specified column by the editor.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct Headline {
     content_data: ContentData<()>, // TODO
     level: u32,
@@ -176,10 +231,16 @@ pub struct Headline {
 
 impl Headline {
     pub fn is_footnote_section(&self) -> bool {
-        self.title.as_ref().map(|title| title == "org-footnote-section").unwrap_or(false)
+        self.title
+            .as_ref()
+            .map(|title| title == "org-footnote-section")
+            .unwrap_or(false)
     }
     pub fn is_commented(&self) -> bool {
-        self.title.as_ref().map(|title| title.starts_with("COMMENT")).unwrap_or(false)
+        self.title
+            .as_ref()
+            .map(|title| title.starts_with("COMMENT"))
+            .unwrap_or(false)
     }
     pub fn is_archived(&self) -> bool {
         self.tags.contains(&"ARCHIVE".to_string())
@@ -354,7 +415,18 @@ pub enum Checkbox {
 /// list*. If it contains a tag it is be a *descriptive list*. Otherwise it is be an
 /// *unordered list*.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct PlainList {
     content_data: ContentData<Item>,
     // structure ?
@@ -419,10 +491,21 @@ pub struct PropertyDrawer {
 ///
 /// TODO not sure if this is actually a greater element
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct QuoteBlock {
     content_data: ContentData<()>, // TODO only allow the standard set of ELEMENTS
-    // hiddenp: bool
+                                   // hiddenp: bool
 }
 
 /// A section.
@@ -467,7 +550,18 @@ pub struct Section {
 ///
 /// TODO not sure if this is actually a greater element
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct SpecialBlock {
     content_data: ContentData<()>,
     kind: String,
@@ -518,7 +612,18 @@ pub struct SpecialBlock {
 /// +------+------+------+
 /// ```
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct Table {
     content_data: ContentData<TableContent>,
     kind: TableKind,
@@ -537,7 +642,7 @@ pub enum TableKind {
     TableEl {
         formulas: Vec<String>,
         value: Option<String>,
-    }
+    },
 }
 
 /// A row in a [`Table`][`Table`].
@@ -590,7 +695,18 @@ pub enum TableRowKind {
 /// `CONTENTS` can contain anything except a line `#+END_VERSE` on its own. Lines beginning
 /// with stars must be quoted by comma. `CONTENTS` will be parsed as objects.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
-#[derive(Element, HasContent, GreaterElement, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Element,
+    HasContent,
+    GreaterElement,
+    HasAffiliatedKeywords,
+    getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+)]
 pub struct VerseBlock {
     content_data: ContentData<StandardSetOfObjects>,
 }

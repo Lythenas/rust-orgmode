@@ -125,7 +125,6 @@ pub trait HasContent<T: 'static>: SharedBehavior {
     }
 }
 
-
 /// Helper struct that contains the data for the elements and objects that can contain other
 /// objects.
 ///
@@ -199,7 +198,12 @@ pub struct AffiliatedKeywords {
     /// secondary strings (can contain objects).
     ///
     /// The caption key can occur more than once.
-    pub caption: Vec<SpannedValue<(Option<SecondaryString<StandardSetOfObjects>>, SecondaryString<StandardSetOfObjects>)>>,
+    pub caption: Vec<
+        SpannedValue<(
+            Option<SecondaryString<StandardSetOfObjects>>,
+            SecondaryString<StandardSetOfObjects>,
+        )>,
+    >,
     /// Parsed from: `#+HEADER: VALUE`.
     ///
     /// The header key can occur more than once.
@@ -268,8 +272,14 @@ impl<T> SecondaryStringContent<T> {
 /// Returns `false` if it does not.
 impl<T> SecondaryString<T> {
     pub fn starts_with<'a, P>(&'a self, pat: P) -> bool
-        where P: Pattern<'a> {
-        self.0.first().and_then(|x| x.as_raw_string()).map(|s| s.starts_with(pat)).unwrap_or(false)
+    where
+        P: Pattern<'a>,
+    {
+        self.0
+            .first()
+            .and_then(|x| x.as_raw_string())
+            .map(|s| s.starts_with(pat))
+            .unwrap_or(false)
     }
 }
 

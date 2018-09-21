@@ -285,7 +285,11 @@ pub enum LinkFormat {
     /// The secondary string can contain: export snippet, inline babel call, inline src block,
     /// latex fragment, entity, macro, plain link, statistics cookie, sub/superscript,
     /// text markup.
-    Bracket(LinkPath, Option<SearchOption>, Option<SecondaryString<LinkDescriptionSetOfObjects>>),
+    Bracket(
+        LinkPath,
+        Option<SearchOption>,
+        Option<SecondaryString<LinkDescriptionSetOfObjects>>,
+    ),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
