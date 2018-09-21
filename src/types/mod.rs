@@ -28,6 +28,7 @@ pub mod objects;
 
 use mopa::Any;
 use std::fmt::Debug;
+use std::str::pattern::Pattern;
 
 // TODO
 #[allow(dead_code)]
@@ -242,7 +243,34 @@ impl<T> SpannedValue<T> {
 ///
 /// It is used for attributes of elements that can contain objects.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SecondaryString<T>(Vec<T>);
+pub struct SecondaryString<T>(Vec<SecondaryStringContent<T>>);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum SecondaryStringContent<T> {
+    String(String),
+    Object(T),
+}
+
+/// Returns `true` if this `SecondaryString` starts with a raw string and the given pattern matches
+/// a prefix of this string.
+///
+/// Returns `false` if it does not.
+impl<T> SecondaryString<T> {
+    pub fn starts_with<'a, P>(&'a self, pat: P) -> bool
+        where P: Pattern<'a> {
+        match self.0.first() {
+            Some(SecondaryStringContent::String(ref s)) => s.starts_with(pat),
+            _ => false,
+        }
+    }
+}
+
+impl<T> PartialEq<str> for SecondaryString<T> {
+    fn eq(&self, _other: &str) -> bool {
+        //self.0 == other
+        unimplemented!()
+    }
+}
 
 /// Marker trait for objects in an org file.
 ///

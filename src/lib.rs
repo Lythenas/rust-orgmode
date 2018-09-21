@@ -14,6 +14,7 @@
 #![feature(custom_attribute)]
 #![feature(plugin)]
 #![feature(min_const_fn)]
+#![feature(pattern)]
 #![plugin(phf_macros)]
 
 #[cfg(test)]

@@ -176,14 +176,10 @@ pub struct Headline {
 
 impl Headline {
     pub fn is_footnote_section(&self) -> bool {
-        // TODO does not compile maybe implement PartialEq<String> for SecondaryString
-        //self.title.map(|title| title == "org-footnote-section").unwrap_or(false)
-        unimplemented!()
+        self.title.as_ref().map(|title| title == "org-footnote-section").unwrap_or(false)
     }
     pub fn is_commented(&self) -> bool {
-        // TODO does not compile create a method named starts_with for SecondaryString
-        //self.title.map(|title| title.starts_with("COMMENT")).unwrap_or(false)
-        unimplemented!()
+        self.title.as_ref().map(|title| title.starts_with("COMMENT")).unwrap_or(false)
     }
     pub fn is_archived(&self) -> bool {
         self.tags.contains(&"ARCHIVE".to_string())
