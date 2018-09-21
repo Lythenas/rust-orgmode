@@ -300,8 +300,8 @@ pub struct Keyword {
 /// See [`Keyword`].
 ///
 /// `VALUE` is parsed as a [`SecondaryString`].
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
-#[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[add_fields_for(SharedBehavior)]
+#[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentProperty {
     key: String,
     value: SecondaryString<StandardSetOfObjects>,
