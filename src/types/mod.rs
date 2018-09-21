@@ -247,30 +247,21 @@ impl<T> SpannedValue<T> {
 ///
 /// It is used for attributes of elements that can contain objects.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SecondaryString<T>(Vec<SecondaryStringContent<T>>);
+pub struct SecondaryString<T: AsRawString>(Vec<T>);
 
-/// Used to represent if the item of a [`SecondaryString`] is a `RawString` or an actual
-/// [`Object`].
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum SecondaryStringContent<T> {
-    RawString(String),
-    Object(T),
-}
+pub trait AsRawString {
+    fn as_raw_string(&self) -> Option<&str>;
 
-impl<T> SecondaryStringContent<T> {
-    pub fn as_raw_string(&self) -> Option<&str> {
-        match self {
-            SecondaryStringContent::RawString(s) => Some(&s),
-            _ => None,
-        }
+    fn is_raw_string(&self) -> bool {
+        self.as_raw_string().is_some()
     }
 }
 
-/// Returns `true` if this `SecondaryString` starts with a raw string and the given pattern matches
-/// a prefix of this string.
-///
-/// Returns `false` if it does not.
-impl<T> SecondaryString<T> {
+impl<T: AsRawString> SecondaryString<T> {
+    /// Returns `true` if this `SecondaryString` starts with a raw string and the given pattern matches
+    /// a prefix of this string.
+    ///
+    /// Returns `false` if it does not.
     pub fn starts_with<'a, P>(&'a self, pat: P) -> bool
     where
         P: Pattern<'a>,
@@ -283,7 +274,7 @@ impl<T> SecondaryString<T> {
     }
 }
 
-impl<T> PartialEq<str> for SecondaryString<T> {
+impl<T: AsRawString> PartialEq<str> for SecondaryString<T> {
     fn eq(&self, other: &str) -> bool {
         self.0
             .first()
@@ -313,9 +304,12 @@ pub trait Element: SharedBehavior {}
 /// See [`greater_elements`] module for all available greater elements.
 pub trait GreaterElement<T: 'static>: Element + HasContent<T> {}
 
-/// TODO
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// The standard set of objects as defined by org mode.
+///
+/// These objects are used by most other recursive objects. E.g. a link can contain some bold text.
+#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StandardSetOfObjects {
+    RawString(String),
     Entity(objects::Entity),
     ExportSnippet(objects::ExportSnippet),
     FootnoteReference(objects::FootnoteReference),

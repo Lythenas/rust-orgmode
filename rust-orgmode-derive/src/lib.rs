@@ -445,6 +445,32 @@ fn impl_one_getter(field: &Field) -> TokenStream {
     }
 }
 
+/// Derives the implementation of `AsRawString` for enums.
+///
+/// The enums require a variant called `RawString(String)`.
+#[proc_macro_derive(AsRawString)]
+pub fn as_raw_string_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    let name = &input.ident;
+
+    let expanded = impl_as_raw_string(name);
+    proc_macro::TokenStream::from(expanded)
+}
+
+fn impl_as_raw_string(name: &Ident) -> TokenStream {
+    quote! {
+        impl AsRawString for #name {
+            fn as_raw_string(&self) -> Option<&str> {
+                match self {
+                    #name::RawString(s) => Some(&s),
+                    _ => None,
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

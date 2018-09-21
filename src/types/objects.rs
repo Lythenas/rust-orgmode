@@ -292,8 +292,9 @@ pub enum LinkFormat {
     ),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LinkDescriptionSetOfObjects {
+    RawString(String),
     Entity(objects::Entity),
     ExportSnippet(objects::ExportSnippet),
     InlineBabelCall(objects::InlineBabelCall),

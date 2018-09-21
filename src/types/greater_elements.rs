@@ -247,8 +247,10 @@ impl Headline {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// The set of objects that the title of a [`Headline`] or [`Inlinetask`] can contain.
+#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TitleSetOfObjects {
+    RawString(String),
     Entity(objects::Entity),
     ExportSnippet(objects::ExportSnippet),
     FootnoteReference(objects::FootnoteReference),
