@@ -289,24 +289,6 @@ pub struct Keyword {
     value: String,
 }
 
-/// A document property keyword.
-///
-/// # Semantics
-///
-/// See [`Keyword`] but for the whole org file.
-///
-/// # Syntax
-///
-/// See [`Keyword`].
-///
-/// `VALUE` is parsed as a [`SecondaryString`].
-#[add_fields_for(SharedBehavior)]
-#[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct DocumentProperty {
-    key: String,
-    value: SecondaryString<StandardSetOfObjects>,
-}
-
 /// A LaTeX environment.
 ///
 /// # Semantics

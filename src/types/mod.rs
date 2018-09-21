@@ -9,18 +9,11 @@
 //! # Implementation of shared behavior
 //!
 //! There is some shared behavior between elements an objects. This is organized into the
-//! traits: [`SharedBehavior`], [`ContainsObjects`] and [`HasAffiliatedKeywords`]. Those traits
+//! traits: [`SharedBehavior`], [`HasContent`] and [`HasAffiliatedKeywords`]. Those traits
 //! rely on specific data being stored in the elements/objects. To simplify this the data is
 //! stored in helper traits and these helper traits are then stored in elements/objects. The
 //! element/object structs only need to implement a getter method for the helper struct and the
 //! trait will give them getter methods for the data in those helper structs.
-//!
-//! [`Object`]: trait.Object.html
-//! [`Element`]: trait.Element.html
-//! [`GreaterElement`]: trait.GreaterElement.html
-//! [`SharedBehavior`]: trait.SharedBehavior.html
-//! [`ContainsObjects`]: trait.ContainsObjects.html
-//! [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
 
 pub mod elements;
 pub mod greater_elements;
@@ -33,6 +26,40 @@ use std::str::pattern::Pattern;
 // TODO
 #[allow(dead_code)]
 static ORG_LINK_TYPES: () = ();
+
+/// A complete org document/file.
+///
+/// Contains the global document properties and section before the first headline as well as the
+/// list of all top level headlines.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+pub struct Document {
+    // TODO make PreSection a new struct that can contain document properties instead of keywords
+    // and remove the keywords property here
+    pre_section: Option<greater_elements::Section>,
+    headlines: Vec<greater_elements::Headline>,
+    keywords: Vec<DocumentProperty>,
+}
+
+/// A document property keyword.
+///
+/// # Semantics
+///
+/// See [`Keyword`] but for the whole org file.
+///
+/// # Syntax
+///
+/// See [`Keyword`].
+///
+/// `VALUE` is parsed as a [`SecondaryString`].
+///
+/// [`Keyword`]: `elements::Keyword`
+#[add_fields_for(SharedBehavior)]
+#[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct DocumentProperty {
+    // TODO maybe move this back to elements
+    key: String,
+    value: SecondaryString<StandardSetOfObjects>,
+}
 
 /// All greater elements, elements and objects share some shared behavior.
 ///
