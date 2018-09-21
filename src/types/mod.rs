@@ -245,10 +245,21 @@ impl<T> SpannedValue<T> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SecondaryString<T>(Vec<SecondaryStringContent<T>>);
 
+/// Used to represent if the item of a [`SecondaryString`] is a `RawString` or an actual
+/// [`Object`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SecondaryStringContent<T> {
-    String(String),
+    RawString(String),
     Object(T),
+}
+
+impl<T> SecondaryStringContent<T> {
+    pub fn as_raw_string(&self) -> Option<&str> {
+        match self {
+            SecondaryStringContent::RawString(s) => Some(&s),
+            _ => None,
+        }
+    }
 }
 
 /// Returns `true` if this `SecondaryString` starts with a raw string and the given pattern matches
@@ -258,10 +269,7 @@ pub enum SecondaryStringContent<T> {
 impl<T> SecondaryString<T> {
     pub fn starts_with<'a, P>(&'a self, pat: P) -> bool
         where P: Pattern<'a> {
-        match self.0.first() {
-            Some(SecondaryStringContent::String(ref s)) => s.starts_with(pat),
-            _ => false,
-        }
+        self.0.first().and_then(|x| x.as_raw_string()).map(|s| s.starts_with(pat)).unwrap_or(false)
     }
 }
 
