@@ -284,9 +284,12 @@ impl<T> SecondaryString<T> {
 }
 
 impl<T> PartialEq<str> for SecondaryString<T> {
-    fn eq(&self, _other: &str) -> bool {
-        //self.0 == other
-        unimplemented!()
+    fn eq(&self, other: &str) -> bool {
+        self.0
+            .first()
+            .and_then(|x| x.as_raw_string())
+            .map(|s| s == other)
+            .unwrap_or(false)
     }
 }
 
