@@ -198,7 +198,7 @@ pub struct AffiliatedKeywords {
     /// secondary strings (can contain objects).
     ///
     /// The caption key can occur more than once.
-    pub caption: Vec<SpannedValue<(Option<SecondaryString>, SecondaryString)>>,
+    pub caption: Vec<SpannedValue<(Option<SecondaryString<StandardSetOfObjects>>, SecondaryString<StandardSetOfObjects>)>>,
     /// Parsed from: `#+HEADER: VALUE`.
     ///
     /// The header key can occur more than once.
@@ -242,7 +242,7 @@ impl<T> SpannedValue<T> {
 ///
 /// It is used for attributes of elements that can contain objects.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SecondaryString(Vec<()>); // TODO make this similar to HasContent
+pub struct SecondaryString<T>(Vec<T>);
 
 /// Marker trait for objects in an org file.
 ///

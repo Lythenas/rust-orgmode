@@ -165,7 +165,7 @@ pub struct Headline {
     level: u32,
     todo_keyword: Option<TodoKeyword>,
     priority: Option<char>, // TODO maybe make separate struct
-    title: Option<SecondaryString>,
+    title: Option<SecondaryString<TitleSetOfObjects>>,
     tags: Vec<String>,
     planning: Option<elements::Planning>,
     property_drawer: Option<PropertyDrawer>,
@@ -188,6 +188,25 @@ impl Headline {
     pub fn is_archived(&self) -> bool {
         self.tags.contains(&"ARCHIVE".to_string())
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TitleSetOfObjects {
+    Entity(objects::Entity),
+    ExportSnippet(objects::ExportSnippet),
+    FootnoteReference(objects::FootnoteReference),
+    InlineBabelCall(objects::InlineBabelCall),
+    InlineSrcBlock(objects::InlineSrcBlock),
+    LatexFragment(objects::LatexFragment),
+    Link(objects::Link),
+    Macro(objects::Macro),
+    RadioTarget(objects::RadioTarget),
+    StatisticsCookie(objects::StatisticsCookie),
+    Subscript(objects::Subscript),
+    Superscript(objects::Superscript),
+    Target(objects::Target),
+    TextMarkup(objects::TextMarkup),
+    Timestamp(objects::Timestamp),
 }
 
 /// A todo keyword of a [`Headline`] or [`Inlinetask`].
@@ -224,7 +243,7 @@ pub struct Inlinetask {
     content_data: ContentData<()>, // TODO
     todo_keyword: Option<TodoKeyword>,
     priority: Option<char>, // TODO maybe make separate struct (maybe use old enum)
-    title: Option<SecondaryString>,
+    title: Option<SecondaryString<TitleSetOfObjects>>,
     tags: Vec<String>,
     // hiddenp: bool,
     // pre_blank: u32 // blank lines before the content starts

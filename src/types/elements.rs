@@ -304,7 +304,7 @@ pub struct Keyword {
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentProperty {
     key: String,
-    value: SecondaryString,
+    value: SecondaryString<StandardSetOfObjects>,
 }
 
 /// A LaTeX environment.
@@ -378,7 +378,7 @@ pub struct Paragraph {
     /// Newlines are ignored and are not stored here.
     ///
     /// TODO also store the ignored newlines somewhere/somehow.
-    content: SecondaryString,
+    content: SecondaryString<StandardSetOfObjects>,
 }
 
 /// A planning element.

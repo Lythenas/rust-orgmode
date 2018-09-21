@@ -90,10 +90,10 @@ pub enum FootnoteReferenceKind {
     },
     Inline {
         label: String,
-        definition: SecondaryString,
+        definition: SecondaryString<StandardSetOfObjects>,
     },
     Anonymous {
-        definition: SecondaryString,
+        definition: SecondaryString<StandardSetOfObjects>,
     },
 }
 
@@ -285,7 +285,24 @@ pub enum LinkFormat {
     /// The secondary string can contain: export snippet, inline babel call, inline src block,
     /// latex fragment, entity, macro, plain link, statistics cookie, sub/superscript,
     /// text markup.
-    Bracket(LinkPath, Option<SearchOption>, Option<SecondaryString>),
+    Bracket(LinkPath, Option<SearchOption>, Option<SecondaryString<LinkDescriptionSetOfObjects>>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum LinkDescriptionSetOfObjects {
+    Entity(objects::Entity),
+    ExportSnippet(objects::ExportSnippet),
+    InlineBabelCall(objects::InlineBabelCall),
+    InlineSrcBlock(objects::InlineSrcBlock),
+    LatexFragment(objects::LatexFragment),
+    Link(objects::Link),
+    Macro(objects::Macro),
+    StatisticsCookie(objects::StatisticsCookie),
+    Subscript(objects::Subscript),
+    Superscript(objects::Superscript),
+    Target(objects::Target),
+    TextMarkup(objects::TextMarkup),
+    Timestamp(objects::Timestamp),
 }
 
 /// The kind and data of a bracket link in [`LinkFormat`].
@@ -386,7 +403,7 @@ pub struct Macro {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RadioTarget {
-    target: SecondaryString,
+    target: SecondaryString<StandardSetOfObjects>,
 }
 
 /// A statistics cookie.
@@ -461,7 +478,7 @@ pub enum CookieKind {
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
     used_brackets: bool,
-    content: SecondaryString, // can contain the standard set of objects.
+    content: SecondaryString<StandardSetOfObjects>, // can contain the standard set of objects.
 }
 
 /// A superscript.
@@ -481,7 +498,7 @@ pub struct Subscript {
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
     used_brackets: bool,
-    content: SecondaryString, // can contain the standard set of objects.
+    content: SecondaryString<StandardSetOfObjects>, // can contain the standard set of objects.
 }
 
 /// A table cell in a [`greater_elements::TableRow`].
@@ -578,10 +595,10 @@ pub struct TextMarkup {
 /// Only code and verbatim can't contain other objects.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TextMarkupKind {
-    Bold(SecondaryString),
-    Italic(SecondaryString),
-    Underline(SecondaryString),
-    StrikeThrough(SecondaryString),
+    Bold(SecondaryString<StandardSetOfObjects>),
+    Italic(SecondaryString<StandardSetOfObjects>),
+    Underline(SecondaryString<StandardSetOfObjects>),
+    StrikeThrough(SecondaryString<StandardSetOfObjects>),
     Code(String),
     Verbatim(String),
 }
