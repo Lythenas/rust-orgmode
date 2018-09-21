@@ -220,7 +220,7 @@ pub struct Headline {
     level: u32,
     todo_keyword: Option<TodoKeyword>,
     priority: Option<char>, // TODO maybe make separate struct
-    title: Option<SecondaryString<TitleSetOfObjects>>,
+    title: Option<SecondaryString<StandardSetOfObjectsNoLineBreak>>,
     tags: Vec<String>,
     planning: Option<elements::Planning>,
     property_drawer: Option<PropertyDrawer>,
@@ -245,27 +245,6 @@ impl Headline {
     pub fn is_archived(&self) -> bool {
         self.tags.contains(&"ARCHIVE".to_string())
     }
-}
-
-/// The set of objects that the title of a [`Headline`] or [`Inlinetask`] can contain.
-#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum TitleSetOfObjects {
-    RawString(String),
-    Entity(objects::Entity),
-    ExportSnippet(objects::ExportSnippet),
-    FootnoteReference(objects::FootnoteReference),
-    InlineBabelCall(objects::InlineBabelCall),
-    InlineSrcBlock(objects::InlineSrcBlock),
-    LatexFragment(objects::LatexFragment),
-    Link(objects::Link),
-    Macro(objects::Macro),
-    RadioTarget(objects::RadioTarget),
-    StatisticsCookie(objects::StatisticsCookie),
-    Subscript(objects::Subscript),
-    Superscript(objects::Superscript),
-    Target(objects::Target),
-    TextMarkup(objects::TextMarkup),
-    Timestamp(objects::Timestamp),
 }
 
 /// A todo keyword of a [`Headline`] or [`Inlinetask`].
@@ -302,7 +281,7 @@ pub struct Inlinetask {
     content_data: ContentData<()>, // TODO
     todo_keyword: Option<TodoKeyword>,
     priority: Option<char>, // TODO maybe make separate struct (maybe use old enum)
-    title: Option<SecondaryString<TitleSetOfObjects>>,
+    title: Option<SecondaryString<StandardSetOfObjectsNoLineBreak>>,
     tags: Vec<String>,
     // hiddenp: bool,
     // pre_blank: u32 // blank lines before the content starts
@@ -340,7 +319,7 @@ pub struct Inlinetask {
 #[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Item {
-    content_data: ContentData<()>, // TODO Can contain greater elements. All or just some?
+    content_data: ContentData<StandardSetOfObjectsNoLineBreak>,
     kind: ItemKind,
     checkbox: Option<Checkbox>,
     // structure ?
@@ -666,16 +645,30 @@ pub enum TableKind {
 ///   |--------|
 ///   ```
 #[add_fields_for(Element)]
-#[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableRow {
     kind: TableRowKind,
-    content_data: ContentData<objects::TableCell>,
 }
+
+impl GreaterElement<objects::TableCell> for TableRow {}
+impl HasContent<objects::TableCell> for TableRow {
+    fn content_data(&self) -> &ContentData<objects::TableCell> {
+        match self.kind {
+            TableRowKind::Normal(ref content) => &content,
+            TableRowKind::Rule => &EMPTY_CONTENT_DATA_FOR_TABLE_ROWS,
+        }
+    }
+}
+
+static EMPTY_CONTENT_DATA_FOR_TABLE_ROWS: ContentData<objects::TableCell> = ContentData {
+    span: Span { start: 0, end: 0, },
+    content: Vec::new(),
+};
 
 /// The kind of a [`TableRow`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TableRowKind {
-    Normal,
+    Normal(ContentData<objects::TableCell>),
     Rule,
 }
 

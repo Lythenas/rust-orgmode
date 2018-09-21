@@ -333,7 +333,7 @@ pub trait GreaterElement<T: 'static>: Element + HasContent<T> {}
 
 /// The standard set of objects as defined by org mode.
 ///
-/// These objects are used by most other recursive objects. E.g. a link can contain some bold text.
+/// These objects are used by most other recursive objects. E.g. a bold text can contain an entity.
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StandardSetOfObjects {
     RawString(String),
@@ -344,6 +344,30 @@ pub enum StandardSetOfObjects {
     InlineSrcBlock(objects::InlineSrcBlock),
     LatexFragment(objects::LatexFragment),
     LineBreak(objects::LineBreak),
+    Link(objects::Link),
+    Macro(objects::Macro),
+    RadioTarget(objects::RadioTarget),
+    StatisticsCookie(objects::StatisticsCookie),
+    Subscript(objects::Subscript),
+    Superscript(objects::Superscript),
+    Target(objects::Target),
+    TextMarkup(objects::TextMarkup),
+    Timestamp(objects::Timestamp),
+}
+
+/// The standard set of objects without [`objects::LineBreak`]s.
+///
+/// Used for elements that can contain the standard set but no line breaks. E.g.
+/// [`greater_elements::Headline`] or [`greater_elements::Inlinetask`].
+#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum StandardSetOfObjectsNoLineBreak {
+    RawString(String),
+    Entity(objects::Entity),
+    ExportSnippet(objects::ExportSnippet),
+    FootnoteReference(objects::FootnoteReference),
+    InlineBabelCall(objects::InlineBabelCall),
+    InlineSrcBlock(objects::InlineSrcBlock),
+    LatexFragment(objects::LatexFragment),
     Link(objects::Link),
     Macro(objects::Macro),
     RadioTarget(objects::RadioTarget),

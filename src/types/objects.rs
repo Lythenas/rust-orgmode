@@ -266,8 +266,8 @@ pub struct LineBreak {
 ///
 /// `DESCRIPTION` is optional and must be enclosed with square brackets. It can contain any
 /// character except square brackets. It is also parsed as a [`SecondaryString`] and can
-/// contain any object found in a paragraph except a [`FootnoteReference`], a [`RadioTarget`]
-/// and a [`LineBreak`]. It also can't contain another link unless it is a plain or angle link.
+/// contain any most object in the [`StandardSetOfObjects`]. It also can't contain another
+/// link unless it is a plain or angle link. (See [`LinkDescriptionSetOfObjects`]).
 ///
 /// Whitespace and newlines in the link are replaced with a single space.
 #[add_fields_for(Object)]
@@ -300,14 +300,13 @@ pub enum LinkDescriptionSetOfObjects {
     InlineBabelCall(objects::InlineBabelCall),
     InlineSrcBlock(objects::InlineSrcBlock),
     LatexFragment(objects::LatexFragment),
+    /// Can contain links that are not plain or angle links. This will probably be ignored.
     Link(objects::Link),
     Macro(objects::Macro),
     StatisticsCookie(objects::StatisticsCookie),
     Subscript(objects::Subscript),
     Superscript(objects::Superscript),
-    Target(objects::Target),
     TextMarkup(objects::TextMarkup),
-    Timestamp(objects::Timestamp),
 }
 
 /// The kind and data of a bracket link in [`LinkFormat`].
@@ -411,6 +410,16 @@ pub struct RadioTarget {
     target: SecondaryString<StandardSetOfObjects>,
 }
 
+#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum RadioTargetSetOfObjects {
+    RawString(String),
+    Entity(objects::Entity),
+    LatexFragment(objects::LatexFragment),
+    Subscript(objects::Subscript),
+    Superscript(objects::Superscript),
+    TextMarkup(objects::TextMarkup),
+}
+
 /// A statistics cookie.
 ///
 /// # Semantics
@@ -483,7 +492,7 @@ pub enum CookieKind {
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
     used_brackets: bool,
-    content: SecondaryString<StandardSetOfObjects>, // can contain the standard set of objects.
+    content: SecondaryString<StandardSetOfObjects>,
 }
 
 /// A superscript.
@@ -503,7 +512,7 @@ pub struct Subscript {
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
     used_brackets: bool,
-    content: SecondaryString<StandardSetOfObjects>, // can contain the standard set of objects.
+    content: SecondaryString<StandardSetOfObjects>,
 }
 
 /// A table cell in a [`greater_elements::TableRow`].
@@ -529,7 +538,28 @@ pub struct Superscript {
 /// entity, link, macro, radio target, sub/superscript, target, text markup, timestamp
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TableCell {}
+pub struct TableCell {
+    content: ContentData<TableCellSetOfObjects>,
+}
+
+/// Table cells can't contain [`InlineBabelCall`], [`InlineSrcBlock`] because formulas are
+/// possible. Also they can't contain [`LineBreak`] and [`StatisticsCookie`].
+#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TableCellSetOfObjects {
+    RawString(String),
+    Entity(objects::Entity),
+    ExportSnippet(objects::ExportSnippet),
+    FootnoteReference(objects::FootnoteReference),
+    LatexFragment(objects::LatexFragment),
+    Link(objects::Link),
+    Macro(objects::Macro),
+    RadioTarget(objects::RadioTarget),
+    Subscript(objects::Subscript),
+    Superscript(objects::Superscript),
+    Target(objects::Target),
+    TextMarkup(objects::TextMarkup),
+    Timestamp(objects::Timestamp),
+}
 
 /// A target.
 ///
@@ -600,6 +630,7 @@ pub struct TextMarkup {
 /// Only code and verbatim can't contain other objects.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TextMarkupKind {
+    // TODO maybe make these actual different types instead of an enum
     Bold(SecondaryString<StandardSetOfObjects>),
     Italic(SecondaryString<StandardSetOfObjects>),
     Underline(SecondaryString<StandardSetOfObjects>),

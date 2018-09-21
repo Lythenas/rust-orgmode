@@ -286,7 +286,27 @@ pub struct HorizontalRule {}
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyword {
     key: String,
-    value: String,
+    value: ContentData<KeywordValueSetOfObjects>,
+}
+
+#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum KeywordValueSetOfObjects {
+    RawString(String),
+    Entity(objects::Entity),
+    ExportSnippet(objects::ExportSnippet),
+    InlineBabelCall(objects::InlineBabelCall),
+    InlineSrcBlock(objects::InlineSrcBlock),
+    LatexFragment(objects::LatexFragment),
+    LineBreak(objects::LineBreak),
+    Link(objects::Link),
+    Macro(objects::Macro),
+    RadioTarget(objects::RadioTarget),
+    StatisticsCookie(objects::StatisticsCookie),
+    Subscript(objects::Subscript),
+    Superscript(objects::Superscript),
+    Target(objects::Target),
+    TextMarkup(objects::TextMarkup),
+    Timestamp(objects::Timestamp),
 }
 
 /// A LaTeX environment.
