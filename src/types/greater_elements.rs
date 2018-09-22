@@ -24,7 +24,7 @@ use rust_orgmode_derive::add_fields_for;
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct CenterBlock {
-    content_data: ContentData<()>, // TODO only allow the standard set of ELEMENTS
+    content_data: ContentData<String>,
 }
 
 /// A drawer to hide content.
@@ -52,7 +52,7 @@ pub struct CenterBlock {
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct Drawer {
-    content_data: ContentData<()>, // TODO
+    content_data: ContentData<ElementSet>,
     pub name: String,
     // hiddenp: bool,
 }
@@ -61,8 +61,8 @@ pub struct Drawer {
 ///
 /// # Semantics
 ///
-/// The content of dynamic blocks can be updated automatically by calling the a function with
-/// the given name and parameters. It that function needs the previous content of the block an
+/// The content of dynamic blocks can be updated automatically by calling a function with
+/// the given name and parameters. If that function needs the previous content of the block an
 /// extra parameter `:content` has to be added.
 ///
 /// # Syntax
@@ -81,13 +81,13 @@ pub struct Drawer {
 /// `PARAMETERS` can contain any character and can be omitted. They are usually of the format
 /// `:name value` or `:name`.
 ///
-/// TODO not sure if this is actually a greater element
+/// `CONTENTS` is auto-generated and will not be parsed.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct DynamicBlock {
-    content_data: ContentData<()>, // TODO
+    content_data: ContentData<ElementSet>,
     /// The name of the function that can update this block.
     pub name: String,
     /// The parameters to pass to the function updating this block.
@@ -122,7 +122,7 @@ pub struct DynamicBlock {
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct FootnoteDefinition {
-    content_data: ContentData<()>, // TODO
+    content_data: ContentData<ElementSet>, // TODO
     pub label: String,
     // pre_blank: u32 // TODO (maybe) blank lines after `[LABEL]`
 }
@@ -171,7 +171,7 @@ pub struct FootnoteDefinition {
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct Headline {
-    content_data: ContentData<()>, // TODO
+    content_data: ContentData<HeadlineContentSet>, // TODO
     pub level: u32,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct
@@ -201,6 +201,14 @@ impl Headline {
         self.tags.contains(&"ARCHIVE".to_string())
     }
 }
+
+/// List of elements that are content of a [`Headline`] or [`Inlinetask`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum HeadlineContentSet {
+    Section(greater_elements::Section),
+    Headline(greater_elements::Headline),
+}
+
 
 /// A todo keyword of a [`Headline`] or [`Inlinetask`].
 ///
@@ -233,7 +241,7 @@ pub enum TodoKeyword {
 #[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inlinetask {
-    content_data: ContentData<()>, // TODO
+    content_data: ContentData<HeadlineContentSet>,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct (maybe use old enum)
     pub title: Option<SecondaryString<StandardSetOfObjectsNoLineBreak>>,
@@ -422,8 +430,8 @@ pub struct PropertyDrawer {
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct QuoteBlock {
-    content_data: ContentData<()>, // TODO only allow the standard set of ELEMENTS
-                                   // hiddenp: bool
+    content_data: ContentData<ElementSet>,
+    // hiddenp: bool
 }
 
 /// A section.
@@ -444,7 +452,7 @@ pub struct QuoteBlock {
 #[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Section {
-    content_data: ContentData<()>,
+    content_data: ContentData<ElementSet>,
 }
 
 /// A special block.
@@ -472,7 +480,7 @@ pub struct Section {
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct SpecialBlock {
-    content_data: ContentData<()>,
+    content_data: ContentData<String>,
     pub kind: String,
     // hiddenp: bool
 }
@@ -532,7 +540,7 @@ pub struct Table {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TableContent {
     Org(TableRow),
-    TableEl(()),
+    TableEl(String),
 }
 
 /// The kind of a [`Table`].

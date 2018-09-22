@@ -346,7 +346,38 @@ pub enum StandardSetOfObjectsNoLineBreak {
     Timestamp(objects::Timestamp),
 }
 
-// TODO add the other list of objects/elements that can be sub nodes of other objects/elements
-// TODO add the correct objects/elements to greater elements content
-// TODO figure out how to handle the Paragraph
-// should this be an actual object or is this just the list of objects and strings in a section
+/// This is a list of elements and greater elements.
+///
+/// This is used for the [`ContentData`] of [`greater_elements`]. Note that greater elements can't
+/// usually directly contain elements of the same type. So this is not strictly type safe. E.g. a
+/// drawer can't contain a drawer.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ElementSet {
+    BabelCall(elements::BabelCall),
+    CenterBlock(greater_elements::CenterBlock),
+    Clock(elements::Clock),
+    Comment(elements::Comment),
+    CommentBlock(elements::CommentBlock),
+    DiarySexp(elements::DiarySexp),
+    Drawer(greater_elements::Drawer),
+    DynamicBlock(greater_elements::DynamicBlock),
+    ExampleBlock(elements::ExampleBlock),
+    ExportBlock(elements::ExportBlock),
+    FixedWidth(elements::FixedWidth),
+    FootnoteDefinition(greater_elements::FootnoteDefinition),
+    HorizontalRule(elements::HorizontalRule),
+    Inlinetask(greater_elements::Inlinetask),
+    Keyword(elements::Keyword),
+    LatexEnvironment(elements::LatexEnvironment),
+    Paragraph(elements::Paragraph),
+    PlainList(greater_elements::PlainList),
+    Planning(elements::Planning),
+    PropertyDrawer(greater_elements::PropertyDrawer),
+    QuoteBlock(greater_elements::QuoteBlock),
+    Section(greater_elements::Section),
+    SpecialBlock(greater_elements::Section),
+    SrcBlock(elements::SrcBlock),
+    Table(greater_elements::Table),
+    VerseBlock(greater_elements::VerseBlock),
+}
+
