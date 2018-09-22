@@ -1704,3 +1704,25 @@ granularities:
 When parsing smaller chunks ([[#secondary-strings][secondary strings]]) restrictions
 can be used to only parse elements of a specific type.
 
+When parsing there are different modes:
+
+- first-section :: the beginning of a document
+- section :: a section
+- planning :: planning
+- item :: item (with a structure)
+- node-property :: node property
+- table-row :: table row
+
+How parsing is done:
+
+1. Find current elements type and parse it
+2. Parse elements content (if applicable)
+   - When no content don't do anything
+   - For greater elements: parse recursively between ~content-begin~ and
+     ~content-end~ (Jump to 1. with next mode, current structure and
+     granularity). Also make sure that granularity allows recursion
+     (or the element is a headline).
+   - For elements: parse objects inside (if granularity allows it).
+3. Insert the content into the parent element
+4. Update the mode
+5. Return result
