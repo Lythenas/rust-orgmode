@@ -35,9 +35,9 @@ static ORG_LINK_TYPES: () = ();
 pub struct Document {
     // TODO make PreSection a new struct that can contain document properties instead of keywords
     // and remove the keywords property here
-    pre_section: Option<greater_elements::Section>,
-    headlines: Vec<greater_elements::Headline>,
-    keywords: Vec<DocumentProperty>,
+    pub pre_section: Option<greater_elements::Section>,
+    pub headlines: Vec<greater_elements::Headline>,
+    pub keywords: Vec<DocumentProperty>,
 }
 
 /// A document property keyword.

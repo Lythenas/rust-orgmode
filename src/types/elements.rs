@@ -21,10 +21,10 @@ use rust_orgmode_derive::add_fields_for;
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BabelCall {
     /// The code block to call
-    call: String,
-    inside_header: String,
-    arguments: String,
-    end_header: String,
+    pub call: String,
+    pub inside_header: String,
+    pub arguments: String,
+    pub end_header: String,
 }
 
 /// A clock element.
@@ -52,8 +52,8 @@ pub struct BabelCall {
 #[add_fields_for(SharedBehavior)]
 #[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Clock {
-    timestamp: Option<objects::Timestamp>,
-    duration: Option<(u64, u8)>,
+    pub timestamp: Option<objects::Timestamp>,
+    pub duration: Option<(u64, u8)>,
 }
 
 impl Clock {
@@ -95,7 +95,7 @@ pub enum ClockStatus {
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Comment {
-    value: String,
+    pub value: String,
 }
 
 /// A comment block.
@@ -117,7 +117,7 @@ pub struct Comment {
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CommentBlock {
-    value: String,
+    pub value: String,
 }
 
 /// A diary sexp.
@@ -140,7 +140,7 @@ pub struct CommentBlock {
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DiarySexp {
-    value: String,
+    pub value: String,
 }
 
 /// An example block.
@@ -165,8 +165,8 @@ pub struct DiarySexp {
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExampleBlock {
-    value: String,
-    flags: BlockFlags,
+    pub value: String,
+    pub flags: BlockFlags,
 }
 
 /// Contains the flags of an [`ExampleBlock`] or [`SrcBlock`].
@@ -188,14 +188,14 @@ pub struct ExampleBlock {
 /// `FMT` can contain everything except `"` and newlines.
 #[derive(getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BlockFlags {
-    number_lines: Option<NumberLinesFlag>,
+    pub number_lines: Option<NumberLinesFlag>,
     /// Default: false
-    preserve_indent: bool,
+    pub preserve_indent: bool,
     /// Default: true
     ///
     /// If true, code-references should use labels instead of line numbers.
-    retain_labels: bool,
-    label_fmt: Option<String>,
+    pub retain_labels: bool,
+    pub label_fmt: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -225,9 +225,9 @@ pub enum NumberLinesFlag {
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportBlock {
-    value: String,
+    pub value: String,
     /// Always lowercase.
-    backend: String,
+    pub backend: String,
 }
 
 /// A fixed width area.
@@ -245,7 +245,7 @@ pub struct ExportBlock {
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FixedWidth {
-    value: String,
+    pub value: String,
 }
 
 /// A horizontal line.
@@ -285,8 +285,8 @@ pub struct HorizontalRule {}
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyword {
-    key: String,
-    value: ContentData<KeywordValueSetOfObjects>,
+    pub key: String,
+    pub value: ContentData<KeywordValueSetOfObjects>,
 }
 
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
@@ -332,7 +332,7 @@ pub enum KeywordValueSetOfObjects {
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexEnvironment {
     /// Contains everything including `\begin...` and `\end`.
-    value: String,
+    pub value: String,
 }
 
 /// A node property.
@@ -357,8 +357,8 @@ pub struct LatexEnvironment {
 #[add_fields_for(SharedBehavior)]
 #[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NodeProperty {
-    name: String,
-    value: String,
+    pub name: String,
+    pub value: String,
 }
 
 /// A paragraph.
@@ -380,7 +380,7 @@ pub struct Paragraph {
     /// Newlines are ignored and are not stored here.
     ///
     /// TODO also store the ignored newlines somewhere/somehow.
-    content: SecondaryString<StandardSetOfObjects>,
+    pub content: SecondaryString<StandardSetOfObjects>,
 }
 
 /// A planning element.
@@ -406,9 +406,9 @@ pub struct Paragraph {
 #[add_fields_for(SharedBehavior)]
 #[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Planning {
-    closed: Option<objects::Timestamp>,
-    deadline: Option<objects::Timestamp>,
-    scheduled: Option<objects::Timestamp>,
+    pub closed: Option<objects::Timestamp>,
+    pub deadline: Option<objects::Timestamp>,
+    pub scheduled: Option<objects::Timestamp>,
 }
 
 /// A block of source code.
@@ -437,7 +437,7 @@ pub struct Planning {
 #[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SrcBlock {
-    language: String,
-    flags: BlockFlags,
-    arguments: String,
+    pub language: String,
+    pub flags: BlockFlags,
+    pub arguments: String,
 }

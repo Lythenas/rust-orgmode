@@ -71,7 +71,7 @@ pub struct CenterBlock {
 )]
 pub struct Drawer {
     content_data: ContentData<()>, // TODO
-    name: String,
+    pub name: String,
     // hiddenp: bool,
 }
 
@@ -116,13 +116,13 @@ pub struct Drawer {
 pub struct DynamicBlock {
     content_data: ContentData<()>, // TODO
     /// The name of the function that can update this block.
-    name: String,
+    pub name: String,
     /// The parameters to pass to the function updating this block.
     ///
     /// Usually of the format `:name value`, separated by a space. Value can also be omitted.
     ///
     /// If the function needs the current content of the block add a parameter `:content`.
-    parameters: String, // TODO maybe parse this as a list
+    pub parameters: String, // TODO maybe parse this as a list
                         // hiddenp: bool
 }
 
@@ -159,7 +159,7 @@ pub struct DynamicBlock {
 )]
 pub struct FootnoteDefinition {
     content_data: ContentData<()>, // TODO
-    label: String,
+    pub label: String,
     // pre_blank: u32 // TODO (maybe) blank lines after `[LABEL]`
 }
 
@@ -217,13 +217,13 @@ pub struct FootnoteDefinition {
 )]
 pub struct Headline {
     content_data: ContentData<()>, // TODO
-    level: u32,
-    todo_keyword: Option<TodoKeyword>,
-    priority: Option<char>, // TODO maybe make separate struct
-    title: Option<SecondaryString<StandardSetOfObjectsNoLineBreak>>,
-    tags: Vec<String>,
-    planning: Option<elements::Planning>,
-    property_drawer: Option<PropertyDrawer>,
+    pub level: u32,
+    pub todo_keyword: Option<TodoKeyword>,
+    pub priority: Option<char>, // TODO maybe make separate struct
+    pub title: Option<SecondaryString<StandardSetOfObjectsNoLineBreak>>,
+    pub tags: Vec<String>,
+    pub planning: Option<elements::Planning>,
+    pub property_drawer: Option<PropertyDrawer>,
     // quotedp ?
     // hiddenp: bool,
     // pre_blank: u32 // TODO (maybe) blank lines before the content starts
@@ -279,10 +279,10 @@ pub enum TodoKeyword {
 #[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inlinetask {
     content_data: ContentData<()>, // TODO
-    todo_keyword: Option<TodoKeyword>,
-    priority: Option<char>, // TODO maybe make separate struct (maybe use old enum)
-    title: Option<SecondaryString<StandardSetOfObjectsNoLineBreak>>,
-    tags: Vec<String>,
+    pub todo_keyword: Option<TodoKeyword>,
+    pub priority: Option<char>, // TODO maybe make separate struct (maybe use old enum)
+    pub title: Option<SecondaryString<StandardSetOfObjectsNoLineBreak>>,
+    pub tags: Vec<String>,
     // hiddenp: bool,
     // pre_blank: u32 // blank lines before the content starts
 }
@@ -320,8 +320,8 @@ pub struct Inlinetask {
 #[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Item {
     content_data: ContentData<StandardSetOfObjectsNoLineBreak>,
-    kind: ItemKind,
-    checkbox: Option<Checkbox>,
+    pub kind: ItemKind,
+    pub checkbox: Option<Checkbox>,
     // structure ?
     // hiddenp: bool
 }
@@ -545,7 +545,7 @@ pub struct Section {
 )]
 pub struct SpecialBlock {
     content_data: ContentData<()>,
-    kind: String,
+    pub kind: String,
     // hiddenp: bool
 }
 
@@ -607,7 +607,7 @@ pub struct SpecialBlock {
 )]
 pub struct Table {
     content_data: ContentData<TableContent>,
-    kind: TableKind,
+    pub kind: TableKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -647,7 +647,7 @@ pub enum TableKind {
 #[add_fields_for(Element)]
 #[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableRow {
-    kind: TableRowKind,
+    pub kind: TableRowKind,
 }
 
 impl GreaterElement<objects::TableCell> for TableRow {}

@@ -28,9 +28,9 @@ use rust_orgmode_derive::add_fields_for;
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Entity {
-    name: String,
+    pub name: String,
     /// True if the entity ended with `{}`.
-    used_brackets: bool,
+    pub used_brackets: bool,
 }
 
 /// An export snippet.
@@ -52,8 +52,8 @@ pub struct Entity {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportSnippet {
-    backend: String,
-    value: String,
+    pub backend: String,
+    pub value: String,
 }
 
 /// A footnote reference.
@@ -79,7 +79,7 @@ pub struct ExportSnippet {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteReference {
-    kind: FootnoteReferenceKind,
+    pub kind: FootnoteReferenceKind,
 }
 
 /// The kind of a [`FootnoteReference`].
@@ -119,10 +119,10 @@ pub enum FootnoteReferenceKind {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineBabelCall {
-    call: String,
-    inside_header: String,
-    arguments: String,
-    end_header: String,
+    pub call: String,
+    pub inside_header: String,
+    pub arguments: String,
+    pub end_header: String,
 }
 
 /// An inline src block.
@@ -145,9 +145,9 @@ pub struct InlineBabelCall {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineSrcBlock {
-    lang: String,
-    value: String,
-    options: String,
+    pub lang: String,
+    pub value: String,
+    pub options: String,
 }
 
 /// A LaTeX fragment.
@@ -197,7 +197,7 @@ pub struct InlineSrcBlock {
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexFragment {
     /// Contains the entire parsed string, except the `PRE` and `POST` parts.
-    value: String,
+    pub value: String,
 }
 
 /// A line break.
@@ -217,7 +217,7 @@ pub struct LatexFragment {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LineBreak {
-    spaces: u64,
+    pub spaces: u64,
 }
 
 /// A link.
@@ -273,7 +273,7 @@ pub struct LineBreak {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Link {
-    link: LinkFormat,
+    pub link: LinkFormat,
 }
 
 /// The format with the actual link data of a [`Link`].
@@ -383,8 +383,8 @@ pub enum SearchOption {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Macro {
-    name: String,
-    arguments: Vec<String>,
+    pub name: String,
+    pub arguments: Vec<String>,
 }
 
 /// A target that is automatically linked to.
@@ -407,7 +407,7 @@ pub struct Macro {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RadioTarget {
-    target: SecondaryString<StandardSetOfObjects>,
+    pub target: SecondaryString<StandardSetOfObjects>,
 }
 
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
@@ -443,7 +443,7 @@ pub enum RadioTargetSetOfObjects {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StatisticsCookie {
-    cookie: CookieKind,
+    pub cookie: CookieKind,
 }
 
 /// This is the kind and data of a [`StatisticsCookie`].
@@ -491,8 +491,8 @@ pub enum CookieKind {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
-    used_brackets: bool,
-    content: SecondaryString<StandardSetOfObjects>,
+    pub used_brackets: bool,
+    pub content: SecondaryString<StandardSetOfObjects>,
 }
 
 /// A superscript.
@@ -511,8 +511,8 @@ pub struct Subscript {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
-    used_brackets: bool,
-    content: SecondaryString<StandardSetOfObjects>,
+    pub used_brackets: bool,
+    pub content: SecondaryString<StandardSetOfObjects>,
 }
 
 /// A table cell in a [`greater_elements::TableRow`].
@@ -539,7 +539,7 @@ pub struct Superscript {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableCell {
-    content: ContentData<TableCellSetOfObjects>,
+    pub content: ContentData<TableCellSetOfObjects>,
 }
 
 /// Table cells can't contain [`InlineBabelCall`], [`InlineSrcBlock`] because formulas are
@@ -581,7 +581,7 @@ pub enum TableCellSetOfObjects {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Target {
-    target: String,
+    pub target: String,
 }
 
 /// A text formatter.
@@ -622,7 +622,7 @@ pub struct Target {
 #[add_fields_for(Object)]
 #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TextMarkup {
-    kind: TextMarkupKind,
+    pub kind: TextMarkupKind,
 }
 
 /// The kind and content of a [`TextMarkup`] object.
@@ -684,7 +684,7 @@ pub mod timestamp {
     #[add_fields_for(Object)]
     #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Timestamp {
-        kind: TimestampKind,
+        pub kind: TimestampKind,
     }
 
     impl Timestamp {
