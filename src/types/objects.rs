@@ -26,7 +26,7 @@ use rust_orgmode_derive::add_fields_for;
 ///
 /// [`entities`]: ../../entities/index.html
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Entity {
     pub name: String,
     /// True if the entity ended with `{}`.
@@ -50,7 +50,7 @@ pub struct Entity {
 ///
 /// `VALUE` can contain anything but the `@@` string.
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportSnippet {
     pub backend: String,
     pub value: String,
@@ -77,7 +77,7 @@ pub struct ExportSnippet {
 /// balanced in it. It can contain the standard set of objects, even other footnote references.
 /// Will be parsed as a secondary string and can contain the standard set of objects.
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteReference {
     pub kind: FootnoteReferenceKind,
 }
@@ -117,7 +117,7 @@ pub enum FootnoteReferenceKind {
 ///
 /// Both `HEADER`s are optional. But then there are also no square brackets.
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineBabelCall {
     pub call: String,
     pub inside_header: String,
@@ -143,7 +143,7 @@ pub struct InlineBabelCall {
 ///
 /// `OPTIONS` is optional. But then there are also not quote brackets.
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineSrcBlock {
     pub lang: String,
     pub value: String,
@@ -194,7 +194,7 @@ pub struct InlineSrcBlock {
 ///
 /// [`entities`]: ../../entities/index.html
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexFragment {
     /// Contains the entire parsed string, except the `PRE` and `POST` parts.
     pub value: String,
@@ -215,7 +215,7 @@ pub struct LatexFragment {
 /// `SPACE` is zero or more whitespace characters followed by the end of line or end of
 /// document.
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LineBreak {
     pub spaces: u64,
 }
@@ -271,7 +271,7 @@ pub struct LineBreak {
 ///
 /// Whitespace and newlines in the link are replaced with a single space.
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Link {
     pub link: LinkFormat,
 }
@@ -381,7 +381,7 @@ pub enum SearchOption {
 ///
 /// Multiple whitespace and newline characters in `ARGUMENTS` are replaced by a single space.
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Macro {
     pub name: String,
     pub arguments: Vec<String>,
@@ -405,7 +405,7 @@ pub struct Macro {
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will be parsed as a [`SecondaryString`].
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RadioTarget {
     pub target: SecondaryString<StandardSetOfObjects>,
 }
@@ -441,7 +441,7 @@ pub enum RadioTargetSetOfObjects {
 /// [`Item`]: `greater_elements::Item`
 /// [`PlainList`]: `greater_elements::PlainList`
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StatisticsCookie {
     pub cookie: CookieKind,
 }
@@ -489,7 +489,7 @@ pub enum CookieKind {
 /// only contain specific objects and therefore other recursive objects in them may contain
 /// less objects than they can usually contain
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
     pub used_brackets: bool,
     pub content: SecondaryString<StandardSetOfObjects>,
@@ -509,7 +509,7 @@ pub struct Subscript {
 ///
 /// See [`Subscript`].
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
     pub used_brackets: bool,
     pub content: SecondaryString<StandardSetOfObjects>,
@@ -537,7 +537,7 @@ pub struct Superscript {
 /// TODO recusrive object. can contain: export snippet, footnote reference, latex fragment,
 /// entity, link, macro, radio target, sub/superscript, target, text markup, timestamp
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableCell {
     pub content: ContentData<TableCellSetOfObjects>,
 }
@@ -579,7 +579,7 @@ pub enum TableCellSetOfObjects {
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will not be parsed.
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Target {
     pub target: String,
 }
@@ -620,7 +620,7 @@ pub struct Target {
 /// standard set of objects when the markup is bold, italic, strike through or udnerline. The
 /// content of verbatim and code is not parsed.
 #[add_fields_for(Object)]
-#[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TextMarkup {
     pub kind: TextMarkupKind,
 }
@@ -682,7 +682,7 @@ pub mod timestamp {
     /// There can be two `REPEATERORYEAR` in the timestamp. One as a repeater and on as a warning
     /// delay.
     #[add_fields_for(Object)]
-    #[derive(Object, getters, Debug, Clone, PartialEq, Eq, Hash)]
+    #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Timestamp {
         pub kind: TimestampKind,
     }

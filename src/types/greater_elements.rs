@@ -25,7 +25,6 @@ use rust_orgmode_derive::add_fields_for;
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,
@@ -62,7 +61,6 @@ pub struct CenterBlock {
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,
@@ -106,7 +104,6 @@ pub struct Drawer {
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,
@@ -150,7 +147,6 @@ pub struct DynamicBlock {
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,
@@ -208,7 +204,6 @@ pub struct FootnoteDefinition {
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,
@@ -276,7 +271,7 @@ pub enum TodoKeyword {
 /// space and the string `END`. This should start at the beginning of a line but that is not
 /// required.
 #[add_fields_for(Element)]
-#[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inlinetask {
     content_data: ContentData<()>, // TODO
     pub todo_keyword: Option<TodoKeyword>,
@@ -317,7 +312,7 @@ pub struct Inlinetask {
 /// starting line or two consecutive empty lines. Indentation of lines within other greater
 /// elements including inlinetask boundaries are ignored.
 #[add_fields_for(Element)]
-#[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Item {
     content_data: ContentData<StandardSetOfObjectsNoLineBreak>,
     pub kind: ItemKind,
@@ -401,7 +396,6 @@ pub enum Checkbox {
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,
@@ -447,7 +441,7 @@ pub enum ListKind {
 ///
 /// `CONTENTS` consists of zero or more [`elements::NodeProperty`].
 #[add_fields_for(Element)]
-#[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PropertyDrawer {
     content_data: ContentData<elements::NodeProperty>,
     // hiddenp: bool
@@ -477,7 +471,6 @@ pub struct PropertyDrawer {
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,
@@ -505,7 +498,7 @@ pub struct QuoteBlock {
 ///
 /// A section ends at the beginning of the next headline or the end of the file.
 #[add_fields_for(Element)]
-#[derive(Element, HasContent, GreaterElement, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Section {
     content_data: ContentData<()>,
 }
@@ -536,7 +529,6 @@ pub struct Section {
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,
@@ -598,7 +590,6 @@ pub struct SpecialBlock {
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,
@@ -645,7 +636,7 @@ pub enum TableKind {
 ///   |--------|
 ///   ```
 #[add_fields_for(Element)]
-#[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableRow {
     pub kind: TableRowKind,
 }
@@ -695,7 +686,6 @@ pub enum TableRowKind {
     HasContent,
     GreaterElement,
     HasAffiliatedKeywords,
-    getters,
     Debug,
     Clone,
     PartialEq,

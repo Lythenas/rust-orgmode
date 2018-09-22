@@ -54,7 +54,7 @@ pub struct Document {
 ///
 /// [`Keyword`]: `elements::Keyword`
 #[add_fields_for(SharedBehavior)]
-#[derive(Element, getters, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentProperty {
     // TODO maybe move this back to elements
     key: String,
