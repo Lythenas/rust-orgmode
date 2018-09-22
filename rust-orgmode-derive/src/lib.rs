@@ -11,8 +11,8 @@ use syn::parse::{Parse, ParseStream};
 use syn::spanned::Spanned;
 use syn::token::Colon;
 use syn::{
-    Attribute, Data, DataEnum, DataUnion, DeriveInput, Field, Fields, FieldsNamed, Generics, Ident,
-    Path, Type, TypePath, Visibility, PathArguments,
+    Data, DataEnum, DataUnion, DeriveInput, Field, Fields, Ident, Path, PathArguments, Type,
+    TypePath, Visibility,
 };
 
 struct FieldsToAdd {
@@ -67,13 +67,9 @@ where
 /// - `Element` (same as `SharedBehavior`)
 /// - `Object` (same as `SharedBehavior`)
 ///
-/// **Note:** You need to enable the `custom_attribute` feature because we annotate all fields with
-/// `#[no_getter]` so the [`getters_derive`] does not generate unneded getters.
-///
 /// # Usage
 ///
 /// ```
-/// #![feature(custom_attribute)]
 /// use rust_orgmode_derive::add_fields_for;
 ///
 /// # struct SharedBehaviorData;
@@ -91,8 +87,6 @@ where
 ///     shared_behavior_data: SharedBehaviorData,
 /// }
 /// ```
-///
-/// [`getters_derive`]: fn.getters_derive.html
 #[proc_macro_attribute]
 pub fn add_fields_for(
     args: proc_macro::TokenStream,
@@ -163,37 +157,13 @@ fn make_field(path: Path, name: &str) -> Field {
     //}.into();
     //Field::parse_named(&expand).unwrap()
     Field {
-        attrs: vec![make_attribute("no_getter")],
+        attrs: vec![],
         vis: Visibility::Inherited,
         ident: Some(Ident::new(name, Span::call_site())),
         colon_token: Some(Colon {
             spans: [Span::call_site()],
         }),
         ty: Type::Path(TypePath { qself: None, path }),
-    }
-}
-
-fn make_attribute(name: &str) -> Attribute {
-    use syn::token::{Bracket, Pound};
-    use syn::AttrStyle;
-
-    let name = Ident::new(name, Span::call_site());
-    let path = quote! { #name }.into();
-    let path = match syn::parse::<Path>(path) {
-        Ok(data) => data,
-        Err(err) => panic!(format!("Err: {:?}", err)),
-    };
-
-    Attribute {
-        pound_token: Pound {
-            spans: [Span::call_site()],
-        },
-        style: AttrStyle::Outer,
-        bracket_token: Bracket {
-            span: Span::call_site(),
-        },
-        path,
-        tts: TokenStream::new(),
     }
 }
 
@@ -208,10 +178,9 @@ fn get_field<'a>(trait_name: &str, field_name: &str, data: &'a Data) -> &'a Fiel
                 .named
                 .iter()
                 .find(|ref field| field.ident.as_ref().unwrap() == field_name)
-                .unwrap_or_else(|| panic!(
-                    "{} needs a field named \"{}\".",
-                    trait_name, field_name
-                )),
+                .unwrap_or_else(|| {
+                    panic!("{} needs a field named \"{}\".", trait_name, field_name)
+                }),
             _ => panic!(
                 "{} can only be derived on a struct with named fields.",
                 trait_name
@@ -280,11 +249,9 @@ fn impl_greater_element(input: &DeriveInput) -> TokenStream {
 
 fn get_generics_of_field(field: &Field) -> &syn::AngleBracketedGenericArguments {
     match &field.ty {
-        Type::Path(ty) => {
-            match ty.path.segments.last().unwrap().value().arguments {
-                PathArguments::AngleBracketed(ref ty_args) => ty_args,
-                _ => panic!(),
-            }
+        Type::Path(ty) => match ty.path.segments.last().unwrap().value().arguments {
+            PathArguments::AngleBracketed(ref ty_args) => ty_args,
+            _ => panic!(),
         },
         _ => panic!(),
     }
@@ -354,94 +321,6 @@ fn impl_object(input: &DeriveInput) -> TokenStream {
         #shared_behavior_impl
 
         impl Object for #name {}
-    }
-}
-
-/// Derives getters for all fields except attributes marked with `#[no_getter]`.
-///
-/// The `add_fields_for` attribute adds this marker to all fields it generates.
-///
-/// This needs `#![feature(custom_attribute)]`.
-///
-/// # Examples
-///
-/// ```
-/// #[macro_use]
-/// extern crate rust_orgmode_derive;
-///
-/// #[derive(getters)]
-/// pub struct Something<T>
-/// where
-///     T: Eq
-/// {
-///     value: T,
-/// }
-///
-/// fn use_something(s: Something<String>) -> bool {
-///     s.value() == "something"
-/// }
-///
-/// # fn main() {}
-/// ```
-#[proc_macro_derive(getters)]
-pub fn getters_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-
-    let name = &input.ident;
-    let fields = match &input.data {
-        Data::Struct(ref data) => match data.fields {
-            Fields::Named(ref fields) => fields,
-            ref other => {
-                return error_no_struct_with_named_fields(other);
-            }
-        },
-        Data::Enum(DataEnum {
-            enum_token: other, ..
-        }) => {
-            return error_no_struct_with_named_fields(&other);
-        }
-        Data::Union(DataUnion {
-            union_token: other, ..
-        }) => {
-            return error_no_struct_with_named_fields(&other);
-        }
-    };
-    let generics = &input.generics;
-
-    let expanded = impl_getters(name, fields, generics);
-    proc_macro::TokenStream::from(expanded)
-}
-
-fn impl_getters(name: &Ident, fields: &FieldsNamed, generics: &Generics) -> TokenStream {
-    let getters = fields
-        .named
-        .iter()
-        .filter(|field| !contains_attr(field.attrs.iter(), "no_getter"))
-        .map(impl_one_getter);
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
-    quote! {
-        impl #impl_generics #name #ty_generics #where_clause {
-            #(#getters)*
-        }
-    }
-}
-
-fn contains_attr<'a>(mut attrs: impl Iterator<Item = &'a Attribute>, name: &str) -> bool {
-    attrs.any(|attr| attr.interpret_meta().unwrap().name() == name)
-}
-
-fn impl_one_getter(field: &Field) -> TokenStream {
-    let name = &field.ident;
-    let ty = &field.ty;
-    let span = field.span();
-    let attrs = &field.attrs; // TODO maybe whitelist or blacklist specific attributes
-
-    quote_spanned! { span=>
-        #(#attrs)*
-        pub fn #name(&self) -> &#ty {
-            &self.#name
-        }
     }
 }
 
