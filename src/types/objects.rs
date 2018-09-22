@@ -2,7 +2,6 @@
 
 use super::*;
 use chrono::{NaiveDate, NaiveTime};
-use rust_orgmode_derive::add_fields_for;
 
 /// An entity.
 ///
@@ -25,9 +24,9 @@ use rust_orgmode_derive::add_fields_for;
 /// whitespace). It isn't separated from `NAME` by any whitespace.
 ///
 /// [`entities`]: ../../entities/index.html
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Entity {
+    shared_behavior_data: SharedBehaviorData,
     pub name: String,
     /// True if the entity ended with `{}`.
     pub used_brackets: bool,
@@ -49,9 +48,9 @@ pub struct Entity {
 /// `BACKEND` can contain any alpha-numeric character and hyphens.
 ///
 /// `VALUE` can contain anything but the `@@` string.
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportSnippet {
+    shared_behavior_data: SharedBehaviorData,
     pub backend: String,
     pub value: String,
 }
@@ -76,9 +75,9 @@ pub struct ExportSnippet {
 /// `DEFINITION` can contain any character. Opening and closing square brackets must be
 /// balanced in it. It can contain the standard set of objects, even other footnote references.
 /// Will be parsed as a secondary string and can contain the standard set of objects.
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteReference {
+    shared_behavior_data: SharedBehaviorData,
     pub kind: FootnoteReferenceKind,
 }
 
@@ -116,9 +115,9 @@ pub enum FootnoteReferenceKind {
 /// `ARGUMENTS` can contain any character besides `)` and newline.
 ///
 /// Both `HEADER`s are optional. But then there are also no square brackets.
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineBabelCall {
+    shared_behavior_data: SharedBehaviorData,
     pub call: String,
     pub inside_header: String,
     pub arguments: String,
@@ -142,9 +141,9 @@ pub struct InlineBabelCall {
 /// `OPTIONS` and `BODY` can contain any character but a newline.
 ///
 /// `OPTIONS` is optional. But then there are also not quote brackets.
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineSrcBlock {
+    shared_behavior_data: SharedBehaviorData,
     pub lang: String,
     pub value: String,
     pub options: String,
@@ -193,9 +192,9 @@ pub struct InlineSrcBlock {
 /// `BORDER2` is any non-whitespace character except `.`, `,` and `$`.
 ///
 /// [`entities`]: ../../entities/index.html
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexFragment {
+    shared_behavior_data: SharedBehaviorData,
     /// Contains the entire parsed string, except the `PRE` and `POST` parts.
     pub value: String,
 }
@@ -214,9 +213,9 @@ pub struct LatexFragment {
 ///
 /// `SPACE` is zero or more whitespace characters followed by the end of line or end of
 /// document.
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LineBreak {
+    shared_behavior_data: SharedBehaviorData,
     pub spaces: u64,
 }
 
@@ -270,9 +269,9 @@ pub struct LineBreak {
 /// link unless it is a plain or angle link. (See [`LinkDescriptionSetOfObjects`]).
 ///
 /// Whitespace and newlines in the link are replaced with a single space.
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Link {
+    shared_behavior_data: SharedBehaviorData,
     pub link: LinkFormat,
 }
 
@@ -380,9 +379,9 @@ pub enum SearchOption {
 /// backslash directly before the comma it has to be escaped with another backslash).
 ///
 /// Multiple whitespace and newline characters in `ARGUMENTS` are replaced by a single space.
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Macro {
+    shared_behavior_data: SharedBehaviorData,
     pub name: String,
     pub arguments: Vec<String>,
 }
@@ -404,9 +403,9 @@ pub struct Macro {
 ///
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will be parsed as a [`SecondaryString`].
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RadioTarget {
+    shared_behavior_data: SharedBehaviorData,
     pub target: SecondaryString<StandardSet>,
 }
 
@@ -440,9 +439,9 @@ pub enum RadioTargetSetOfObjects {
 /// [`Inlinetask`]: `greater_elements::Inlinetask`
 /// [`Item`]: `greater_elements::Item`
 /// [`PlainList`]: `greater_elements::PlainList`
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StatisticsCookie {
+    shared_behavior_data: SharedBehaviorData,
     pub cookie: CookieKind,
 }
 
@@ -488,9 +487,9 @@ pub enum CookieKind {
 /// TODO this is recursive object. figure out how to handle recursive objects because some can
 /// only contain specific objects and therefore other recursive objects in them may contain
 /// less objects than they can usually contain
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
+    shared_behavior_data: SharedBehaviorData,
     pub used_brackets: bool,
     pub content: SecondaryString<StandardSet>,
 }
@@ -508,9 +507,9 @@ pub struct Subscript {
 /// ```
 ///
 /// See [`Subscript`].
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
+    shared_behavior_data: SharedBehaviorData,
     pub used_brackets: bool,
     pub content: SecondaryString<StandardSet>,
 }
@@ -536,9 +535,9 @@ pub struct Superscript {
 ///
 /// TODO recusrive object. can contain: export snippet, footnote reference, latex fragment,
 /// entity, link, macro, radio target, sub/superscript, target, text markup, timestamp
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableCell {
+    shared_behavior_data: SharedBehaviorData,
     pub content: ContentData<TableCellSetOfObjects>,
 }
 
@@ -578,9 +577,9 @@ pub enum TableCellSetOfObjects {
 ///
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will not be parsed.
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Target {
+    shared_behavior_data: SharedBehaviorData,
     pub target: String,
 }
 
@@ -619,9 +618,9 @@ pub struct Target {
 /// The part `BORDER BODY BORDER` is parsed as a [`SecondaryString`] and can contain the
 /// standard set of objects when the markup is bold, italic, strike through or udnerline. The
 /// content of verbatim and code is not parsed.
-#[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TextMarkup {
+    shared_behavior_data: SharedBehaviorData,
     pub kind: TextMarkupKind,
 }
 
@@ -681,9 +680,9 @@ pub mod timestamp {
     ///
     /// There can be two `REPEATERORYEAR` in the timestamp. One as a repeater and on as a warning
     /// delay.
-    #[add_fields_for(Object)]
     #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Timestamp {
+        shared_behavior_data: SharedBehaviorData,
         pub kind: TimestampKind,
     }
 

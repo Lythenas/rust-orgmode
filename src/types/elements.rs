@@ -1,7 +1,6 @@
 //! Contains all elements except [`greater_elements`].
 
 use super::*;
-use rust_orgmode_derive::add_fields_for;
 
 /// A babel call element.
 ///
@@ -17,9 +16,10 @@ use rust_orgmode_derive::add_fields_for;
 ///
 /// `FUNCTION` is the name of a [`SrcBlock`] to execute. `INSIDE-HEADER`, `ARGUEMENTS` and
 /// `END-HEADER` can contain everything except a newline (and their respective closing char).
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BabelCall {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     /// The code block to call
     pub call: String,
     pub inside_header: String,
@@ -49,9 +49,9 @@ pub struct BabelCall {
 ///
 /// `DURATION` follows the pattern `=> HH:MM` where `HH` is a number containing any number of
 /// digits and `MM` is a two digit number.
-#[add_fields_for(SharedBehavior)]
 #[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Clock {
+    shared_behavior_data: SharedBehaviorData,
     pub timestamp: Option<objects::Timestamp>,
     pub duration: Option<(u64, u8)>,
 }
@@ -92,9 +92,10 @@ pub enum ClockStatus {
 /// `CONTENTS` can be any string.
 ///
 /// Consecutive comment lines are accumulated into one comment.
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Comment {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     pub value: String,
 }
 
@@ -114,9 +115,10 @@ pub struct Comment {
 ///
 /// `CONTENTS` can contain anything except a line `#+END_COMMENT` on its own. Lines beginning
 /// with stars must be quoted by a comma. `CONTENTS` will not be parsed.
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CommentBlock {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     pub value: String,
 }
 
@@ -137,9 +139,10 @@ pub struct CommentBlock {
 ///
 /// `VALUE` can contain any character except a newline. The expression has to start at the
 /// beginning of the line.
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DiarySexp {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     pub value: String,
 }
 
@@ -162,9 +165,10 @@ pub struct DiarySexp {
 /// contain labels with the pattern `(ref:LABEL)`. **Labels are not recognized.**
 ///
 /// `FLAGS` see [`BlockFlags`].
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExampleBlock {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     pub value: String,
     pub flags: BlockFlags,
 }
@@ -222,9 +226,10 @@ pub enum NumberLinesFlag {
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 ///
 /// `BACKEND` can contain any alpha-numerical character. Case is ignored.
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportBlock {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     pub value: String,
     /// Always lowercase.
     pub backend: String,
@@ -242,9 +247,10 @@ pub struct ExportBlock {
 /// by whitespace.
 ///
 /// Consecutive fixed width lines are accumulated.
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FixedWidth {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     pub value: String,
 }
 
@@ -261,9 +267,11 @@ pub struct FixedWidth {
 /// ```text
 /// -----
 /// ```
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct HorizontalRule {}
+pub struct HorizontalRule {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
+}
 
 /// A keyword.
 ///
@@ -282,9 +290,10 @@ pub struct HorizontalRule {}
 /// affiliated keyword.
 ///
 /// `VALUE` can contain any character except a newline.
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyword {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     pub key: String,
     pub value: ContentData<KeywordValueSetOfObjects>,
 }
@@ -328,9 +337,10 @@ pub enum KeywordValueSetOfObjects {
 /// is only at the end.
 ///
 /// `CONTENT` can be anything except `\end{ENVIRONMENT}`.
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexEnvironment {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     /// Contains everything including `\begin...` and `\end`.
     pub value: String,
 }
@@ -354,9 +364,9 @@ pub struct LatexEnvironment {
 /// plus sign (`+`).
 ///
 /// `VALUE` can contain anything but a newline character.
-#[add_fields_for(SharedBehavior)]
 #[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NodeProperty {
+    shared_behavior_data: SharedBehaviorData,
     pub name: String,
     pub value: String,
 }
@@ -372,9 +382,10 @@ pub struct NodeProperty {
 ///
 /// Everything that is not another element is a paragraph. Empty lines and other elements end
 /// paragraphs but all inner elements of the current paragraph must be closed first.
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Paragraph {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     /// The content of the paragraph.
     ///
     /// Newlines are ignored and are not stored here.
@@ -403,9 +414,9 @@ pub struct Paragraph {
 /// `TIMESTAMP` is a [`objects::Timestamp`].
 ///
 /// Consecutive planning items are aggregated into one.
-#[add_fields_for(SharedBehavior)]
 #[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Planning {
+    shared_behavior_data: SharedBehaviorData,
     pub closed: Option<objects::Timestamp>,
     pub deadline: Option<objects::Timestamp>,
     pub scheduled: Option<objects::Timestamp>,
@@ -434,9 +445,10 @@ pub struct Planning {
 /// `FLAGS` see [`BlockFlags`].
 ///
 /// `ARGUMENTS` can contain any character except a newline.
-#[add_fields_for(SharedBehavior, HasAffiliatedKeywords)]
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SrcBlock {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     pub language: String,
     pub flags: BlockFlags,
     pub arguments: String,

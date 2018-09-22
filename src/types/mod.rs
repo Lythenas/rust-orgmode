@@ -380,4 +380,3 @@ pub enum ElementSet {
     Table(greater_elements::Table),
     VerseBlock(greater_elements::VerseBlock),
 }
-

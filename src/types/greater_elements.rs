@@ -1,7 +1,6 @@
 //! Contains all greater elements.
 
 use super::*;
-use rust_orgmode_derive::add_fields_for;
 
 /// A center block.
 ///
@@ -19,11 +18,12 @@ use rust_orgmode_derive::add_fields_for;
 ///
 /// `CONTENTS` can contain anything except a line `#+END_CENTER` on its own. Lines beginning
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct CenterBlock {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<String>,
 }
 
@@ -47,11 +47,12 @@ pub struct CenterBlock {
 /// `CONTENTS` can contain any element except a [`Headline`] and another drawer.
 ///
 /// Drawers can be indented.
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct Drawer {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<ElementSet>,
     pub name: String,
     // hiddenp: bool,
@@ -82,11 +83,12 @@ pub struct Drawer {
 /// `:name value` or `:name`.
 ///
 /// `CONTENTS` is auto-generated and will not be parsed.
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct DynamicBlock {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<ElementSet>,
     /// The name of the function that can update this block.
     pub name: String,
@@ -117,11 +119,12 @@ pub struct DynamicBlock {
 /// `CONTENTS` can contain any element except another footnote definition and a [`Headline`].
 /// It ends at the next footnote definition, headline, with two consecutive empty lines or the
 /// end of the buffer.
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct FootnoteDefinition {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<ElementSet>, // TODO
     pub label: String,
     // pre_blank: u32 // TODO (maybe) blank lines after `[LABEL]`
@@ -166,11 +169,12 @@ pub struct FootnoteDefinition {
 /// hash signs and percent signs. Tags are separated and surrounded by `:`s. There can be an
 /// arbitraty amount of whitespace (except newlines) between `TITLE` and `TAGS`. Tags are
 /// usually right aligned at a specified column by the editor.
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct Headline {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<HeadlineContentSet>, // TODO
     pub level: u32,
     pub todo_keyword: Option<TodoKeyword>,
@@ -209,7 +213,6 @@ pub enum HeadlineContentSet {
     Headline(greater_elements::Headline),
 }
 
-
 /// A todo keyword of a [`Headline`] or [`Inlinetask`].
 ///
 /// Todo keywords can be configured before parsing. The default is to parse `TODO` and `NEXT` as
@@ -238,9 +241,9 @@ pub enum TodoKeyword {
 /// Inline tasks can be ended with a line of *org-inlinetask-min-level* asterisks followed by a
 /// space and the string `END`. This should start at the beginning of a line but that is not
 /// required.
-#[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inlinetask {
+    shared_behavior_data: SharedBehaviorData,
     content_data: ContentData<HeadlineContentSet>,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct (maybe use old enum)
@@ -279,9 +282,9 @@ pub struct Inlinetask {
 /// An item ends before the next item, the first line that is less or equally indented that its
 /// starting line or two consecutive empty lines. Indentation of lines within other greater
 /// elements including inlinetask boundaries are ignored.
-#[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Item {
+    shared_behavior_data: SharedBehaviorData,
     content_data: ContentData<StandardSetNoLineBreak>,
     pub kind: ItemKind,
     pub checkbox: Option<Checkbox>,
@@ -358,11 +361,12 @@ pub enum Checkbox {
 /// If the dirst item has a `COUNTER` in its `BULLET` the plain list is be an *ordered plain
 /// list*. If it contains a tag it is be a *descriptive list*. Otherwise it is be an
 /// *unordered list*.
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct PlainList {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<Item>,
     // structure ?
 }
@@ -400,9 +404,9 @@ pub enum ListKind {
 /// ```
 ///
 /// `CONTENTS` consists of zero or more [`elements::NodeProperty`].
-#[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PropertyDrawer {
+    shared_behavior_data: SharedBehaviorData,
     content_data: ContentData<elements::NodeProperty>,
     // hiddenp: bool
 }
@@ -425,11 +429,12 @@ pub struct PropertyDrawer {
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 ///
 /// TODO not sure if this is actually a greater element
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct QuoteBlock {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<ElementSet>,
     // hiddenp: bool
 }
@@ -449,9 +454,9 @@ pub struct QuoteBlock {
 /// section. Also content before the first headline in a document belongs to a section.
 ///
 /// A section ends at the beginning of the next headline or the end of the file.
-#[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Section {
+    shared_behavior_data: SharedBehaviorData,
     content_data: ContentData<ElementSet>,
 }
 
@@ -475,11 +480,12 @@ pub struct Section {
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 ///
 /// TODO not sure if this is actually a greater element
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct SpecialBlock {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<String>,
     pub kind: String,
     // hiddenp: bool
@@ -528,11 +534,12 @@ pub struct SpecialBlock {
 /// |  200 |  300 |  500 |
 /// +------+------+------+
 /// ```
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct Table {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<TableContent>,
     pub kind: TableKind,
 }
@@ -571,9 +578,9 @@ pub enum TableKind {
 ///   ```text
 ///   |--------|
 ///   ```
-#[add_fields_for(Element)]
 #[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableRow {
+    shared_behavior_data: SharedBehaviorData,
     pub kind: TableRowKind,
 }
 
@@ -616,10 +623,11 @@ pub enum TableRowKind {
 ///
 /// `CONTENTS` can contain anything except a line `#+END_VERSE` on its own. Lines beginning
 /// with stars must be quoted by comma. `CONTENTS` will be parsed as objects.
-#[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct VerseBlock {
+    shared_behavior_data: SharedBehaviorData,
+    affiliated_keywords_data: AffiliatedKeywordsData,
     content_data: ContentData<StandardSet>,
 }
