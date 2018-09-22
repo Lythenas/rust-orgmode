@@ -21,15 +21,7 @@ use rust_orgmode_derive::add_fields_for;
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct CenterBlock {
     content_data: ContentData<()>, // TODO only allow the standard set of ELEMENTS
@@ -57,15 +49,7 @@ pub struct CenterBlock {
 /// Drawers can be indented.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct Drawer {
     content_data: ContentData<()>, // TODO
@@ -100,15 +84,7 @@ pub struct Drawer {
 /// TODO not sure if this is actually a greater element
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct DynamicBlock {
     content_data: ContentData<()>, // TODO
@@ -120,7 +96,7 @@ pub struct DynamicBlock {
     ///
     /// If the function needs the current content of the block add a parameter `:content`.
     pub parameters: String, // TODO maybe parse this as a list
-                        // hiddenp: bool
+                            // hiddenp: bool
 }
 
 /// A footnote definition.
@@ -143,15 +119,7 @@ pub struct DynamicBlock {
 /// end of the buffer.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct FootnoteDefinition {
     content_data: ContentData<()>, // TODO
@@ -200,15 +168,7 @@ pub struct FootnoteDefinition {
 /// usually right aligned at a specified column by the editor.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct Headline {
     content_data: ContentData<()>, // TODO
@@ -392,15 +352,7 @@ pub enum Checkbox {
 /// *unordered list*.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct PlainList {
     content_data: ContentData<Item>,
@@ -467,15 +419,7 @@ pub struct PropertyDrawer {
 /// TODO not sure if this is actually a greater element
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct QuoteBlock {
     content_data: ContentData<()>, // TODO only allow the standard set of ELEMENTS
@@ -525,15 +469,7 @@ pub struct Section {
 /// TODO not sure if this is actually a greater element
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct SpecialBlock {
     content_data: ContentData<()>,
@@ -586,15 +522,7 @@ pub struct SpecialBlock {
 /// ```
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct Table {
     content_data: ContentData<TableContent>,
@@ -652,7 +580,7 @@ impl HasContent<objects::TableCell> for TableRow {
 }
 
 static EMPTY_CONTENT_DATA_FOR_TABLE_ROWS: ContentData<objects::TableCell> = ContentData {
-    span: Span { start: 0, end: 0, },
+    span: Span { start: 0, end: 0 },
     content: Vec::new(),
 };
 
@@ -682,15 +610,7 @@ pub enum TableRowKind {
 /// with stars must be quoted by comma. `CONTENTS` will be parsed as objects.
 #[add_fields_for(Element, HasAffiliatedKeywords)]
 #[derive(
-    Element,
-    HasContent,
-    GreaterElement,
-    HasAffiliatedKeywords,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
+    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct VerseBlock {
     content_data: ContentData<StandardSetOfObjects>,
