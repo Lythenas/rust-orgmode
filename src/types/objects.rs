@@ -90,10 +90,10 @@ pub enum FootnoteReferenceKind {
     },
     Inline {
         label: String,
-        definition: SecondaryString<StandardSetOfObjects>,
+        definition: SecondaryString<StandardSet>,
     },
     Anonymous {
-        definition: SecondaryString<StandardSetOfObjects>,
+        definition: SecondaryString<StandardSet>,
     },
 }
 
@@ -266,7 +266,7 @@ pub struct LineBreak {
 ///
 /// `DESCRIPTION` is optional and must be enclosed with square brackets. It can contain any
 /// character except square brackets. It is also parsed as a [`SecondaryString`] and can
-/// contain any most object in the [`StandardSetOfObjects`]. It also can't contain another
+/// contain any most object in the [`StandardSet`]. It also can't contain another
 /// link unless it is a plain or angle link. (See [`LinkDescriptionSetOfObjects`]).
 ///
 /// Whitespace and newlines in the link are replaced with a single space.
@@ -407,7 +407,7 @@ pub struct Macro {
 #[add_fields_for(Object)]
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RadioTarget {
-    pub target: SecondaryString<StandardSetOfObjects>,
+    pub target: SecondaryString<StandardSet>,
 }
 
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
@@ -492,7 +492,7 @@ pub enum CookieKind {
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
     pub used_brackets: bool,
-    pub content: SecondaryString<StandardSetOfObjects>,
+    pub content: SecondaryString<StandardSet>,
 }
 
 /// A superscript.
@@ -512,7 +512,7 @@ pub struct Subscript {
 #[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
     pub used_brackets: bool,
-    pub content: SecondaryString<StandardSetOfObjects>,
+    pub content: SecondaryString<StandardSet>,
 }
 
 /// A table cell in a [`greater_elements::TableRow`].
@@ -631,10 +631,10 @@ pub struct TextMarkup {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TextMarkupKind {
     // TODO maybe make these actual different types instead of an enum
-    Bold(SecondaryString<StandardSetOfObjects>),
-    Italic(SecondaryString<StandardSetOfObjects>),
-    Underline(SecondaryString<StandardSetOfObjects>),
-    StrikeThrough(SecondaryString<StandardSetOfObjects>),
+    Bold(SecondaryString<StandardSet>),
+    Italic(SecondaryString<StandardSet>),
+    Underline(SecondaryString<StandardSet>),
+    StrikeThrough(SecondaryString<StandardSet>),
     Code(String),
     Verbatim(String),
 }

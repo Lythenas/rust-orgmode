@@ -175,7 +175,7 @@ pub struct Headline {
     pub level: u32,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct
-    pub title: Option<SecondaryString<StandardSetOfObjectsNoLineBreak>>,
+    pub title: Option<SecondaryString<StandardSetNoLineBreak>>,
     pub tags: Vec<String>,
     pub planning: Option<elements::Planning>,
     pub property_drawer: Option<PropertyDrawer>,
@@ -244,7 +244,7 @@ pub struct Inlinetask {
     content_data: ContentData<HeadlineContentSet>,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct (maybe use old enum)
-    pub title: Option<SecondaryString<StandardSetOfObjectsNoLineBreak>>,
+    pub title: Option<SecondaryString<StandardSetNoLineBreak>>,
     pub tags: Vec<String>,
     // hiddenp: bool,
     // pre_blank: u32 // blank lines before the content starts
@@ -282,7 +282,7 @@ pub struct Inlinetask {
 #[add_fields_for(Element)]
 #[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Item {
-    content_data: ContentData<StandardSetOfObjectsNoLineBreak>,
+    content_data: ContentData<StandardSetNoLineBreak>,
     pub kind: ItemKind,
     pub checkbox: Option<Checkbox>,
     // structure ?
@@ -621,5 +621,5 @@ pub enum TableRowKind {
     Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
 )]
 pub struct VerseBlock {
-    content_data: ContentData<StandardSetOfObjects>,
+    content_data: ContentData<StandardSet>,
 }

@@ -380,7 +380,7 @@ pub struct Paragraph {
     /// Newlines are ignored and are not stored here.
     ///
     /// TODO also store the ignored newlines somewhere/somehow.
-    pub content: SecondaryString<StandardSetOfObjects>,
+    pub content: SecondaryString<StandardSet>,
 }
 
 /// A planning element.

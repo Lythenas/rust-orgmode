@@ -194,8 +194,8 @@ pub struct AffiliatedKeywords {
     /// The caption key can occur more than once.
     pub caption: Vec<
         SpannedValue<(
-            Option<SecondaryString<StandardSetOfObjects>>,
-            SecondaryString<StandardSetOfObjects>,
+            Option<SecondaryString<StandardSet>>,
+            SecondaryString<StandardSet>,
         )>,
     >,
     /// Parsed from: `#+HEADER: VALUE`.
@@ -302,7 +302,7 @@ pub trait GreaterElement<T: 'static>: Element + HasContent<T> {}
 ///
 /// These objects are used by most other recursive objects. E.g. a bold text can contain an entity.
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum StandardSetOfObjects {
+pub enum StandardSet {
     RawString(String),
     Entity(objects::Entity),
     ExportSnippet(objects::ExportSnippet),
@@ -327,7 +327,7 @@ pub enum StandardSetOfObjects {
 /// Used for elements that can contain the standard set but no line breaks. E.g.
 /// [`greater_elements::Headline`] or [`greater_elements::Inlinetask`].
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum StandardSetOfObjectsNoLineBreak {
+pub enum StandardSetNoLineBreak {
     RawString(String),
     Entity(objects::Entity),
     ExportSnippet(objects::ExportSnippet),
