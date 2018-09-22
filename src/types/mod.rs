@@ -15,6 +15,7 @@
 //! element/object structs only need to implement a getter method for the helper struct and the
 //! trait will give them getter methods for the data in those helper structs.
 
+pub mod document;
 pub mod elements;
 pub mod greater_elements;
 pub mod objects;
@@ -26,40 +27,6 @@ use std::str::pattern::Pattern;
 // TODO
 #[allow(dead_code)]
 static ORG_LINK_TYPES: () = ();
-
-/// A complete org document/file.
-///
-/// Contains the global document properties and section before the first headline as well as the
-/// list of all top level headlines.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
-pub struct Document {
-    // TODO make PreSection a new struct that can contain document properties instead of keywords
-    // and remove the keywords property here
-    pub pre_section: Option<greater_elements::Section>,
-    pub headlines: Vec<greater_elements::Headline>,
-    pub keywords: Vec<DocumentProperty>,
-}
-
-/// A document property keyword.
-///
-/// # Semantics
-///
-/// See [`Keyword`] but for the whole org file.
-///
-/// # Syntax
-///
-/// See [`Keyword`].
-///
-/// `VALUE` is parsed as a [`SecondaryString`].
-///
-/// [`Keyword`]: `elements::Keyword`
-#[add_fields_for(SharedBehavior)]
-#[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct DocumentProperty {
-    // TODO maybe move this back to elements
-    key: String,
-    value: SecondaryString<StandardSetOfObjects>,
-}
 
 /// All greater elements, elements and objects share some shared behavior.
 ///
