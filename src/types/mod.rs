@@ -20,7 +20,6 @@ pub mod elements;
 pub mod greater_elements;
 pub mod objects;
 pub mod parsing;
-pub mod timestamp;
 
 use mopa::Any;
 use std::fmt::Debug;
