@@ -6,6 +6,7 @@ use regex::{Captures, Match, Regex};
 /// # Usage
 ///
 /// ```
+/// # use rust_orgmode::types::parsing::Input;
 /// let input = Input::new("Some input read from file.");
 /// // regex match / etc
 /// // advance cursor
