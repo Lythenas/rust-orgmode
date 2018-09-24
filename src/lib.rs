@@ -24,6 +24,7 @@ extern crate pretty_assertions;
 #[macro_use]
 extern crate rust_orgmode_derive;
 extern crate chrono;
+extern crate regex;
 #[macro_use]
 extern crate nom;
 #[macro_use]

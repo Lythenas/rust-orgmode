@@ -19,6 +19,8 @@ pub mod document;
 pub mod elements;
 pub mod greater_elements;
 pub mod objects;
+pub mod parsing;
+pub mod timestamp;
 
 use mopa::Any;
 use std::fmt::Debug;
@@ -78,12 +80,12 @@ pub struct SharedBehaviorData {
 /// This is useful for warning/error messages and modifying the file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct Span {
-    pub start: u64,
-    pub end: u64,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Span {
-    pub fn new(start: u64, end: u64) -> Self {
+    pub fn new(start: usize, end: usize) -> Self {
         Span { start, end }
     }
 }

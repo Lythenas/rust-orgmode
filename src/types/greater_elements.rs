@@ -58,6 +58,16 @@ pub struct Drawer {
     // hiddenp: bool,
 }
 
+fn parse() {
+    // search for "^[ \t]*:END:[ \t]*$"
+    // if not found: parse a paragraph
+    // if found: get end line position
+    // parse the start line
+    // check if has content
+    // (if so: parse conten)
+    // count blank lines after end (skip forward all " \r\t\n" chars)
+}
+
 /// A dynamic block.
 ///
 /// # Semantics
@@ -175,7 +185,7 @@ pub struct FootnoteDefinition {
 pub struct Headline {
     shared_behavior_data: SharedBehaviorData,
     affiliated_keywords_data: AffiliatedKeywordsData,
-    content_data: ContentData<HeadlineContentSet>, // TODO
+    content_data: ContentData<HeadlineContentSet>,
     pub level: u32,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct

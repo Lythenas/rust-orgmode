@@ -1,7 +1,8 @@
 //! Contains all objects.
 
+use super::parsing::{Input, Parse, ParseError};
 use super::*;
-use chrono::{NaiveDate, NaiveTime};
+use regex::Regex;
 
 /// An entity.
 ///
@@ -30,6 +31,104 @@ pub struct Entity {
     pub name: String,
     /// True if the entity ended with `{}`.
     pub used_brackets: bool,
+}
+
+fn build_regex(pattern: &str) -> Regex {
+    use regex::RegexBuilder;
+    RegexBuilder::new(pattern).multi_line(true).build().unwrap()
+}
+
+impl Parse for Entity {
+    fn parse(input: &mut Input) -> Result<Self, ParseError> {
+        // TODO maybe combine into one regex for a little less code below
+        lazy_static! {
+            static ref SPACES_RE: Regex = build_regex(r"\A\\(_ +)");
+            static ref OTHER_RE: Regex =
+                build_regex(r"\A\\(there4|sup[123]|frac[13][24]|[[:alpha:]]+)($|\{}|[^[:alpha:]])");
+        }
+
+        if let Some(m) = input.try_match(&SPACES_RE) {
+            Ok(Entity {
+                shared_behavior_data: SharedBehaviorData {
+                    span: Span::new(m.start(), input.cursor - 1),
+                    post_blank: 0,
+                },
+                name: "".to_string(),
+                used_brackets: false,
+            })
+        } else if let Some(m) = input.try_capture(&OTHER_RE) {
+            let name = m.get(1).unwrap();
+            let post = m.get(2).unwrap();
+            let used_brackets = post.as_str() == "{}";
+            if !used_brackets && !post.as_str().is_empty() {
+                input.backup_cursor(1);
+            }
+            Ok(Entity {
+                shared_behavior_data: SharedBehaviorData {
+                    span: Span::new(name.start() - 1, input.cursor - 1),
+                    post_blank: 0,
+                },
+                name: name.as_str().to_string(),
+                used_brackets,
+            })
+        } else {
+            Err(ParseError)
+        }
+    }
+}
+
+#[test]
+fn test_parse_spaces_entity() {
+    let s = r"\_ ";
+    let mut input = Input::new(s);
+    assert_eq!(
+        Entity::parse(&mut input).unwrap(),
+        Entity {
+            shared_behavior_data: SharedBehaviorData {
+                span: Span::new(0, 2),
+                post_blank: 0,
+            },
+            name: "_ ".to_string(),
+            used_brackets: false,
+        }
+    );
+    assert_eq!(input.cursor, 3);
+}
+
+#[test]
+fn test_parse_entity() {
+    let s = r"\name";
+    let mut input = Input::new(s);
+    assert_eq!(
+        Entity::parse(&mut input).unwrap(),
+        Entity {
+            shared_behavior_data: SharedBehaviorData {
+                span: Span::new(0, 4),
+                post_blank: 0,
+            },
+            name: "name".to_string(),
+            used_brackets: false,
+        }
+    );
+    assert_eq!(input.cursor, 5);
+}
+
+#[test]
+fn test_parse_entity_with_brackets() {
+    let s = r"\name{}";
+    let mut input = Input::new(s);
+    assert_eq!(
+        Entity::parse(&mut input).unwrap(),
+        Entity {
+            shared_behavior_data: SharedBehaviorData {
+                span: Span::new(0, 6),
+                post_blank: 0,
+            },
+            name: "name".to_string(),
+            used_brackets: true,
+        }
+    );
+    assert_eq!(input.cursor, 7);
 }
 
 /// An export snippet.
