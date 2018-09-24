@@ -58,7 +58,7 @@ pub trait SharedBehavior: Any + Debug {
         &self.shared_behavior_data().span
     }
 
-    fn post_blank(&self) -> u32 {
+    fn post_blank(&self) -> usize {
         self.shared_behavior_data().post_blank
     }
 }
@@ -70,7 +70,7 @@ mopafy!(SharedBehavior);
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct SharedBehaviorData {
     span: Span,
-    post_blank: u32,
+    post_blank: usize,
 }
 
 /// Represents where in the file the a object or element is.

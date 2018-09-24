@@ -12,37 +12,34 @@ use regex::{Captures, Match, Regex};
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Input<'a> {
-    pub input: &'a str,
+    pub text: &'a str,
     pub cursor: usize,
 }
 
 impl<'a> Input<'a> {
-    pub fn new(input: &'a str) -> Self {
-        Input { input, cursor: 0 }
+    pub fn new(text: &'a str) -> Self {
+        Input { text, cursor: 0 }
     }
 
     pub fn try_match(&mut self, regex: &Regex) -> Option<Match<'a>> {
-        let input = &self.input[self.cursor..self.input.len()];
-        let re_match = regex.find(input);
-
-        if let Some(ref m) = &re_match {
-            self.cursor += m.end();
-        };
-
-        re_match
+        let text = &self.text[self.cursor..self.text.len()];
+        regex.find(text)
     }
-    pub fn try_capture(&mut self, regex: &Regex) -> Option<Captures<'a>> {
-        let re_captures = regex.captures(&self.input[self.cursor..self.input.len()]);
-
-        if let Some(ref c) = &re_captures.iter().last() {
-            if let Some(ref m) = &c.iter().last().unwrap() {
-                self.cursor += m.end();
-            }
-        };
-
-        re_captures
+    pub fn try_capture(&self, regex: &Regex) -> Option<Captures<'a>> {
+        let text = &self.text[self.cursor..self.text.len()];
+        regex.captures(text)
     }
-    pub fn backup_cursor(&mut self, amount: usize) -> bool {
+
+    pub fn move_forward(&mut self, amount: usize) -> bool {
+        self.cursor += amount;
+        if self.cursor > self.text.len() {
+            self.cursor = self.text.len();
+            false
+        } else {
+            true
+        }
+    }
+    pub fn move_backward(&mut self, amount: usize) -> bool {
         match self.cursor.checked_sub(amount) {
             Some(cursor) => {
                 self.cursor = cursor;
@@ -50,6 +47,27 @@ impl<'a> Input<'a> {
             }
             None => false,
         }
+    }
+    pub fn skip_forward(&mut self, regex: &Regex) -> usize {
+        let text = &self.text[self.cursor..self.text.len()];
+        let chars = match regex.find(text) {
+            Some(m) => m.end(),
+            None => 0,
+        };
+        self.move_forward(chars);
+        chars
+    }
+    pub fn skip_whitespace(&mut self) -> usize {
+        lazy_static! {
+            static ref WHITESPACE: Regex = Regex::new(r"[ \t]+").unwrap();
+        }
+        self.skip_forward(&WHITESPACE)
+    }
+    pub fn skip_whitespace_newline(&mut self) -> usize {
+        lazy_static! {
+            static ref WHITESPACE_NEWLINE: Regex = Regex::new(r"[ \t\r\n]+").unwrap();
+        }
+        self.skip_forward(&WHITESPACE_NEWLINE)
     }
 }
 
