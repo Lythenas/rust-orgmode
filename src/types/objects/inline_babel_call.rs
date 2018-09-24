@@ -27,4 +27,3 @@ pub struct InlineBabelCall {
     pub arguments: String,
     pub end_header: String,
 }
-

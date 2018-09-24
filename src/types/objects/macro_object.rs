@@ -52,4 +52,3 @@ pub struct Macro {
     pub name: String,
     pub arguments: Vec<String>,
 }
-

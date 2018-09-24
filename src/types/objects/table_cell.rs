@@ -45,4 +45,3 @@ pub enum TableCellSetOfObjects {
     TextMarkup(objects::TextMarkup),
     Timestamp(objects::Timestamp),
 }
-

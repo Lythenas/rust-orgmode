@@ -54,4 +54,3 @@ pub enum TextMarkupKind {
     Code(String),
     Verbatim(String),
 }
-

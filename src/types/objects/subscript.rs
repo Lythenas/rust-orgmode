@@ -41,4 +41,3 @@ pub struct Subscript {
     pub used_brackets: bool,
     pub content: SecondaryString<StandardSet>,
 }
-

@@ -32,4 +32,3 @@ pub enum RadioTargetSetOfObjects {
     Superscript(objects::Superscript),
     TextMarkup(objects::TextMarkup),
 }
-

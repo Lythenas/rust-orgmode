@@ -49,4 +49,3 @@ pub struct LatexFragment {
     /// Contains the entire parsed string, except the `PRE` and `POST` parts.
     pub value: String,
 }
-

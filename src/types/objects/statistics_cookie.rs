@@ -32,4 +32,3 @@ pub enum CookieKind {
     Percent(Option<u32>),
     Number(Option<u32>, Option<u32>),
 }
-

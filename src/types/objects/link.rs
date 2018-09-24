@@ -113,4 +113,3 @@ pub enum SearchOption {
     /// Do a regular expression search.
     Regex(String),
 }
-

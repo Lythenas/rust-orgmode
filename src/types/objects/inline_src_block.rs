@@ -24,4 +24,3 @@ pub struct InlineSrcBlock {
     pub value: String,
     pub options: String,
 }
-

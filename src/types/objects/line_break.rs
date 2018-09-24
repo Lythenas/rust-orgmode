@@ -19,4 +19,3 @@ pub struct LineBreak {
     shared_behavior_data: SharedBehaviorData,
     pub spaces: u64,
 }
-

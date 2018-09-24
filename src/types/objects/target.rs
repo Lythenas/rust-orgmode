@@ -22,4 +22,3 @@ pub struct Target {
     shared_behavior_data: SharedBehaviorData,
     pub target: String,
 }
-

@@ -19,4 +19,3 @@ pub struct Superscript {
     pub used_brackets: bool,
     pub content: SecondaryString<StandardSet>,
 }
-

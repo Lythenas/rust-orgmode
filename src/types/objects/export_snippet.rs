@@ -22,4 +22,3 @@ pub struct ExportSnippet {
     pub backend: String,
     pub value: String,
 }
-

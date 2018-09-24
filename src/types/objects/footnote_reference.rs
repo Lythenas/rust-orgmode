@@ -40,4 +40,3 @@ pub enum FootnoteReferenceKind {
         definition: SecondaryString<StandardSet>,
     },
 }
-

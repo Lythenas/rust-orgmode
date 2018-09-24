@@ -30,13 +30,17 @@ pub use self::inline_babel_call::InlineBabelCall;
 pub use self::inline_src_block::InlineSrcBlock;
 pub use self::latex_fragment::LatexFragment;
 pub use self::line_break::LineBreak;
-pub use self::link::{Link, LinkFormat, LinkDescriptionSetOfObjects, LinkPath, SearchOption};
+pub use self::link::{Link, LinkDescriptionSetOfObjects, LinkFormat, LinkPath, SearchOption};
 pub use self::macro_object::Macro;
 pub use self::radio_target::{RadioTarget, RadioTargetSetOfObjects};
-pub use self::statistics_cookie::{StatisticsCookie, CookieKind};
+pub use self::statistics_cookie::{CookieKind, StatisticsCookie};
 pub use self::subscript::Subscript;
 pub use self::superscript::Superscript;
 pub use self::table_cell::{TableCell, TableCellSetOfObjects};
 pub use self::target::Target;
 pub use self::text_markup::{TextMarkup, TextMarkupKind};
-pub use self::timestamp::{Timestamp, TimestampKind, TimestampStatus, TimestampData, Date, Time, Repeater, Warning, TimePeriod, RepeatStrategy, WarningStrategy, TimeUnit, TimestampRange, TimestampDataWithTime};
+pub use self::timestamp::{
+    Date, RepeatStrategy, Repeater, Time, TimePeriod, TimeUnit, Timestamp, TimestampData,
+    TimestampDataWithTime, TimestampKind, TimestampRange, TimestampStatus, Warning,
+    WarningStrategy,
+};

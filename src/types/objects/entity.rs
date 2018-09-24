@@ -92,11 +92,7 @@ impl Parse for Entity {
 
 impl fmt::Display for Entity {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let brackets = if self.used_brackets {
-            "{}"
-        } else {
-            ""
-        };
+        let brackets = if self.used_brackets { "{}" } else { "" };
         write!(f, r"\{}{}", self.name, brackets)
     }
 }
