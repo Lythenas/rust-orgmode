@@ -1,3 +1,4 @@
+use super::parsing::do_parse;
 use super::*;
 
 /// An entity.
@@ -29,6 +30,19 @@ pub struct Entity {
     pub used_brackets: bool,
 }
 
+impl Entity {
+    fn from_do_parse_result(
+        (name, used_brackets): (String, bool),
+        shared_behavior_data: SharedBehaviorData,
+    ) -> Self {
+        Entity {
+            shared_behavior_data,
+            name,
+            used_brackets,
+        }
+    }
+}
+
 impl Parse for Entity {
     fn parse(input: &mut Input) -> Result<Self, ParseError> {
         lazy_static! {
@@ -42,51 +56,28 @@ impl Parse for Entity {
             ).unwrap();
         }
 
-        let start = input.cursor;
+        do_parse(
+            input,
+            &RE,
+            |input, captures| {
+                let name_group = captures.name("spaces").or(captures.name("name")).unwrap();
+                let name = name_group.as_str().to_string();
+                let post_group = captures.name("post");
+                let post = post_group.map(|m| m.as_str());
 
-        if let Some(c) = input.try_capture(&RE) {
-            let name_group = c.name("spaces").or(c.name("name")).unwrap();
-            let name = name_group.as_str().to_string();
-
-            if let Some(post) = c.name("post") {
-                // matched a "normal" entity
+                // skip over name
                 input.move_forward(name_group.end());
-                let used_brackets = post.as_str() == "{}";
-                // skip the brackets (if present)
+
+                let used_brackets = post == Some("{}");
                 if used_brackets {
+                    // skip over brackets
                     input.move_forward(2);
                 }
 
-                let end = input.cursor - 1;
-                let post_blank = input.skip_whitespace();
-
-                Ok(Entity {
-                    shared_behavior_data: SharedBehaviorData {
-                        span: Span::new(start, end),
-                        post_blank,
-                    },
-                    name,
-                    used_brackets,
-                })
-            } else {
-                // matched a "_spaces" entity
-                input.move_forward(name_group.end());
-
-                let end = input.cursor - 1;
-                let post_blank = input.skip_whitespace();
-
-                Ok(Entity {
-                    shared_behavior_data: SharedBehaviorData {
-                        span: Span::new(start, end),
-                        post_blank,
-                    },
-                    name,
-                    used_brackets: false,
-                })
-            }
-        } else {
-            Err(ParseError)
-        }
+                Ok((name, used_brackets))
+            },
+            Entity::from_do_parse_result,
+        )
     }
 }
 
@@ -97,86 +88,112 @@ impl fmt::Display for Entity {
     }
 }
 
-#[test]
-fn test_parse_spaces_entity() {
-    let s = r"\_ ";
-    let mut input = Input::new(s);
-    let parsed = Entity::parse(&mut input).unwrap();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    assert_eq!(
-        parsed,
-        Entity {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 2),
-                post_blank: 0,
-            },
-            name: "_ ".to_string(),
-            used_brackets: false,
-        }
-    );
-    assert_eq!(input.cursor, 3);
-    assert_eq!(parsed.to_string(), s);
-}
+    #[test]
+    fn test_parse_spaces_entity() {
+        let s = r"\_ ";
+        let mut input = Input::new(s);
+        let parsed = Entity::parse(&mut input).unwrap();
 
-#[test]
-fn test_parse_entity() {
-    let s = r"\name";
-    let mut input = Input::new(s);
-    let parsed = Entity::parse(&mut input).unwrap();
+        assert_eq!(
+            parsed,
+            Entity {
+                shared_behavior_data: SharedBehaviorData {
+                    span: Span::new(0, 2),
+                    post_blank: 0,
+                },
+                name: "_ ".to_string(),
+                used_brackets: false,
+            }
+        );
+        assert_eq!(input.cursor, 3);
+        assert_eq!(parsed.to_string(), s);
+    }
 
-    assert_eq!(
-        parsed,
-        Entity {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 4),
-                post_blank: 0,
-            },
-            name: "name".to_string(),
-            used_brackets: false,
-        }
-    );
-    assert_eq!(input.cursor, 5);
-    assert_eq!(parsed.to_string(), s);
-}
+    #[test]
+    fn test_parse_entity() {
+        let s = r"\name";
+        let mut input = Input::new(s);
+        let parsed = Entity::parse(&mut input).unwrap();
 
-#[test]
-fn test_parse_entity_with_brackets() {
-    let s = r"\name{}";
-    let mut input = Input::new(s);
-    let parsed = Entity::parse(&mut input).unwrap();
+        assert_eq!(
+            parsed,
+            Entity {
+                shared_behavior_data: SharedBehaviorData {
+                    span: Span::new(0, 4),
+                    post_blank: 0,
+                },
+                name: "name".to_string(),
+                used_brackets: false,
+            }
+        );
+        assert_eq!(input.cursor, 5);
+        assert_eq!(parsed.to_string(), s);
+    }
 
-    assert_eq!(
-        parsed,
-        Entity {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 6),
-                post_blank: 0,
-            },
-            name: "name".to_string(),
-            used_brackets: true,
-        }
-    );
-    assert_eq!(input.cursor, 7);
-    assert_eq!(parsed.to_string(), s);
-}
+    #[test]
+    fn test_parse_entity_with_brackets() {
+        let s = r"\name{}";
+        let mut input = Input::new(s);
+        let parsed = Entity::parse(&mut input).unwrap();
 
-#[test]
-fn test_parse_entity_with_brackets_and_post_blanks() {
-    let s = "\\name{}\t\t\t \t";
-    let mut input = Input::new(s);
-    let parsed = Entity::parse(&mut input).unwrap();
+        assert_eq!(
+            parsed,
+            Entity {
+                shared_behavior_data: SharedBehaviorData {
+                    span: Span::new(0, 6),
+                    post_blank: 0,
+                },
+                name: "name".to_string(),
+                used_brackets: true,
+            }
+        );
+        assert_eq!(input.cursor, 7);
+        assert_eq!(parsed.to_string(), s);
+    }
 
-    assert_eq!(
-        parsed,
-        Entity {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 6),
-                post_blank: 5,
-            },
-            name: "name".to_string(),
-            used_brackets: true,
-        }
-    );
-    assert_eq!(input.cursor, 12);
-    assert_eq!(parsed.to_string(), r"\name{}");
+    #[test]
+    fn test_parse_entity_with_brackets_and_post_blanks() {
+        let s = "\\name{}\t\t\t \t";
+        let mut input = Input::new(s);
+        let parsed = Entity::parse(&mut input).unwrap();
+
+        assert_eq!(
+            parsed,
+            Entity {
+                shared_behavior_data: SharedBehaviorData {
+                    span: Span::new(0, 6),
+                    post_blank: 5,
+                },
+                name: "name".to_string(),
+                used_brackets: true,
+            }
+        );
+        assert_eq!(input.cursor, 12);
+        assert_eq!(parsed.to_string(), r"\name{}");
+    }
+
+    #[test]
+    fn test_parse_entity_with_non_alpha_post() {
+        let s = r"\name6";
+        let mut input = Input::new(s);
+        let parsed = Entity::parse(&mut input).unwrap();
+
+        assert_eq!(
+            parsed,
+            Entity {
+                shared_behavior_data: SharedBehaviorData {
+                    span: Span::new(0, 4),
+                    post_blank: 0,
+                },
+                name: "name".to_string(),
+                used_brackets: false,
+            }
+        );
+        assert_eq!(input.cursor, 5);
+        assert_eq!(parsed.to_string(), r"\name");
+    }
 }
