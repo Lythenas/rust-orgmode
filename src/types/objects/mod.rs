@@ -2,7 +2,6 @@
 
 use super::parsing::{Input, Parse, ParseError};
 use super::*;
-use regex::Regex;
 use std::fmt;
 
 mod entity;

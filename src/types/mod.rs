@@ -78,13 +78,19 @@ pub struct SharedBehaviorData {
 /// This is useful for warning/error messages and modifying the file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct Span {
-    pub start: usize,
-    pub end: usize,
+    start: usize,
+    end: usize,
 }
 
 impl Span {
     pub fn new(start: usize, end: usize) -> Self {
         Span { start, end }
+    }
+    pub fn start(&self) -> usize {
+        self.start
+    }
+    pub fn end(&self) -> usize {
+        self.end
     }
 }
 
