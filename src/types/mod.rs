@@ -15,12 +15,14 @@
 //! element/object structs only need to implement a getter method for the helper struct and the
 //! trait will give them getter methods for the data in those helper structs.
 
+pub mod affiliated_keywords;
 pub mod document;
 pub mod elements;
 pub mod greater_elements;
 pub mod objects;
 pub mod parsing;
 
+use self::affiliated_keywords::AffiliatedKeywords;
 use mopa::Any;
 use std::str::pattern::Pattern;
 
@@ -179,67 +181,22 @@ pub struct AffiliatedKeywordsData {
     span: Span,
 }
 
-/// Contains all affiliated keywords for one element/object.
-///
-/// An affiliated keyword represents an attribute of an element.
-///
-/// Not all elements can have affiliated keywords. See the specific element.
-///
-/// Affiliated keywords have one of the following formats:
-///
-/// - `#+KEY: VALUE`
-/// - `#+KEY[OPTIONAL]: VALUE`
-/// - `#+ATTR_BACKEND: VALUE`
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AffiliatedKeywords {
-    /// Parsed from: `#+CAPTION[OPTIONAL]: VALUE`.
-    ///
-    /// Where `OPTIONAL` (and the brackets) are optional and both `OPTIONAL` and `VALUE` are
-    /// secondary strings (can contain objects).
-    ///
-    /// The caption key can occur more than once.
-    pub caption: Vec<
-        SpannedValue<(
-            Option<SecondaryString<StandardSet>>,
-            SecondaryString<StandardSet>,
-        )>,
-    >,
-    /// Parsed from: `#+HEADER: VALUE`.
-    ///
-    /// The header key can occur more than once.
-    ///
-    /// The deprecated `HEADERS` key will also be parsed to this variant.
-    pub header: Vec<SpannedValue<String>>,
-    /// Parsed from: `#+NAME: VALUE`.
-    ///
-    /// The deprecated `LABEL`, `SRCNAME`, `TBLNAME`, `DATA`, `RESNAME` and `SOURCE` keys will also
-    /// be parsed to this variant.
-    pub name: Option<SpannedValue<String>>,
-    /// Parsed from: `#+PLOT: VALUE`.
-    pub plot: Option<SpannedValue<String>>,
-    /// Parsed from: `#+RESULTS[OPTIONAL]: VALUE`.
-    ///
-    /// Where `OPTIONAL` (and the brackets) are optional and both `OPTIONAL` and `VALUE` are
-    /// secondary strings (can contain objects).
-    ///
-    /// The deprecated `RESULT` key will also be parsed to this variant.
-    pub results: Option<SpannedValue<(Option<String>, String)>>,
-    /// Parsed from: `#+ATTR_BACKEND: VALUE`.
-    ///
-    /// The attr keywords for one backend can occur more than once.
-    pub attrs: Vec<(String, Vec<SpannedValue<String>>)>,
-}
-
 /// Represents a value and its position in an org file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SpannedValue<T> {
-    pub span: Span,
-    pub value: T,
+    span: Span,
+    value: T,
 }
 
 impl<T> SpannedValue<T> {
     pub fn new(span: Span, value: T) -> Self {
         SpannedValue { span, value }
+    }
+    pub fn span(&self) -> &Span {
+        &self.span
+    }
+    pub fn value(&self) -> &T {
+        &self.value
     }
 }
 
@@ -248,6 +205,18 @@ impl<T> SpannedValue<T> {
 /// It is used for attributes of elements that can contain objects.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SecondaryString<T: AsRawString>(Vec<T>);
+
+impl<T: AsRawString> SecondaryString<T> {
+    pub fn new() -> Self {
+        SecondaryString(Vec::new())
+    }
+}
+
+impl<T: AsRawString> Default for SecondaryString<T> {
+    fn default() -> SecondaryString<T> {
+        SecondaryString::new()
+    }
+}
 
 pub trait AsRawString {
     fn as_raw_string(&self) -> Option<&str>;
