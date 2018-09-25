@@ -22,7 +22,6 @@ pub mod objects;
 pub mod parsing;
 
 use mopa::Any;
-use std::fmt::Debug;
 use std::str::pattern::Pattern;
 
 // TODO
@@ -43,7 +42,7 @@ static ORG_LINK_TYPES: () = ();
 /// getters for the fields of the `SharedBehaviorData` struct.
 ///
 /// [`SharedBehaviorData`]: struct.SharedBehaviorData.html
-pub trait SharedBehavior: Any + Debug {
+pub trait SharedBehavior: Any {
     /// Returns a reference to the data of the shared behavior.
     ///
     /// You should most likely not use this method. It is just a proxy for the other methods on
