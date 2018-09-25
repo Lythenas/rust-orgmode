@@ -1,5 +1,6 @@
 use super::parsing::do_parse;
 use super::*;
+use regex::{self, Regex};
 
 /// An entity.
 ///
@@ -41,6 +42,26 @@ impl Entity {
             used_brackets,
         }
     }
+    fn collect_data(
+        input: &mut Input,
+        captures: regex::Captures,
+    ) -> Result<(String, bool), ParseError> {
+        let name_group = captures.name("spaces").or(captures.name("name")).unwrap();
+        let name = name_group.as_str().to_string();
+        let post_group = captures.name("post");
+        let post = post_group.map(|m| m.as_str());
+
+        // skip over name
+        input.move_forward(name_group.end());
+
+        let used_brackets = post == Some("{}");
+        if used_brackets {
+            // skip over brackets
+            input.move_forward(2);
+        }
+
+        Ok((name, used_brackets))
+    }
 }
 
 impl Parse for Entity {
@@ -59,23 +80,7 @@ impl Parse for Entity {
         do_parse(
             input,
             &RE,
-            |input, captures| {
-                let name_group = captures.name("spaces").or(captures.name("name")).unwrap();
-                let name = name_group.as_str().to_string();
-                let post_group = captures.name("post");
-                let post = post_group.map(|m| m.as_str());
-
-                // skip over name
-                input.move_forward(name_group.end());
-
-                let used_brackets = post == Some("{}");
-                if used_brackets {
-                    // skip over brackets
-                    input.move_forward(2);
-                }
-
-                Ok((name, used_brackets))
-            },
+            Entity::collect_data,
             Entity::from_do_parse_result,
         )
     }
