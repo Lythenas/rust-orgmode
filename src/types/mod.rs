@@ -14,6 +14,13 @@
 //! stored in helper traits and these helper traits are then stored in elements/objects. The
 //! element/object structs only need to implement a getter method for the helper struct and the
 //! trait will give them getter methods for the data in those helper structs.
+//!
+//! [`Object`]: `types::Object`
+//! [`Element`]: `types::Element`
+//! [`GreaterElement`]: `types::GreaterElement`
+//! [`SharedBehavior`]: `types::SharedBehavior`
+//! [`HasContent`]: `types::HasContent`
+//! [`HasAffiliatedKeywords`]: `types::HasAffiliatedKeywords`
 
 pub mod affiliated_keywords;
 pub mod document;
@@ -42,8 +49,6 @@ static ORG_LINK_TYPES: () = ();
 /// The actual data is stored in the convenience struct [`SharedBehaviorData`]. The implementing
 /// structs only need to implement `shared_behavior_data()` and this trait will provide the
 /// getters for the fields of the `SharedBehaviorData` struct.
-///
-/// [`SharedBehaviorData`]: struct.SharedBehaviorData.html
 pub trait SharedBehavior: Any {
     /// Returns a reference to the data of the shared behavior.
     ///
@@ -210,23 +215,7 @@ impl<T: AsRawString> SecondaryString<T> {
     pub fn new() -> Self {
         SecondaryString(Vec::new())
     }
-}
 
-impl<T: AsRawString> Default for SecondaryString<T> {
-    fn default() -> SecondaryString<T> {
-        SecondaryString::new()
-    }
-}
-
-pub trait AsRawString {
-    fn as_raw_string(&self) -> Option<&str>;
-
-    fn is_raw_string(&self) -> bool {
-        self.as_raw_string().is_some()
-    }
-}
-
-impl<T: AsRawString> SecondaryString<T> {
     /// Returns `true` if this `SecondaryString` starts with a raw string and the given pattern matches
     /// a prefix of this string.
     ///
@@ -243,6 +232,12 @@ impl<T: AsRawString> SecondaryString<T> {
     }
 }
 
+impl<T: AsRawString> Default for SecondaryString<T> {
+    fn default() -> SecondaryString<T> {
+        SecondaryString::new()
+    }
+}
+
 impl<T: AsRawString> PartialEq<str> for SecondaryString<T> {
     fn eq(&self, other: &str) -> bool {
         self.0
@@ -251,6 +246,15 @@ impl<T: AsRawString> PartialEq<str> for SecondaryString<T> {
             .map(|s| s == other)
             .unwrap_or(false)
     }
+}
+
+/// A cheap conversion to a raw [`str`] that may fail.
+///
+/// Used for objects and raw strings in [`SecondaryString`]. Abstracts away the type of the actual
+/// objects stored when e.g. for [`starts_with()`][`SecondaryString::starts_with`].
+pub trait AsRawString {
+    /// Performs the conversion.
+    fn as_raw_string(&self) -> Option<&str>;
 }
 
 /// Marker trait for objects in an org file.
