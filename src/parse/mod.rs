@@ -1,4 +1,5 @@
 //! Contains all the parsers for org files and parts of it.
+#![allow(clippy)]
 
 use failure::Error;
 use nom::types::CompleteStr;

@@ -58,7 +58,7 @@ pub struct Drawer {
     // hiddenp: bool,
 }
 
-fn parse() {
+fn _parse() {
     // search for "^[ \t]*:END:[ \t]*$"
     // if not found: parse a paragraph
     // if found: get end line position
@@ -220,7 +220,7 @@ impl Headline {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum HeadlineContentSet {
     Section(greater_elements::Section),
-    Headline(greater_elements::Headline),
+    Headline(Box<greater_elements::Headline>),
 }
 
 /// A todo keyword of a [`Headline`] or [`Inlinetask`].

@@ -30,7 +30,6 @@ pub mod objects;
 pub mod parsing;
 
 use self::affiliated_keywords::AffiliatedKeywords;
-use mopa::Any;
 use std::str::pattern::Pattern;
 
 // TODO
@@ -49,7 +48,7 @@ static ORG_LINK_TYPES: () = ();
 /// The actual data is stored in the convenience struct [`SharedBehaviorData`]. The implementing
 /// structs only need to implement `shared_behavior_data()` and this trait will provide the
 /// getters for the fields of the `SharedBehaviorData` struct.
-pub trait SharedBehavior: Any {
+pub trait SharedBehavior {
     /// Returns a reference to the data of the shared behavior.
     ///
     /// You should most likely not use this method. It is just a proxy for the other methods on
@@ -67,7 +66,6 @@ pub trait SharedBehavior: Any {
         self.shared_behavior_data().post_blank
     }
 }
-mopafy!(SharedBehavior);
 
 /// Helper struct that contains the data for the shared behavior. See [`SharedBehavior`].
 ///
@@ -332,30 +330,30 @@ pub enum StandardSetNoLineBreak {
 /// drawer can't contain a drawer.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ElementSet {
-    BabelCall(elements::BabelCall),
-    CenterBlock(greater_elements::CenterBlock),
-    Clock(elements::Clock),
-    Comment(elements::Comment),
-    CommentBlock(elements::CommentBlock),
-    DiarySexp(elements::DiarySexp),
-    Drawer(greater_elements::Drawer),
-    DynamicBlock(greater_elements::DynamicBlock),
-    ExampleBlock(elements::ExampleBlock),
-    ExportBlock(elements::ExportBlock),
-    FixedWidth(elements::FixedWidth),
-    FootnoteDefinition(greater_elements::FootnoteDefinition),
-    HorizontalRule(elements::HorizontalRule),
-    Inlinetask(greater_elements::Inlinetask),
-    Keyword(elements::Keyword),
-    LatexEnvironment(elements::LatexEnvironment),
-    Paragraph(elements::Paragraph),
-    PlainList(greater_elements::PlainList),
-    Planning(elements::Planning),
-    PropertyDrawer(greater_elements::PropertyDrawer),
-    QuoteBlock(greater_elements::QuoteBlock),
-    Section(greater_elements::Section),
-    SpecialBlock(greater_elements::Section),
-    SrcBlock(elements::SrcBlock),
-    Table(greater_elements::Table),
-    VerseBlock(greater_elements::VerseBlock),
+    BabelCall(Box<elements::BabelCall>),
+    CenterBlock(Box<greater_elements::CenterBlock>),
+    Clock(Box<elements::Clock>),
+    Comment(Box<elements::Comment>),
+    CommentBlock(Box<elements::CommentBlock>),
+    DiarySexp(Box<elements::DiarySexp>),
+    Drawer(Box<greater_elements::Drawer>),
+    DynamicBlock(Box<greater_elements::DynamicBlock>),
+    ExampleBlock(Box<elements::ExampleBlock>),
+    ExportBlock(Box<elements::ExportBlock>),
+    FixedWidth(Box<elements::FixedWidth>),
+    FootnoteDefinition(Box<greater_elements::FootnoteDefinition>),
+    HorizontalRule(Box<elements::HorizontalRule>),
+    Inlinetask(Box<greater_elements::Inlinetask>),
+    Keyword(Box<elements::Keyword>),
+    LatexEnvironment(Box<elements::LatexEnvironment>),
+    Paragraph(Box<elements::Paragraph>),
+    PlainList(Box<greater_elements::PlainList>),
+    Planning(Box<elements::Planning>),
+    PropertyDrawer(Box<greater_elements::PropertyDrawer>),
+    QuoteBlock(Box<greater_elements::QuoteBlock>),
+    Section(Box<greater_elements::Section>),
+    SpecialBlock(Box<greater_elements::Section>),
+    SrcBlock(Box<elements::SrcBlock>),
+    Table(Box<greater_elements::Table>),
+    VerseBlock(Box<greater_elements::VerseBlock>),
 }

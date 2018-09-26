@@ -19,7 +19,7 @@ use regex::{Captures, Match, Regex};
 /// let regex = Regex::new(r"(?m)\AParse (?P<number1>\d+)\^(?P<number2>\d+)").unwrap();
 ///
 /// // collects the data from the capture groups of the regex
-/// fn collect_data(input: &mut Input, captures: Captures) -> parsing::Result<(u32, u32)> {
+/// fn collect_data(input: &mut Input, captures: &Captures) -> parsing::Result<(u32, u32)> {
 ///     let number1_match = captures.name("number1").ok_or(ParseError)?;
 ///     let number1 = number1_match.as_str().parse().map_err(|_| ParseError)?;
 ///     let number2_match = captures.name("number2").ok_or(ParseError)?;
@@ -130,12 +130,12 @@ impl<'a> Input<'a> {
         construct_result: F2,
     ) -> Result<R>
     where
-        F1: FnOnce(&mut Input, Captures) -> Result<T>,
+        F1: FnOnce(&mut Input, &Captures) -> Result<T>,
         F2: FnOnce(T, SharedBehaviorData) -> Result<R>,
     {
         let start = self.cursor;
         let captures = self.try_captures(regex).ok_or(ParseError)?;
-        let value = collect_data(self, captures)?;
+        let value = collect_data(self, &captures)?;
         let end = self.cursor - 1;
         let post_blank = self.skip_whitespace();
 

@@ -35,8 +35,6 @@ extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
 extern crate phf;
-#[macro_use]
-extern crate mopa;
 
 pub mod entities;
 pub mod types;
@@ -162,7 +160,7 @@ impl Headline {
             keyword: None,
             priority: None,
             commented: title.starts_with("COMMENT"),
-            title: title,
+            title,
             tags: Vec::new(),
             planning: Planning::default(),
             property_drawer: PropertyDrawer::default(),
@@ -187,7 +185,7 @@ impl Headline {
         Headline { tags, ..self }
     }
     pub fn and_opt_tags(self, tags: Option<Vec<String>>) -> Self {
-        self.and_tags(tags.unwrap_or(Vec::new()))
+        self.and_tags(tags.unwrap_or_default())
     }
     pub fn and_planning(self, planning: Planning) -> Self {
         Headline { planning, ..self }
