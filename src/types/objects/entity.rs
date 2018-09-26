@@ -1,4 +1,3 @@
-use super::parsing::do_parse;
 use super::*;
 use regex::{self, Regex};
 
@@ -35,12 +34,12 @@ impl Entity {
     fn from_do_parse_result(
         (name, used_brackets): (String, bool),
         shared_behavior_data: SharedBehaviorData,
-    ) -> Self {
-        Entity {
+    ) -> Result<Self, ParseError> {
+        Ok(Entity {
             shared_behavior_data,
             name,
             used_brackets,
-        }
+        })
     }
     fn collect_data(
         input: &mut Input,
@@ -77,8 +76,7 @@ impl Parse for Entity {
             ).unwrap();
         }
 
-        do_parse(
-            input,
+        input.do_parse(
             &RE,
             Entity::collect_data,
             Entity::from_do_parse_result,
