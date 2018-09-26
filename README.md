@@ -11,7 +11,7 @@ everything will be change.
 
 ## Planned features
 
-- Parsing
+- Parsing (Currently working on this)
 - *Graceful* parsing (errors don't abort the parsing)
 - Analyzing (warning reporting)
 - Error/Warning correction
