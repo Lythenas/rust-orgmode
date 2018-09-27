@@ -207,6 +207,8 @@ impl Cursor {
 
 /// An error which can be returned when parsing a [`Document`] or any of its components.
 ///
+/// [`Document`]: `document::Document`
+///
 /// TODO improve this probably make this an enum
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParseError;
