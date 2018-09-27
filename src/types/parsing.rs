@@ -109,8 +109,8 @@ impl<'a> Input<'a> {
     ///
     /// `collect_data` takes these [`Captures`] and uses them to extract the needed data and move
     /// the cursor of the input forward (after the parsed input). If collecting the data fails this
-    /// function should not move the cursor and return an error. If collecting the data succeeds
-    /// the function returns the collected data `T` (this is usually a tuple).
+    /// function returns an error. If collecting the data succeeds the function returns the collected
+    /// data `T` (this is usually a tuple).
     ///
     /// `construct_result` takes the collected data `T` and creates the final [`Object`] or
     /// [`Element`] struct `R`. For this it also receives the [`SharedBehaviorData`] that it needs to
@@ -118,7 +118,8 @@ impl<'a> Input<'a> {
     /// easier to directly fail in `collect_data`.
     ///
     /// The errors returned from `collect_data` and `construct_result` can be any type that can be
-    /// converted to [`ParseError`].
+    /// converted to [`ParseError`]. If one of the functions return an error the [`Cursor`] of the
+    /// [`Input`] will be reset.
     pub fn do_parse<T, R, E1, E2>(
         &mut self,
         regex: &Regex,
@@ -128,16 +129,31 @@ impl<'a> Input<'a> {
     where
         ParseError: From<E1> + From<E2>,
     {
-        let start = self.cursor.pos();
+
         let captures = self.try_captures(regex).ok_or(ParseError)?;
-        let value = collect_data(self, &captures)?;
+        let start = self.cursor.clone();
+
+        let value = match collect_data(self, &captures) {
+            Ok(value) => value,
+            Err(err) => {
+                self.cursor = start;
+                return Err(ParseError::from(err));
+            },
+        };
+
         let end = self.cursor.pos() - 1;
         let post_blank = self.skip_whitespace();
 
-        let span = Span::new(start, end);
+        let span = Span::new(start.pos(), end);
         let shared_behavior_data = SharedBehaviorData { span, post_blank };
 
-        construct_result(value, shared_behavior_data).map_err(ParseError::from)
+        match construct_result(value, shared_behavior_data) {
+            Ok(result) => Ok(result),
+            Err(err) => {
+                self.cursor = start;
+                Err(ParseError::from(err))
+            },
+        }
     }
 }
 
