@@ -19,7 +19,7 @@ use regex::{Captures, Match, Regex};
 /// let regex = Regex::new(r"(?m)\AParse (?P<number1>\d+)\^(?P<number2>\d+)").unwrap();
 ///
 /// // collects the data from the capture groups of the regex
-/// fn collect_data(input: &mut Input, captures: &Captures) -> parsing::Result<(u32, u32)> {
+/// fn collect_data(input: &mut Input, captures: &Captures) -> Result<(u32, u32), ParseError> {
 ///     let number1_match = captures.name("number1").ok_or(ParseError)?;
 ///     let number1 = number1_match.as_str().parse().map_err(|_| ParseError)?;
 ///     let number2_match = captures.name("number2").ok_or(ParseError)?;
@@ -32,7 +32,7 @@ use regex::{Captures, Match, Regex};
 /// }
 ///
 /// // creates the actual result type
-/// fn construct_result((number1, number2): (u32, u32), sbd: SharedBehaviorData) -> parsing::Result<u32> {
+/// fn construct_result((number1, number2): (u32, u32), sbd: SharedBehaviorData) -> Result<u32, ParseError> {
 ///     Ok(number1.pow(number2))
 /// }
 ///
@@ -113,25 +113,28 @@ impl<'a> Input<'a> {
 
     /// Helper function to make parsing easier.
     ///
-    /// The [`Regex`] is used to capture groups which are then given to `collect_data`. The
-    /// `collect_data` function retrieves the needed capture groups and converts them to a usable
-    /// format. This function also needs to move the cursor of the input appropriately. If collecting
-    /// the data fails the function has to return an error. This error is then returned from this
-    /// function.
+    /// The [`Regex`] is used to capture groups.
     ///
-    /// The `construct_result` function receives the result of `collect_data` (which is usually a single
-    /// value or a tuple) and the [`SharedBehaviorData`] for the parsed object/element and needs to
-    /// construct the object/element. This function can't fail so the data has to be validated in
-    /// `collect_data`.
-    pub fn do_parse<T, F1, F2, R>(
+    /// `collect_data` takes these [`Captures`] and uses them to extract the needed data and move
+    /// the cursor of the input forward (after the parsed input). If collecting the data fails this
+    /// function should not move the cursor and return an error. If collecting the data succeeds
+    /// the function returns the collected data `T` (this is usually a tuple).
+    ///
+    /// `construct_result` takes the collected data `T` and creates the final [`Object`] or
+    /// [`Element`] struct `R`. For this it also receives the [`SharedBehaviorData`] that it needs to
+    /// construct the type. This function can also fail and return an error. However it is probably
+    /// easier to directly fail in `collect_data`.
+    ///
+    /// The errors returned from `collect_data` and `construct_result` can be any type that can be
+    /// converted to [`ParseError`].
+    pub fn do_parse<T, R, E1, E2>(
         &mut self,
         regex: &Regex,
-        collect_data: F1,
-        construct_result: F2,
-    ) -> Result<R>
+        collect_data: impl FnOnce(&mut Input, &Captures) -> Result<T, E1>,
+        construct_result: impl FnOnce(T, SharedBehaviorData) -> Result<R, E2>,
+    ) -> Result<R, ParseError>
     where
-        F1: FnOnce(&mut Input, &Captures) -> Result<T>,
-        F2: FnOnce(T, SharedBehaviorData) -> Result<R>,
+        ParseError: From<E1> + From<E2>,
     {
         let start = self.cursor;
         let captures = self.try_captures(regex).ok_or(ParseError)?;
@@ -142,26 +145,35 @@ impl<'a> Input<'a> {
         let span = Span::new(start, end);
         let shared_behavior_data = SharedBehaviorData { span, post_blank };
 
-        construct_result(value, shared_behavior_data)
+        construct_result(value, shared_behavior_data).map_err(ParseError::from)
     }
 }
-
-/// Result of trying to parse a [`Input`].
-pub type Result<T> = ::std::result::Result<T, ParseError>;
 
 // TODO improve this probably make this an enum
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParseError;
 
+impl From<()> for ParseError {
+    fn from(_: ()) -> ParseError {
+        ParseError
+    }
+}
+
+impl From<!> for ParseError {
+    fn from(x: !) -> ParseError {
+        x
+    }
+}
+
 pub trait Parse: Sized {
-    fn parse(input: &mut Input) -> Result<Self>;
+    fn parse(input: &mut Input) -> Result<Self, ParseError>;
 }
 
 /// Convenience trait to implement [`Parse`] for blocks.
 pub trait ParseBlock: Sized {}
 
 impl<T: ParseBlock> Parse for T {
-    fn parse(_input: &mut Input) -> Result<Self> {
+    fn parse(_input: &mut Input) -> Result<Self, ParseError> {
         unimplemented!()
     }
 }

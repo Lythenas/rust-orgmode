@@ -31,10 +31,10 @@ pub struct Entity {
 }
 
 impl Entity {
-    fn from_do_parse_result(
+    fn from_collected_data(
         (name, used_brackets): (String, bool),
         shared_behavior_data: SharedBehaviorData,
-    ) -> Result<Self, ParseError> {
+    ) -> Result<Self, !> {
         Ok(Entity {
             shared_behavior_data,
             name,
@@ -44,7 +44,7 @@ impl Entity {
     fn collect_data(
         input: &mut Input,
         captures: &regex::Captures,
-    ) -> Result<(String, bool), ParseError> {
+    ) -> Result<(String, bool), !> {
         let name_group = captures.name("spaces").or_else(|| captures.name("name")).unwrap();
         let name = name_group.as_str().to_string();
         let post_group = captures.name("post");
@@ -79,7 +79,7 @@ impl Parse for Entity {
         input.do_parse(
             &RE,
             Entity::collect_data,
-            Entity::from_do_parse_result,
+            Entity::from_collected_data,
         )
     }
 }

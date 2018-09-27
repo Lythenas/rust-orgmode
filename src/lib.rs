@@ -15,6 +15,7 @@
 #![feature(min_const_fn)]
 #![feature(pattern)]
 #![feature(const_vec_new)]
+#![feature(never_type)]
 #![plugin(phf_macros)]
 
 #[cfg(test)]
