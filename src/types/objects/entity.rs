@@ -41,11 +41,11 @@ impl Entity {
             used_brackets,
         })
     }
-    fn collect_data(
-        input: &mut Input,
-        captures: &regex::Captures,
-    ) -> Result<(String, bool), !> {
-        let name_group = captures.name("spaces").or_else(|| captures.name("name")).unwrap();
+    fn collect_data(input: &mut Input, captures: &regex::Captures) -> Result<(String, bool), !> {
+        let name_group = captures
+            .name("spaces")
+            .or_else(|| captures.name("name"))
+            .unwrap();
         let name = name_group.as_str().to_string();
         let post_group = captures.name("post");
         let post = post_group.map(|m| m.as_str());
@@ -76,11 +76,7 @@ impl Parse for Entity {
             ).unwrap();
         }
 
-        input.do_parse(
-            &RE,
-            Entity::collect_data,
-            Entity::from_collected_data,
-        )
+        input.do_parse(&RE, Entity::collect_data, Entity::from_collected_data)
     }
 }
 
