@@ -51,12 +51,12 @@ impl Entity {
         let post = post_group.map(|m| m.as_str());
 
         // skip over name
-        input.move_forward(name_group.end());
+        input.cursor_mut().forward(name_group.end());
 
         let used_brackets = post == Some("{}");
         if used_brackets {
             // skip over brackets
-            input.move_forward(2);
+            input.cursor_mut().forward(2);
         }
 
         Ok((name, used_brackets))
@@ -112,7 +112,7 @@ mod tests {
                 used_brackets: false,
             }
         );
-        assert_eq!(input.cursor, 3);
+        assert_eq!(input.cursor().pos(), 3);
         assert_eq!(parsed.to_string(), s);
     }
 
@@ -133,7 +133,7 @@ mod tests {
                 used_brackets: false,
             }
         );
-        assert_eq!(input.cursor, 5);
+        assert_eq!(input.cursor().pos(), 5);
         assert_eq!(parsed.to_string(), s);
     }
 
@@ -154,7 +154,7 @@ mod tests {
                 used_brackets: true,
             }
         );
-        assert_eq!(input.cursor, 7);
+        assert_eq!(input.cursor().pos(), 7);
         assert_eq!(parsed.to_string(), s);
     }
 
@@ -175,7 +175,7 @@ mod tests {
                 used_brackets: true,
             }
         );
-        assert_eq!(input.cursor, 12);
+        assert_eq!(input.cursor().pos(), 12);
         assert_eq!(parsed.to_string(), r"\name{}");
     }
 
@@ -196,7 +196,7 @@ mod tests {
                 used_brackets: false,
             }
         );
-        assert_eq!(input.cursor, 5);
+        assert_eq!(input.cursor().pos(), 5);
         assert_eq!(parsed.to_string(), r"\name");
     }
 }

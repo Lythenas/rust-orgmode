@@ -26,7 +26,7 @@ use regex::{Captures, Match, Regex};
 ///     let number2 = number2_match.as_str().parse().map_err(|_| ParseError)?;
 ///
 ///     // advance cursor so this will not be parsed again
-///     input.move_forward(number2_match.end());
+///     input.cursor_mut().forward(number2_match.end());
 ///
 ///     Ok((number1, number2))
 /// }
@@ -53,49 +53,41 @@ use regex::{Captures, Match, Regex};
 /// [`do_parse`]: `Input::do_parse`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Input<'a> {
-    pub text: &'a str,
-    pub cursor: usize,
+    text: &'a str,
+    cursor: Cursor,
 }
 
 impl<'a> Input<'a> {
     pub fn new(text: &'a str) -> Self {
-        Input { text, cursor: 0 }
+        Input { text, cursor: Cursor { pos: 0, input_len: text.len(), } }
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+    pub fn cursor(&self) -> &Cursor {
+        &self.cursor
+    }
+    pub fn cursor_mut(&mut self) -> &mut Cursor {
+        &mut self.cursor
     }
 
     pub fn try_match(&mut self, regex: &Regex) -> Option<Match<'a>> {
-        let text = &self.text[self.cursor..self.text.len()];
+        let text = &self.text[self.cursor.pos()..self.text.len()];
         regex.find(text)
     }
     pub fn try_captures(&self, regex: &Regex) -> Option<Captures<'a>> {
-        let text = &self.text[self.cursor..self.text.len()];
+        let text = &self.text[self.cursor.pos()..self.text.len()];
         regex.captures(text)
     }
 
-    pub fn move_forward(&mut self, amount: usize) -> bool {
-        self.cursor += amount;
-        if self.cursor > self.text.len() {
-            self.cursor = self.text.len();
-            false
-        } else {
-            true
-        }
-    }
-    pub fn move_backward(&mut self, amount: usize) -> bool {
-        match self.cursor.checked_sub(amount) {
-            Some(cursor) => {
-                self.cursor = cursor;
-                true
-            }
-            None => false,
-        }
-    }
     pub fn skip_forward(&mut self, regex: &Regex) -> usize {
-        let text = &self.text[self.cursor..self.text.len()];
+        let text = &self.text[self.cursor.pos()..self.text.len()];
         let chars = match regex.find(text) {
             Some(m) => m.end(),
             None => 0,
         };
-        self.move_forward(chars);
+        self.cursor.forward(chars);
         chars
     }
     pub fn skip_whitespace(&mut self) -> usize {
@@ -136,16 +128,53 @@ impl<'a> Input<'a> {
     where
         ParseError: From<E1> + From<E2>,
     {
-        let start = self.cursor;
+        let start = self.cursor.pos();
         let captures = self.try_captures(regex).ok_or(ParseError)?;
         let value = collect_data(self, &captures)?;
-        let end = self.cursor - 1;
+        let end = self.cursor.pos() - 1;
         let post_blank = self.skip_whitespace();
 
         let span = Span::new(start, end);
         let shared_behavior_data = SharedBehaviorData { span, post_blank };
 
         construct_result(value, shared_behavior_data).map_err(ParseError::from)
+    }
+}
+
+/// Cursor of [`Input`].
+///
+/// Tracks the current position in the input. Modify the cursor using
+/// [`forward`][`Cursor::forward`] and [`backward`][`Cursor::backward`].
+///
+/// TODO decide if implementing `Clone` is correct. Because the cursor is invalid if it is cloned
+/// and the input is dropped.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Cursor {
+    pos: usize,
+    input_len: usize,
+}
+
+impl Cursor {
+    pub fn pos(&self) -> usize {
+        self.pos
+    }
+    pub fn forward(&mut self, amount: usize) -> bool {
+        self.pos += amount;
+        if self.pos > self.input_len {
+            self.pos = self.input_len;
+            false
+        } else {
+            true
+        }
+    }
+    pub fn backward(&mut self, amount: usize) -> bool {
+        match self.pos.checked_sub(amount) {
+            Some(pos) => {
+                self.pos = pos;
+                true
+            }
+            None => false,
+        }
     }
 }
 
