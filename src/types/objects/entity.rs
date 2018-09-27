@@ -30,17 +30,24 @@ pub struct Entity {
     pub used_brackets: bool,
 }
 
-impl Entity {
-    fn from_collected_data(
-        (name, used_brackets): (String, bool),
-        shared_behavior_data: SharedBehaviorData,
-    ) -> Result<Self, !> {
-        Ok(Entity {
-            shared_behavior_data,
-            name,
-            used_brackets,
-        })
+impl Parse for Entity {
+    fn parse(input: &mut Input) -> Result<Self, ParseError> {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(
+                r"(?mx)\A\\(?:
+                (?P<spaces>_\ +)
+                |
+                (?P<name>there4|sup[123]|frac[13][24]|[[:alpha:]]+)
+                (?P<post>$|\{}|[^[:alpha:]])
+                )"
+            ).unwrap();
+        }
+
+        input.do_parse(&RE, Entity::collect_data, Entity::from_collected_data)
     }
+}
+
+impl Entity {
     fn collect_data(input: &mut Input, captures: &regex::Captures) -> Result<(String, bool), !> {
         let name_group = captures
             .name("spaces")
@@ -61,24 +68,18 @@ impl Entity {
 
         Ok((name, used_brackets))
     }
-}
-
-impl Parse for Entity {
-    fn parse(input: &mut Input) -> Result<Self, ParseError> {
-        lazy_static! {
-            static ref RE: Regex = Regex::new(
-                r"(?mx)\A\\(?:
-                (?P<spaces>_\ +)
-                |
-                (?P<name>there4|sup[123]|frac[13][24]|[[:alpha:]]+)
-                (?P<post>$|\{}|[^[:alpha:]])
-                )"
-            ).unwrap();
-        }
-
-        input.do_parse(&RE, Entity::collect_data, Entity::from_collected_data)
+    fn from_collected_data(
+        (name, used_brackets): (String, bool),
+        shared_behavior_data: SharedBehaviorData,
+    ) -> Result<Self, !> {
+        Ok(Entity {
+            shared_behavior_data,
+            name,
+            used_brackets,
+        })
     }
 }
+
 
 impl fmt::Display for Entity {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
