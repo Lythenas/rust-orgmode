@@ -72,6 +72,10 @@ pub enum LinkFormat {
     ),
 }
 
+/// The set of objects a [`Link`] can contain.
+///
+/// Linkss can't contain [`FootnoteReference`], [`LineBreak`], [`Target`], [`Target`] and
+/// [`Timestamp`].
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LinkDescriptionSetOfObjects {
     RawString(String),

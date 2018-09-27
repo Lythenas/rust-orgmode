@@ -299,10 +299,14 @@ pub enum StandardSet {
     Timestamp(objects::Timestamp),
 }
 
-/// The standard set of objects without [`objects::LineBreak`]s.
+/// The standard set of objects without [`LineBreak`]s.
 ///
 /// Used for elements that can contain the standard set but no line breaks. E.g.
-/// [`greater_elements::Headline`] or [`greater_elements::Inlinetask`].
+/// [`Headline`] or [`Inlinetask`].
+///
+/// [`LineBreak`]: `objects::LineBreak`
+/// [`Headline`]: `greater_elements::Headline`
+/// [`Inlinetask`]: `greater_elements::Inlinetask`
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StandardSetNoLineBreak {
     RawString(String),

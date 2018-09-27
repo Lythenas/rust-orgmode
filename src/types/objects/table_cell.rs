@@ -27,6 +27,8 @@ pub struct TableCell {
     pub content: ContentData<TableCellSetOfObjects>,
 }
 
+/// The set of objects [`TableCell`] can contain.
+///
 /// Table cells can't contain [`InlineBabelCall`], [`InlineSrcBlock`] because formulas are
 /// possible. Also they can't contain [`LineBreak`] and [`StatisticsCookie`].
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]

@@ -302,6 +302,7 @@ pub struct Item {
     // hiddenp: bool
 }
 
+/// The kind of an [`Item`] (and it's metadata).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ItemKind {
     Unordered {
@@ -317,6 +318,7 @@ pub enum ItemKind {
     },
 }
 
+/// An unordered bullet of a lists [`ItemKind`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UnorderedBullet {
     Minus,
@@ -324,6 +326,7 @@ pub enum UnorderedBullet {
     Star,
 }
 
+/// An ordered bullet of a lists [`ItemKind`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OrderedBullet {
     pub counter: Counter,
@@ -550,10 +553,12 @@ pub struct SpecialBlock {
 pub struct Table {
     shared_behavior_data: SharedBehaviorData,
     affiliated_keywords_data: AffiliatedKeywordsData,
+    // TODO make more type safe, org and table.el can't be mixed in one table.
     content_data: ContentData<TableContent>,
     pub kind: TableKind,
 }
 
+/// The set of objects that can be in a [`Table`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TableContent {
     Org(TableRow),

@@ -23,6 +23,9 @@ pub struct RadioTarget {
     pub target: SecondaryString<StandardSet>,
 }
 
+/// The set of objects a [`RadioTarget`] can contain.
+///
+/// Radio targets content is limited to easy to parse objects. Mainly just markup and raw strings.
 #[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RadioTargetSetOfObjects {
     RawString(String),
