@@ -4,8 +4,8 @@ use super::*;
 
 mod babel_call;
 mod clock;
-mod comment_block;
 mod comment;
+mod comment_block;
 mod diary_sexp;
 mod example_block;
 mod export_block;
@@ -20,8 +20,8 @@ mod src_block;
 
 pub use self::babel_call::BabelCall;
 pub use self::clock::{Clock, ClockStatus};
-pub use self::comment_block::CommentBlock;
 pub use self::comment::Comment;
+pub use self::comment_block::CommentBlock;
 pub use self::diary_sexp::DiarySexp;
 pub use self::example_block::ExampleBlock;
 pub use self::export_block::ExportBlock;
@@ -70,4 +70,3 @@ pub enum NumberLinesFlag {
     Continued(Option<u64>),
     New(Option<u64>),
 }
-

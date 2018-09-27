@@ -44,4 +44,3 @@ pub enum ClockStatus {
     Running,
     Closed,
 }
-

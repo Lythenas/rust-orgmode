@@ -26,4 +26,3 @@ pub struct Comment {
     affiliated_keywords_data: AffiliatedKeywordsData,
     pub value: String,
 }
-

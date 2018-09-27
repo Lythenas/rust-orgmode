@@ -23,7 +23,7 @@ pub use self::dynamic_block::DynamicBlock;
 pub use self::footnote_definition::FootnoteDefinition;
 pub use self::headline::*;
 pub use self::item::*;
-pub use self::plain_list::{PlainList, ListKind};
+pub use self::plain_list::{ListKind, PlainList};
 pub use self::property_drawer::PropertyDrawer;
 pub use self::quote_block::QuoteBlock;
 pub use self::section::Section;
