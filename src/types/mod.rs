@@ -30,6 +30,8 @@ pub mod objects;
 pub mod parsing;
 
 use self::affiliated_keywords::AffiliatedKeywords;
+use itertools::Itertools;
+use std::fmt;
 use std::str::pattern::Pattern;
 
 // TODO
@@ -78,9 +80,19 @@ pub struct SharedBehaviorData {
 
 /// Represents where in the file the a object or element is.
 ///
-/// It contains a start and an end. `end` is always bigger than or equal to `start`.
+/// It contains a start and an end. `end` is always bigger than or equal to `start`. Span is to be
+/// interpreted as the numbers in a [`RangeFull`]. `start` is part of the span but `end` is not.
+///
+/// ```text
+/// some text
+/// ^^^
+/// ```
+///
+/// The marked text (`som`) has the span: **0 to 3** not 0 to 2.
 ///
 /// This is useful for warning/error messages and modifying the file.
+///
+/// [`RangeFull`]: `std::ops::RangeFull`
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct Span {
     start: usize,
@@ -140,6 +152,12 @@ pub trait HasContent<T: 'static>: SharedBehavior {
 pub struct ContentData<T> {
     span: Span,
     content: Vec<T>,
+}
+
+impl<T: fmt::Display> fmt::Display for ContentData<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.content.iter().format("\n"))
+    }
 }
 
 /// Some greater elements and elements can have affiliated keywords.
