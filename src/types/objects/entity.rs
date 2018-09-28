@@ -31,7 +31,7 @@ pub struct Entity {
 }
 
 impl Parse for Entity {
-    fn parse(input: &mut Input) -> Result<Self, ParseError> {
+    fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
         lazy_static! {
             static ref RE: Regex = Regex::new(
                 r"(?mx)\A\\(?:
@@ -43,12 +43,15 @@ impl Parse for Entity {
             ).unwrap();
         }
 
-        input.do_parse(&RE, Entity::collect_data, Entity::from_collected_data)
+        parser.parse_object(&RE, Entity::collect_data, Entity::from_collected_data)
     }
 }
 
 impl Entity {
-    fn collect_data(input: &mut Input, captures: &regex::Captures) -> Result<(String, bool), !> {
+    fn collect_data(
+        context: &mut Context,
+        captures: &regex::Captures,
+    ) -> Result<(String, bool), !> {
         let name_group = captures
             .name("spaces")
             .or_else(|| captures.name("name"))
@@ -58,12 +61,12 @@ impl Entity {
         let post = post_group.map(|m| m.as_str());
 
         // skip over name
-        input.cursor_mut().forward(name_group.end());
+        context.move_cursor_forward(name_group.end());
 
         let used_brackets = post == Some("{}");
         if used_brackets {
             // skip over brackets
-            input.cursor_mut().forward(2);
+            context.move_cursor_forward(2);
         }
 
         Ok((name, used_brackets))
@@ -94,8 +97,8 @@ mod tests {
     #[test]
     fn test_parse_spaces_entity() {
         let s = r"\_ ";
-        let mut input = Input::new(s);
-        let parsed = Entity::parse(&mut input).unwrap();
+        let mut parser = Input::new(s).into();
+        let parsed = Entity::parse(&mut parser).unwrap();
 
         assert_eq!(
             parsed,
@@ -108,15 +111,15 @@ mod tests {
                 used_brackets: false,
             }
         );
-        assert_eq!(input.cursor().pos(), 3);
+        assert_eq!(parser.cursor_pos(), 3);
         assert_eq!(parsed.to_string(), s);
     }
 
     #[test]
     fn test_parse_entity() {
         let s = r"\name";
-        let mut input = Input::new(s);
-        let parsed = Entity::parse(&mut input).unwrap();
+        let mut parser = Input::new(s).into();
+        let parsed = Entity::parse(&mut parser).unwrap();
 
         assert_eq!(
             parsed,
@@ -129,15 +132,15 @@ mod tests {
                 used_brackets: false,
             }
         );
-        assert_eq!(input.cursor().pos(), 5);
+        assert_eq!(parser.cursor_pos(), 5);
         assert_eq!(parsed.to_string(), s);
     }
 
     #[test]
     fn test_parse_entity_with_brackets() {
         let s = r"\name{}";
-        let mut input = Input::new(s);
-        let parsed = Entity::parse(&mut input).unwrap();
+        let mut parser = Input::new(s).into();
+        let parsed = Entity::parse(&mut parser).unwrap();
 
         assert_eq!(
             parsed,
@@ -150,15 +153,15 @@ mod tests {
                 used_brackets: true,
             }
         );
-        assert_eq!(input.cursor().pos(), 7);
+        assert_eq!(parser.cursor_pos(), 7);
         assert_eq!(parsed.to_string(), s);
     }
 
     #[test]
     fn test_parse_entity_with_brackets_and_post_blanks() {
         let s = "\\name{}\t\t\t \t";
-        let mut input = Input::new(s);
-        let parsed = Entity::parse(&mut input).unwrap();
+        let mut parser = Input::new(s).into();
+        let parsed = Entity::parse(&mut parser).unwrap();
 
         assert_eq!(
             parsed,
@@ -171,15 +174,15 @@ mod tests {
                 used_brackets: true,
             }
         );
-        assert_eq!(input.cursor().pos(), 12);
+        assert_eq!(parser.cursor_pos(), 12);
         assert_eq!(parsed.to_string(), r"\name{}");
     }
 
     #[test]
     fn test_parse_entity_with_non_alpha_post() {
         let s = r"\name6";
-        let mut input = Input::new(s);
-        let parsed = Entity::parse(&mut input).unwrap();
+        let mut parser = Input::new(s).into();
+        let parsed = Entity::parse(&mut parser).unwrap();
 
         assert_eq!(
             parsed,
@@ -192,7 +195,7 @@ mod tests {
                 used_brackets: false,
             }
         );
-        assert_eq!(input.cursor().pos(), 5);
+        assert_eq!(parser.cursor_pos(), 5);
         assert_eq!(parsed.to_string(), r"\name");
     }
 }
