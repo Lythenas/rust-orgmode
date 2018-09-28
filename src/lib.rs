@@ -43,7 +43,7 @@ pub mod types;
 pub mod macros;
 #[macro_use]
 mod enum_from_str;
-mod parse;
+mod legacy_parse;
 
 use failure::Error;
 use std::str::FromStr;
@@ -112,7 +112,7 @@ impl FromStr for Timestamp {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use nom::types::CompleteStr;
         use nom::ErrorKind;
-        ::parse::timestamp(CompleteStr(s))
+        self::legacy_parse::timestamp(CompleteStr(s))
             .or_else(|err| {
                 match err.into_error_kind() {
                     // TODO convert to useful error
