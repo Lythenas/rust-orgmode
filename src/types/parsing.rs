@@ -26,21 +26,12 @@ impl From<Input> for Parser {
         let input_len = input.len();
         Parser {
             input,
-            cursor: Cursor {
-                pos: 0,
-                input_len,
-            },
+            cursor: Cursor { pos: 0, input_len },
         }
     }
 }
 
 impl Parser {
-    fn create_context(&self) -> Context {
-        Context {
-            cursor: self.cursor.clone(),
-        }
-    }
-
     /// Helper function to make parsing easier.
     ///
     /// The [`Regex`] is used to capture groups. Use `(?m)` in your regex so you can use `^` and `$`
@@ -70,10 +61,7 @@ impl Parser {
         ParseError: From<E1> + From<E2>,
     {
         let start = self.cursor.pos();
-        let captures = self
-            .input
-            .try_captures(regex, start..)
-            .ok_or(ParseError)?;
+        let captures = self.input.try_captures(regex, start..).ok_or(ParseError)?;
 
         let mut context = self.create_context();
 
@@ -96,6 +84,102 @@ impl Parser {
         self.cursor = context.cursor;
 
         Ok(result)
+    }
+
+    pub fn parse_block<'a, T, R, E1, E2, S>(
+        &mut self,
+        start_re: &Regex,
+        get_end_re: impl FnOnce(&Context, &Captures) -> &'a Regex,
+        collect_data: impl FnOnce(&mut Context, &Captures) -> Result<T, E1>,
+        construct_result: impl FnOnce(T, SharedBehaviorData, AffiliatedKeywordsData, ContentData<S>)
+            -> Result<R, E2>,
+    ) -> Result<R, ParseError>
+    where
+        ParseError: From<E1> + From<E2>,
+        T: ::std::fmt::Debug,
+        S: ::std::fmt::Debug,
+        R: ::std::fmt::Debug,
+    {
+        // capture start line
+        let start = self.cursor.pos();
+        println!("Starting parsing at: {}", start);
+        println!("Parsing:\n========\n{}\n========", self.input.text);
+        let captures = self
+            .input
+            .try_captures(start_re, start..)
+            .ok_or(ParseError)?;
+        let end_of_start = captures.get(0).unwrap().end();
+
+        let mut context = self.create_context();
+        println!("Using context: {:?}", context);
+
+        // find end line
+        // start search after the start line
+        let end_re = get_end_re(&context, &captures);
+        let end_match = self
+            .input
+            .try_match(end_re, end_of_start..)
+            .ok_or(ParseError)?;
+
+        println!("Found end: {:?}", end_match);
+
+        // parse start line
+        // this also moves the cursor to after the content
+        let value = match collect_data(&mut context, &captures) {
+            Ok(value) => value,
+            Err(err) => {
+                return Err(ParseError::from(err));
+            }
+        };
+
+        println!("Parsed start line: {:?}", value);
+
+        // TODO parse content
+        let content_start = end_of_start;
+        let content_end = content_start + end_match.start();
+        let content_data = ContentData::empty(Span::new(content_start, content_end));
+
+        println!("Parsed content: {:?}", content_data);
+
+        context.cursor.forward(end_match.end() + 1);
+        let end = context.cursor.pos();
+        let span = Span::new(start, end);
+
+        // count whitespace after the end
+        let post_blank = self.input.count_whitespace_newline(end..);
+        context.cursor.forward(post_blank);
+
+        println!("Found {} blanks after the end", post_blank);
+
+        let shared_behavior_data = SharedBehaviorData { span, post_blank };
+
+        // TODO get affiliated keywords from somewhere
+        // affiliated keywords are parsed before the element is parsed
+        let affiliated_keywords_data = AffiliatedKeywordsData {
+            span: Span::new(0, 0),
+            affiliated_keywords: AffiliatedKeywords::default(),
+        };
+
+        println!("{:?}", affiliated_keywords_data);
+
+        let result = construct_result(
+            value,
+            shared_behavior_data,
+            affiliated_keywords_data,
+            content_data,
+        )?;
+
+        println!("Constructed result: {:?}", result);
+
+        self.cursor = context.cursor;
+
+        Ok(result)
+    }
+
+    fn create_context(&self) -> Context {
+        Context {
+            cursor: self.cursor.clone(),
+        }
     }
 
     pub fn cursor_pos(&self) -> usize {

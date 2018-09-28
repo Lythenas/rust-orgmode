@@ -72,7 +72,7 @@ pub trait SharedBehavior {
 /// Helper struct that contains the data for the shared behavior. See [`SharedBehavior`].
 ///
 /// [`SharedBehavior`]: trait.SharedBehavior.html
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SharedBehaviorData {
     span: Span,
     post_blank: usize,
@@ -93,7 +93,7 @@ pub struct SharedBehaviorData {
 /// This is useful for warning/error messages and modifying the file.
 ///
 /// [`RangeFull`]: `std::ops::RangeFull`
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Span {
     start: usize,
     end: usize,
@@ -148,10 +148,19 @@ pub trait HasContent<T: 'static>: SharedBehavior {
 /// See [`HasContent`].
 ///
 /// [`HasContent`]: trait.HasContent.html
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ContentData<T> {
     span: Span,
     content: Vec<T>,
+}
+
+impl<T> ContentData<T> {
+    pub fn empty(span: Span) -> Self {
+        ContentData {
+            span,
+            content: Vec::new(),
+        }
+    }
 }
 
 impl<T: fmt::Display> fmt::Display for ContentData<T> {
