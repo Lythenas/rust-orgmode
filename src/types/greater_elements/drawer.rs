@@ -28,7 +28,7 @@ use types::parsing::{Context, Parse, ParseError, Parser};
 )]
 pub struct Drawer {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     content_data: ContentData<ElementSet>,
     pub name: String,
     // hiddenp: bool,
@@ -60,7 +60,7 @@ impl Parse for Drawer {
         fn from_collected_data(
             name: String,
             shared_behavior_data: SharedBehaviorData,
-            affiliated_keywords_data: AffiliatedKeywordsData,
+            affiliated_keywords_data: Spanned<AffiliatedKeywords>,
             content_data: ContentData<ElementSet>,
         ) -> Result<Drawer, ()> {
             Ok(Drawer {
@@ -104,10 +104,7 @@ mod tests {
                     span: Span::new(0, 17),
                     post_blank: 0,
                 },
-                affiliated_keywords_data: AffiliatedKeywordsData {
-                    span: Span::new(0, 0),
-                    affiliated_keywords: AffiliatedKeywords::default(),
-                },
+                affiliated_keywords_data: Spanned::new(Span::new(0, 0), AffiliatedKeywords::default()),
                 content_data: ContentData {
                     span: Span::new(12, 12),
                     content: Vec::default(),

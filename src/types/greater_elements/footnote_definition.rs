@@ -23,7 +23,7 @@ use super::*;
 )]
 pub struct FootnoteDefinition {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     content_data: ContentData<ElementSet>, // TODO
     pub label: String,
     // pre_blank: u32 // TODO (maybe) blank lines after `[LABEL]`

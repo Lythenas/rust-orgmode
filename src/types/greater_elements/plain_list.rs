@@ -19,7 +19,7 @@ use super::*;
 )]
 pub struct PlainList {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     content_data: ContentData<Item>,
     // structure ?
 }

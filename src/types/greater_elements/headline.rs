@@ -44,7 +44,7 @@ use super::*;
 )]
 pub struct Headline {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     content_data: ContentData<HeadlineContentSet>,
     pub level: u32,
     pub todo_keyword: Option<TodoKeyword>,

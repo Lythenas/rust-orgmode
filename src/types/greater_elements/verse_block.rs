@@ -22,6 +22,6 @@ use super::*;
 )]
 pub struct VerseBlock {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     content_data: ContentData<StandardSet>,
 }

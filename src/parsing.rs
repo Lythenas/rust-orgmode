@@ -92,7 +92,7 @@ impl Parser {
         start_re: &Regex,
         get_end_re: impl FnOnce(&Context, &Captures) -> &'a Regex,
         collect_data: impl FnOnce(&mut Context, &Captures) -> Result<T, E1>,
-        construct_result: impl FnOnce(T, SharedBehaviorData, AffiliatedKeywordsData, ContentData<S>)
+        construct_result: impl FnOnce(T, SharedBehaviorData, Spanned<AffiliatedKeywords>, ContentData<S>)
             -> Result<R, E2>,
     ) -> Result<R, ParseError>
     where
@@ -156,8 +156,7 @@ impl Parser {
 
         // TODO get affiliated keywords from somewhere
         // affiliated keywords are parsed before the element is parsed
-        let affiliated_keywords_data =
-            AffiliatedKeywordsData::new(Span::new(0, 0), AffiliatedKeywords::default());
+        let affiliated_keywords_data = Spanned::new(Span::new(0, 0), AffiliatedKeywords::default());
 
         println!("{:?}", affiliated_keywords_data);
 

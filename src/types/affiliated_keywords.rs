@@ -59,12 +59,12 @@ use std::slice;
 /// The attr keywords for one backend can occur more than once.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct AffiliatedKeywords {
-    captions: Vec<SpannedValue<Caption>>,
-    headers: Vec<SpannedValue<String>>,
-    name: Option<SpannedValue<String>>,
-    plot: Option<SpannedValue<String>>,
-    results: Option<SpannedValue<Results>>,
-    attrs: Vec<SpannedValue<Attr>>,
+    captions: Vec<Spanned<Caption>>,
+    headers: Vec<Spanned<String>>,
+    name: Option<Spanned<String>>,
+    plot: Option<Spanned<String>>,
+    results: Option<Spanned<Results>>,
+    attrs: Vec<Spanned<Attr>>,
 }
 
 impl AffiliatedKeywords {
@@ -95,19 +95,19 @@ impl AffiliatedKeywords {
     pub fn name(&self) -> Option<&String> {
         self.name.as_ref().map(|spanned| spanned.value())
     }
-    pub fn spanned_name(&self) -> Option<&SpannedValue<String>> {
+    pub fn spanned_name(&self) -> Option<&Spanned<String>> {
         self.name.as_ref()
     }
     pub fn plot(&self) -> Option<&String> {
         self.plot.as_ref().map(|spanned| spanned.value())
     }
-    pub fn spanned_plot(&self) -> Option<&SpannedValue<String>> {
+    pub fn spanned_plot(&self) -> Option<&Spanned<String>> {
         self.plot.as_ref()
     }
     pub fn results(&self) -> Option<&Results> {
         self.results.as_ref().map(|spanned| spanned.value())
     }
-    pub fn spanned_results(&self) -> Option<&SpannedValue<Results>> {
+    pub fn spanned_results(&self) -> Option<&Spanned<Results>> {
         self.results.as_ref()
     }
     pub fn attrs(&self) -> Attrs {
@@ -179,7 +179,7 @@ pub struct Attr {
 /// This struct is created by the [`captions`][`AffiliatedKeywords::captions`] method
 /// on [`AffiliatedKeywords`].
 pub struct Captions<'a> {
-    inner: slice::Iter<'a, SpannedValue<Caption>>,
+    inner: slice::Iter<'a, Spanned<Caption>>,
 }
 
 impl<'a> Iterator for Captions<'a> {
@@ -195,11 +195,11 @@ impl<'a> Iterator for Captions<'a> {
 /// This struct is created by the [`spanned_captions`][`AffiliatedKeywords::spanned_captions`] method
 /// on [`AffiliatedKeywords`].
 pub struct SpannedCaptions<'a> {
-    inner: slice::Iter<'a, SpannedValue<Caption>>,
+    inner: slice::Iter<'a, Spanned<Caption>>,
 }
 
 impl<'a> Iterator for SpannedCaptions<'a> {
-    type Item = &'a SpannedValue<Caption>;
+    type Item = &'a Spanned<Caption>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()
@@ -211,7 +211,7 @@ impl<'a> Iterator for SpannedCaptions<'a> {
 /// This struct is created by the [`headers`][`AffiliatedKeywords::headers`] method
 /// on [`AffiliatedKeywords`].
 pub struct Headers<'a> {
-    inner: slice::Iter<'a, SpannedValue<String>>,
+    inner: slice::Iter<'a, Spanned<String>>,
 }
 
 impl<'a> Iterator for Headers<'a> {
@@ -227,11 +227,11 @@ impl<'a> Iterator for Headers<'a> {
 /// This struct is created by the [`spanned_headers`][`AffiliatedKeywords::spanned_headers`] method
 /// on [`AffiliatedKeywords`].
 pub struct SpannedHeaders<'a> {
-    inner: slice::Iter<'a, SpannedValue<String>>,
+    inner: slice::Iter<'a, Spanned<String>>,
 }
 
 impl<'a> Iterator for SpannedHeaders<'a> {
-    type Item = &'a SpannedValue<String>;
+    type Item = &'a Spanned<String>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()
@@ -243,7 +243,7 @@ impl<'a> Iterator for SpannedHeaders<'a> {
 /// This struct is created by the [`attrs`][`AffiliatedKeywords::attrs`] method
 /// on [`AffiliatedKeywords`].
 pub struct Attrs<'a> {
-    inner: slice::Iter<'a, SpannedValue<Attr>>,
+    inner: slice::Iter<'a, Spanned<Attr>>,
 }
 
 impl<'a> Iterator for Attrs<'a> {
@@ -259,11 +259,11 @@ impl<'a> Iterator for Attrs<'a> {
 /// This struct is created by the [`spanned_attrs`][`AffiliatedKeywords::spanned_attrs`] method
 /// on [`AffiliatedKeywords`].
 pub struct SpannedAttrs<'a> {
-    inner: slice::Iter<'a, SpannedValue<Attr>>,
+    inner: slice::Iter<'a, Spanned<Attr>>,
 }
 
 impl<'a> Iterator for SpannedAttrs<'a> {
-    type Item = &'a SpannedValue<Attr>;
+    type Item = &'a Spanned<Attr>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()

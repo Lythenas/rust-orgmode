@@ -25,7 +25,7 @@ use super::*;
 )]
 pub struct SpecialBlock {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     content_data: ContentData<String>,
     pub kind: String,
     // hiddenp: bool

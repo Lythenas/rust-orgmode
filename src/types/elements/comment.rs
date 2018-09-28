@@ -23,6 +23,6 @@ use super::*;
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Comment {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     pub value: String,
 }

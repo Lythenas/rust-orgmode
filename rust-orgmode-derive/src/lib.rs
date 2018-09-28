@@ -142,7 +142,7 @@ fn impl_affiliated_keywords(input: &DeriveInput) -> TokenStream {
 
     quote_spanned! { field.span()=>
         impl HasAffiliatedKeywords for #name {
-            fn affiliated_keywords_data(&self) -> &AffiliatedKeywordsData {
+            fn affiliated_keywords_data(&self) -> &Spanned<AffiliatedKeywords> {
                 &self.affiliated_keywords_data
             }
         }

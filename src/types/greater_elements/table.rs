@@ -48,7 +48,7 @@ use super::*;
 )]
 pub struct Table {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     // TODO make more type safe, org and table.el can't be mixed in one table.
     content_data: ContentData<TableContent>,
     pub kind: TableKind,

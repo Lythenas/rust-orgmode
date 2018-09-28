@@ -30,7 +30,7 @@ use super::*;
 )]
 pub struct DynamicBlock {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     content_data: ContentData<ElementSet>,
     /// The name of the function that can update this block.
     pub name: String,

@@ -14,7 +14,7 @@ use super::*;
 #[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Paragraph {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     /// The content of the paragraph.
     ///
     /// Newlines are ignored and are not stored here.

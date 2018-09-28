@@ -195,46 +195,27 @@ pub trait HasAffiliatedKeywords: Element {
     /// this trait.
     ///
     /// Wenn implementing this method you should simply return the field that stores this data.
-    fn affiliated_keywords_data(&self) -> &AffiliatedKeywordsData;
+    fn affiliated_keywords_data(&self) -> &Spanned<AffiliatedKeywords>;
 
     fn affiliated_keywords(&self) -> &AffiliatedKeywords {
-        &self.affiliated_keywords_data().affiliated_keywords
+        &self.affiliated_keywords_data().value()
     }
 
     fn affiliated_keywords_span(&self) -> &Span {
-        &self.affiliated_keywords_data().span
+        &self.affiliated_keywords_data().span()
     }
 }
 
-/// Helper struct that contains the data for the elements that have affiliated keywords.
-///
-/// See [`HasAffiliatedKeywords`].
-///
-/// [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
+/// Represents a value and its [`Span`] (beginning and end position) in an org file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AffiliatedKeywordsData {
-    span: Span,
-    affiliated_keywords: AffiliatedKeywords,
-}
-
-impl AffiliatedKeywordsData {
-    pub(crate) fn new(span: Span, affiliated_keywords: AffiliatedKeywords) -> AffiliatedKeywordsData {
-        AffiliatedKeywordsData {
-            span, affiliated_keywords,
-        }
-    }
-}
-
-/// Represents a value and its position in an org file.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SpannedValue<T> {
+pub struct Spanned<T> {
     span: Span,
     value: T,
 }
 
-impl<T> SpannedValue<T> {
+impl<T> Spanned<T> {
     pub fn new(span: Span, value: T) -> Self {
-        SpannedValue { span, value }
+        Spanned { span, value }
     }
     pub fn span(&self) -> &Span {
         &self.span

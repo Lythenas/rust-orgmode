@@ -23,7 +23,7 @@ use super::*;
 )]
 pub struct QuoteBlock {
     shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: AffiliatedKeywordsData,
+    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
     content_data: ContentData<ElementSet>,
     // hiddenp: bool
 }
