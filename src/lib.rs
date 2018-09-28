@@ -38,6 +38,7 @@ extern crate lazy_static;
 extern crate phf;
 
 pub mod entities;
+pub mod parsing;
 pub mod types;
 #[macro_use]
 pub mod macros;

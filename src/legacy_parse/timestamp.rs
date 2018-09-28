@@ -1,7 +1,7 @@
+use super::{OrgInput, OrgResult};
 use chrono::{NaiveDate, NaiveTime};
 use failure::Error;
 use nom::types::CompleteStr;
-use super::{OrgInput, OrgResult};
 use std::fmt;
 use std::str::{self, FromStr};
 use {

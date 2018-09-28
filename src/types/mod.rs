@@ -27,9 +27,9 @@ pub mod document;
 pub mod elements;
 pub mod greater_elements;
 pub mod objects;
-pub mod parsing;
 
 use self::affiliated_keywords::AffiliatedKeywords;
+use super::parsing;
 use itertools::Itertools;
 use std::fmt;
 use std::str::pattern::Pattern;
@@ -76,6 +76,12 @@ pub trait SharedBehavior {
 pub struct SharedBehaviorData {
     span: Span,
     post_blank: usize,
+}
+
+impl SharedBehaviorData {
+    pub(crate) fn new(span: Span, post_blank: usize) -> SharedBehaviorData {
+        SharedBehaviorData { span, post_blank }
+    }
 }
 
 /// Represents where in the file the a object or element is.
@@ -207,8 +213,16 @@ pub trait HasAffiliatedKeywords: Element {
 /// [`HasAffiliatedKeywords`]: trait.HasAffiliatedKeywords.html
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AffiliatedKeywordsData {
-    affiliated_keywords: AffiliatedKeywords,
     span: Span,
+    affiliated_keywords: AffiliatedKeywords,
+}
+
+impl AffiliatedKeywordsData {
+    pub(crate) fn new(span: Span, affiliated_keywords: AffiliatedKeywords) -> AffiliatedKeywordsData {
+        AffiliatedKeywordsData {
+            span, affiliated_keywords,
+        }
+    }
 }
 
 /// Represents a value and its position in an org file.

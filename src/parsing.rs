@@ -1,8 +1,9 @@
 //! Contains the types and traits needed for parsing.
-use super::*;
 use regex::{Captures, Match, Regex};
 use std::ops::Deref;
 use std::slice::SliceIndex;
+use types::affiliated_keywords::AffiliatedKeywords;
+use types::*;
 
 #[derive(Debug, Clone)]
 pub struct Context {
@@ -77,7 +78,7 @@ impl Parser {
         context.cursor.forward(post_blank);
 
         let span = Span::new(start, end - 1);
-        let shared_behavior_data = SharedBehaviorData { span, post_blank };
+        let shared_behavior_data = SharedBehaviorData::new(span, post_blank);
 
         let result = construct_result(value, shared_behavior_data)?;
 
@@ -151,14 +152,12 @@ impl Parser {
 
         println!("Found {} blanks after the end", post_blank);
 
-        let shared_behavior_data = SharedBehaviorData { span, post_blank };
+        let shared_behavior_data = SharedBehaviorData::new(span, post_blank);
 
         // TODO get affiliated keywords from somewhere
         // affiliated keywords are parsed before the element is parsed
-        let affiliated_keywords_data = AffiliatedKeywordsData {
-            span: Span::new(0, 0),
-            affiliated_keywords: AffiliatedKeywords::default(),
-        };
+        let affiliated_keywords_data =
+            AffiliatedKeywordsData::new(Span::new(0, 0), AffiliatedKeywords::default());
 
         println!("{:?}", affiliated_keywords_data);
 
