@@ -215,3 +215,8 @@ pub struct TimestampDataWithTime {
     pub repeater: Option<Repeater>,
     pub warning: Option<Warning>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+}
