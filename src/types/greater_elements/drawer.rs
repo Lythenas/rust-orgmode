@@ -1,4 +1,6 @@
 use super::*;
+use regex::{self, Regex};
+use std::fmt;
 
 /// A drawer to hide content.
 ///
@@ -31,12 +33,16 @@ pub struct Drawer {
     // hiddenp: bool,
 }
 
-fn _parse() {
-    // search for "^[ \t]*:END:[ \t]*$"
-    // if not found: parse a paragraph
-    // if found: get end line position
-    // parse the start line
-    // check if has content
-    // (if so: parse conten)
-    // count blank lines after end (skip forward all " \r\t\n" chars)
+lazy_static! {
+    static ref RE_START: Regex =
+        Regex::new(r"(?m)\A^(?P<indentation>\s*):(?P<name>[\w-_]+):\s*$").unwrap();
+    static ref RE_END: Regex = Regex::new(r"(?m)\A^(?P<indentation>\s*):END:\s*$").unwrap();
+}
+
+impl fmt::Display for Drawer {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // TODO this should work once all elements impl Display (also impl Display for ElementSet)
+        //write!(f, ":{}:\n{}\n:END:", self.name, self.content_data)
+        unimplemented!()
+    }
 }
