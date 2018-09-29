@@ -199,9 +199,9 @@ impl Deref for Input {
 }
 
 impl Input {
-    pub fn new(text: impl ToString) -> Self {
+    pub fn new(text: impl Into<String>) -> Self {
         Input {
-            text: text.to_string(),
+            text: text.into(),
         }
     }
 

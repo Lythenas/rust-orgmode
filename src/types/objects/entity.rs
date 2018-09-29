@@ -93,6 +93,7 @@ impl fmt::Display for Entity {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use parsing::Input;
 
     #[test]
     fn test_parse_spaces_entity() {

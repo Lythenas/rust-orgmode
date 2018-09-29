@@ -77,10 +77,10 @@ impl Parse for Drawer {
 
 impl fmt::Display for Drawer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, ":{}:\n", self.name)?;
+        writeln!(f, ":{}:", self.name)?;
         if !self.content().is_empty() {
             // TODO this should work once all elements impl Display (also impl Display for ElementSet)
-            //write!(f, "{}\n", self.content_data)?;
+            //writeln!(f, "{}", self.content_data)?;
         }
         write!(f, ":END:")
     }

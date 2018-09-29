@@ -1,6 +1,6 @@
 //! Contains all objects.
 
-use super::parsing::{Context, Input, Parse, ParseError, Parser};
+use super::parsing::{Context, Parse, ParseError, Parser};
 use super::*;
 use std::fmt;
 
