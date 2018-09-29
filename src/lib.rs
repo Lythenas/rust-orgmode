@@ -33,7 +33,6 @@ extern crate failure_derive;
 #[macro_use]
 extern crate lazy_static;
 
-
 pub mod entities;
 pub mod parsing;
 pub mod types;
@@ -117,7 +116,8 @@ impl FromStr for Timestamp {
                     ErrorKind::Custom(e) => Err(TimestampParseError::Custom(e)),
                     _ => unimplemented!(),
                 }
-            }).and_then(|(s, ts)| {
+            })
+            .and_then(|(s, ts)| {
                 if s == CompleteStr("") {
                     Ok(ts)
                 } else {

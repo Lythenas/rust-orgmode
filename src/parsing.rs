@@ -1,9 +1,9 @@
 //! Contains the types and traits needed for parsing.
+use crate::types::affiliated_keywords::AffiliatedKeywords;
+use crate::types::*;
 use regex::{Captures, Match, Regex};
 use std::ops::Deref;
 use std::slice::SliceIndex;
-use crate::types::affiliated_keywords::AffiliatedKeywords;
-use crate::types::*;
 
 #[derive(Debug, Clone)]
 pub struct Context {
@@ -92,8 +92,12 @@ impl Parser {
         start_re: &Regex,
         get_end_re: impl FnOnce(&Context, &Captures<'_>) -> &'a Regex,
         collect_data: impl FnOnce(&mut Context, &Captures<'_>) -> Result<T, E1>,
-        construct_result: impl FnOnce(T, SharedBehaviorData, Spanned<AffiliatedKeywords>, ContentData<S>)
-            -> Result<R, E2>,
+        construct_result: impl FnOnce(
+            T,
+            SharedBehaviorData,
+            Spanned<AffiliatedKeywords>,
+            ContentData<S>,
+        ) -> Result<R, E2>,
     ) -> Result<R, ParseError>
     where
         ParseError: From<E1> + From<E2>,
@@ -200,9 +204,7 @@ impl Deref for Input {
 
 impl Input {
     pub fn new(text: impl Into<String>) -> Self {
-        Input {
-            text: text.into(),
-        }
+        Input { text: text.into() }
     }
 
     pub fn text(&self) -> &str {

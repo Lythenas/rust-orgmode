@@ -111,7 +111,10 @@ mod tests {
 
     #[test]
     fn test_take_until_or_eof() {
-        named!(x<CompleteStr<'_>, CompleteStr<'_>>, take_until_or_eof!("\n"));
+        named!(
+            x<CompleteStr<'_>, CompleteStr<'_>>,
+            take_until_or_eof!("\n")
+        );
         let r = x(CompleteStr("abc def"));
         assert_eq!(r, Ok((CompleteStr(""), CompleteStr("abc def"))));
         let r = x(CompleteStr("abc\ndef"));

@@ -1,7 +1,7 @@
 use super::*;
+use crate::types::parsing::{Context, Parse, ParseError, Parser};
 use regex::Regex;
 use std::fmt;
-use crate::types::parsing::{Context, Parse, ParseError, Parser};
 
 /// A drawer to hide content.
 ///
@@ -46,7 +46,10 @@ impl Parse for Drawer {
             &RE_END
         }
 
-        fn collect_data(context: &mut Context, captures: &regex::Captures<'_>) -> Result<String, ()> {
+        fn collect_data(
+            context: &mut Context,
+            captures: &regex::Captures<'_>,
+        ) -> Result<String, ()> {
             let _indentation = captures.name("indentation").unwrap();
             let name = captures.name("name").unwrap();
 
@@ -104,7 +107,10 @@ mod tests {
                     span: Span::new(0, 17),
                     post_blank: 0,
                 },
-                affiliated_keywords_data: Spanned::new(Span::new(0, 0), AffiliatedKeywords::default()),
+                affiliated_keywords_data: Spanned::new(
+                    Span::new(0, 0),
+                    AffiliatedKeywords::default()
+                ),
                 content_data: ContentData {
                     span: Span::new(12, 12),
                     content: Vec::default(),

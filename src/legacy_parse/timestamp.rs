@@ -1,13 +1,13 @@
 use super::{OrgInput, OrgResult};
 use chrono::{NaiveDate, NaiveTime};
-use failure::Error;
-use nom::types::CompleteStr;
-use std::fmt;
-use std::str::{self, FromStr};
 use crate::{
     Date, RepeatStrategy, Repeater, Time, TimePeriod, TimeUnit, Timestamp, TimestampData,
     TimestampDataWithTime, TimestampRange, WarningDelay, WarningStrategy,
 };
+use failure::Error;
+use nom::types::CompleteStr;
+use std::fmt;
+use std::str::{self, FromStr};
 
 // TODO add better error returns to the parsers.
 // e.g. with return_error! or add_return_error!.
@@ -23,7 +23,9 @@ fn is_digit(c: char) -> bool {
 fn parse_u32(i: OrgInput<'_>) -> OrgResult<'_, u32> {
     to_failure!(
         i,
-        map_res!(take_while1!(is_digit), |s: CompleteStr<'_>| u32::from_str(*s))
+        map_res!(take_while1!(is_digit), |s: CompleteStr<'_>| u32::from_str(
+            *s
+        ))
     )
 }
 
@@ -35,7 +37,8 @@ fn parse_i32(i: OrgInput<'_>) -> OrgResult<'_, i32> {
             recognize!(do_parse!(
                 opt!(alt!(tag!("-") | tag!("+"))) >> take_while1!(is_digit) >> ()
             )),
-            |s: CompleteStr<'_>| i32::from_str_radix(*s, 10).map_err(|_| format_err!("invalid i32"))
+            |s: CompleteStr<'_>| i32::from_str_radix(*s, 10)
+                .map_err(|_| format_err!("invalid i32"))
         )
     )
 }
@@ -79,7 +82,8 @@ fn to_date((year, month, day, weekday): (i32, u32, u32, Option<&str>)) -> Result
             None => Ok(date),
             Some(wd) if wd == date.weekday() => Ok(date),
             _ => Err(format_err!("invalid weekday in date")),
-        }).map(Date::new)
+        })
+        .map(Date::new)
 }
 
 /// Parses a date string in the format `YYYY-MM-DD DAYNAME` and returns
@@ -662,7 +666,8 @@ mod tests {
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
+                )
+                .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
             );
             assert_ts_many!(
                 "<2018-08-04 12:00 +1h>" =>
@@ -674,7 +679,8 @@ mod tests {
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
+                )
+                .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
             );
             assert_ts_many!(
                 "[2018-08-04 12:00 +1h]" =>
@@ -690,7 +696,8 @@ mod tests {
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                )
+                .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "<2018-08-04 12:00 -1h>" =>
@@ -702,7 +709,8 @@ mod tests {
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                )
+                .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
                 "[2018-08-04 12:00 -1h]" =>
@@ -718,7 +726,8 @@ mod tests {
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                )
+                .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
                 .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
@@ -735,7 +744,8 @@ mod tests {
                 TimestampData::with_time(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                )
+                .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
                 .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
             );
             assert_ts_many!(
@@ -773,7 +783,8 @@ mod tests {
                 TimestampDataWithTime::new(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
+                )
+                .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative)),
                 NaiveTime::from_hms(13, 0, 0).into(),
             ));
             assert_ts_many!(
@@ -790,7 +801,8 @@ mod tests {
                 TimestampDataWithTime::new(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
+                )
+                .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
                 NaiveTime::from_hms(13, 0, 0).into(),
             ));
             assert_ts_many!(
@@ -807,7 +819,8 @@ mod tests {
                 TimestampDataWithTime::new(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                )
+                .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
                 .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
                 NaiveTime::from_hms(13, 0, 0).into(),
             ));
@@ -825,7 +838,8 @@ mod tests {
                 TimestampDataWithTime::new(
                     NaiveDate::from_ymd(2018, 08, 04),
                     NaiveTime::from_hms(12, 0, 0),
-                ).and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
+                )
+                .and_repeater(Repeater::new(1.hour(), RepeatStrategy::Cumulative))
                 .and_warning_delay(WarningDelay::new(1.hour(), WarningStrategy::All)),
                 NaiveTime::from_hms(13, 0, 0).into(),
             ));

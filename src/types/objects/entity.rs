@@ -40,7 +40,8 @@ impl Parse for Entity {
                 (?P<name>there4|sup[123]|frac[13][24]|[[:alpha:]]+)
                 (?P<post>$|\{}|[^[:alpha:]])
                 )"
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         parser.parse_object(&RE, Entity::collect_data, Entity::from_collected_data)
