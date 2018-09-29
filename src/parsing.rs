@@ -101,14 +101,12 @@ impl Parser {
     ) -> Result<R, ParseError>
     where
         ParseError: From<E1> + From<E2>,
-        T: ::std::fmt::Debug,
-        S: ::std::fmt::Debug,
-        R: ::std::fmt::Debug,
+        T: std::fmt::Debug,
+        S: std::fmt::Debug,
+        R: std::fmt::Debug,
     {
         // capture start line
         let start = self.cursor.pos();
-        println!("Starting parsing at: {}", start);
-        println!("Parsing:\n========\n{}\n========", self.input.text);
         let captures = self
             .input
             .try_captures(start_re, start..)
@@ -116,7 +114,6 @@ impl Parser {
         let end_of_start = captures.get(0).unwrap().end();
 
         let mut context = self.create_context();
-        println!("Using context: {:?}", context);
 
         // find end line
         // start search after the start line
@@ -125,8 +122,6 @@ impl Parser {
             .input
             .try_match(end_re, end_of_start..)
             .ok_or(ParseError)?;
-
-        println!("Found end: {:?}", end_match);
 
         // parse start line
         // this also moves the cursor to after the content
@@ -137,14 +132,10 @@ impl Parser {
             }
         };
 
-        println!("Parsed start line: {:?}", value);
-
         // TODO parse content
         let content_start = end_of_start;
         let content_end = content_start + end_match.start();
         let content_data = ContentData::empty(Span::new(content_start, content_end));
-
-        println!("Parsed content: {:?}", content_data);
 
         context.cursor.forward(end_match.end() + 1);
         let end = context.cursor.pos();
@@ -154,15 +145,11 @@ impl Parser {
         let post_blank = self.input.count_whitespace_newline(end..);
         context.cursor.forward(post_blank);
 
-        println!("Found {} blanks after the end", post_blank);
-
         let shared_behavior_data = SharedBehaviorData::new(span, post_blank);
 
         // TODO get affiliated keywords from somewhere
         // affiliated keywords are parsed before the element is parsed
         let affiliated_keywords_data = Spanned::new(Span::new(0, 0), AffiliatedKeywords::default());
-
-        println!("{:?}", affiliated_keywords_data);
 
         let result = construct_result(
             value,
@@ -170,8 +157,6 @@ impl Parser {
             affiliated_keywords_data,
             content_data,
         )?;
-
-        println!("Constructed result: {:?}", result);
 
         self.cursor = context.cursor;
 

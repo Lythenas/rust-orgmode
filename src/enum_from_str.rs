@@ -11,7 +11,7 @@ macro_rules! enum_from_str {
             )+
         }
 
-        impl ::std::str::FromStr for $name {
+        impl std::str::FromStr for $name {
             type Err = ();
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -24,8 +24,8 @@ macro_rules! enum_from_str {
             }
         }
 
-        impl ::std::fmt::Display for $name {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                 match &self {
                     $(
                         $name::$x => write!(f, stringify!($x)),
