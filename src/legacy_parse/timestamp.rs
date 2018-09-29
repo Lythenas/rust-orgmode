@@ -4,7 +4,7 @@ use failure::Error;
 use nom::types::CompleteStr;
 use std::fmt;
 use std::str::{self, FromStr};
-use {
+use crate::{
     Date, RepeatStrategy, Repeater, Time, TimePeriod, TimeUnit, Timestamp, TimestampData,
     TimestampDataWithTime, TimestampRange, WarningDelay, WarningStrategy,
 };
@@ -389,7 +389,7 @@ pub fn timestamp(i: OrgInput) -> OrgResult<Timestamp> {
 /// It can't be converted e.g. when one of the timestamps is already a time range but both are
 /// given. (`<2018-06-20 12:30-14:00>--<2018-07-01 22:00>`)
 fn to_timestamp((start, end): (Timestamp, Option<Timestamp>)) -> Result<Timestamp, Error> {
-    use Timestamp::*;
+    use crate::Timestamp::*;
     match (start, end) {
         (Active(start), Some(Active(end))) => {
             Ok(ActiveRange(TimestampRange::DateRange(start, end)))
@@ -529,7 +529,7 @@ mod tests {
 
     mod timestamp {
         use super::*;
-        use AsTimePeriod;
+        use crate::AsTimePeriod;
 
         #[test]
         fn date_only() {

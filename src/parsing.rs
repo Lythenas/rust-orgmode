@@ -2,8 +2,8 @@
 use regex::{Captures, Match, Regex};
 use std::ops::Deref;
 use std::slice::SliceIndex;
-use types::affiliated_keywords::AffiliatedKeywords;
-use types::*;
+use crate::types::affiliated_keywords::AffiliatedKeywords;
+use crate::types::*;
 
 #[derive(Debug, Clone)]
 pub struct Context {

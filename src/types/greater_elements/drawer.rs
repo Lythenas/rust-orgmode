@@ -1,7 +1,7 @@
 use super::*;
 use regex::Regex;
 use std::fmt;
-use types::parsing::{Context, Parse, ParseError, Parser};
+use crate::types::parsing::{Context, Parse, ParseError, Parser};
 
 /// A drawer to hide content.
 ///
@@ -89,7 +89,7 @@ impl fmt::Display for Drawer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use types::parsing::Input;
+    use crate::types::parsing::Input;
 
     #[test]
     fn test_drawer_empty() {
