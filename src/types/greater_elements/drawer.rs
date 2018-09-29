@@ -42,10 +42,6 @@ impl Parse for Drawer {
             static ref RE_END: Regex = Regex::new(r"(?m)\A^(?P<indentation>\s*):END:").unwrap();
         }
 
-        fn get_end_re<'a>(_context: &Context, _captures: &regex::Captures<'_>) -> &'a Regex {
-            &RE_END
-        }
-
         fn collect_data(
             context: &mut Context,
             captures: &regex::Captures<'_>,
@@ -74,7 +70,7 @@ impl Parse for Drawer {
             })
         }
 
-        parser.parse_block(&RE_START, get_end_re, collect_data, from_collected_data)
+        parser.parse_block(&RE_START, |_, _| &RE_END, collect_data, from_collected_data)
     }
 }
 
