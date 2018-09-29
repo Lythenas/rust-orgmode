@@ -17,7 +17,7 @@ impl Document {
     ///
     /// TODO maybe make this iterate over all keywords (not affiliated keywords) in the whole
     /// document not just in the preface.
-    pub fn keywords(&self) -> Keywords {
+    pub fn keywords(&self) -> Keywords<'_> {
         unimplemented!()
     }
 }

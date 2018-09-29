@@ -20,22 +20,22 @@ fn is_digit(c: char) -> bool {
 }
 
 /// Parses an u32.
-fn parse_u32(i: OrgInput) -> OrgResult<u32> {
+fn parse_u32(i: OrgInput<'_>) -> OrgResult<'_, u32> {
     to_failure!(
         i,
-        map_res!(take_while1!(is_digit), |s: CompleteStr| u32::from_str(*s))
+        map_res!(take_while1!(is_digit), |s: CompleteStr<'_>| u32::from_str(*s))
     )
 }
 
 /// Parses an i32.
-fn parse_i32(i: OrgInput) -> OrgResult<i32> {
+fn parse_i32(i: OrgInput<'_>) -> OrgResult<'_, i32> {
     to_failure!(
         i,
         map_res!(
             recognize!(do_parse!(
                 opt!(alt!(tag!("-") | tag!("+"))) >> take_while1!(is_digit) >> ()
             )),
-            |s: CompleteStr| i32::from_str_radix(*s, 10).map_err(|_| format_err!("invalid i32"))
+            |s: CompleteStr<'_>| i32::from_str_radix(*s, 10).map_err(|_| format_err!("invalid i32"))
         )
     )
 }
@@ -50,7 +50,7 @@ fn to_time((hour, minute): (u32, u32)) -> Result<Time, Error> {
 
 /// Parses a time string in the following format: `12:30` and returns
 /// a `NaiveTime`.
-fn time(i: OrgInput) -> OrgResult<Time> {
+fn time(i: OrgInput<'_>) -> OrgResult<'_, Time> {
     to_failure!(
         i,
         map_res!(
@@ -86,7 +86,7 @@ fn to_date((year, month, day, weekday): (i32, u32, u32, Option<&str>)) -> Result
 /// a `NaiveDate`. The dayname is optional.
 ///
 /// E.g. `2018-06-30` or `2018-06-30 Sat`."],
-fn date(i: OrgInput) -> OrgResult<Date> {
+fn date(i: OrgInput<'_>) -> OrgResult<'_, Date> {
     to_failure!(
         i,
         map_res!(
@@ -127,7 +127,7 @@ enum TimestampParseError {
 
 // needed to derive Fail
 impl fmt::Display for TimestampParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO write actual error messages
         write!(f, "{:?}", self)
     }
@@ -155,7 +155,7 @@ impl From<(RepeatStrategy, u32, TimeUnit)> for Repeater {
 }
 
 /// Parses a [`Repeater`].
-fn repeater(i: OrgInput) -> OrgResult<Repeater> {
+fn repeater(i: OrgInput<'_>) -> OrgResult<'_, Repeater> {
     to_failure!(
         i,
         do_parse!(
@@ -167,7 +167,7 @@ fn repeater(i: OrgInput) -> OrgResult<Repeater> {
 }
 
 /// Parses a [`RepeatStrategy`].
-fn repeat_strategy(i: OrgInput) -> OrgResult<RepeatStrategy> {
+fn repeat_strategy(i: OrgInput<'_>) -> OrgResult<'_, RepeatStrategy> {
     to_failure!(
         i,
         map_res!(
@@ -194,13 +194,13 @@ impl From<(u32, TimeUnit)> for TimePeriod {
 }
 
 /// Helper function to convert a `Fn(&str) -> T` to `Fn(CompleteStr) -> T`.
-fn cstr<T>(f: impl Fn(&str) -> T) -> impl Fn(CompleteStr) -> T {
+fn cstr<T>(f: impl Fn(&str) -> T) -> impl Fn(CompleteStr<'_>) -> T {
     move |s| f(*s)
 }
 
 /// Parses a `TimeUnit` using its `from_str`-method if there is a
 /// valid character.
-fn time_unit(i: OrgInput) -> OrgResult<TimeUnit> {
+fn time_unit(i: OrgInput<'_>) -> OrgResult<'_, TimeUnit> {
     to_failure!(
         i,
         map_res!(
@@ -211,7 +211,7 @@ fn time_unit(i: OrgInput) -> OrgResult<TimeUnit> {
 }
 
 /// Parses a [`TimePeriod`].
-fn time_period(i: OrgInput) -> OrgResult<TimePeriod> {
+fn time_period(i: OrgInput<'_>) -> OrgResult<'_, TimePeriod> {
     to_failure!(
         i,
         do_parse!(
@@ -221,7 +221,7 @@ fn time_period(i: OrgInput) -> OrgResult<TimePeriod> {
 }
 
 /// Parses a [`WarningStrategy`].
-fn warning_strategy(i: OrgInput) -> OrgResult<WarningStrategy> {
+fn warning_strategy(i: OrgInput<'_>) -> OrgResult<'_, WarningStrategy> {
     to_failure!(
         i,
         map_res!(
@@ -241,7 +241,7 @@ fn to_warning_strategy(s: &str) -> Result<WarningStrategy, Error> {
 }
 
 /// Parses a [`WarningDelay`].
-fn warning_delay(i: OrgInput) -> OrgResult<WarningDelay> {
+fn warning_delay(i: OrgInput<'_>) -> OrgResult<'_, WarningDelay> {
     to_failure!(
         i,
         do_parse!(
@@ -253,7 +253,7 @@ fn warning_delay(i: OrgInput) -> OrgResult<WarningDelay> {
 }
 
 /// Parses a `(Option<Repeater>, Option<WarningDelay>)`.
-fn repeater_and_delay(i: OrgInput) -> OrgResult<(Option<Repeater>, Option<WarningDelay>)> {
+fn repeater_and_delay(i: OrgInput<'_>) -> OrgResult<'_, (Option<Repeater>, Option<WarningDelay>)> {
     to_failure!(
         i,
         do_parse!(
@@ -268,7 +268,7 @@ fn repeater_and_delay(i: OrgInput) -> OrgResult<(Option<Repeater>, Option<Warnin
 
 /// Parses a [`TimestampData`]. E.g. `DATE TIME[-TIME] REPEATER-OR-DELAY`
 /// with optional second time for a time range.
-fn inner_timestamp(i: OrgInput) -> OrgResult<(TimestampData, Option<Time>)> {
+fn inner_timestamp(i: OrgInput<'_>) -> OrgResult<'_, (TimestampData, Option<Time>)> {
     to_failure!(
         i,
         do_parse!(
@@ -307,7 +307,7 @@ fn to_timestamp_data(
 /// - `[DATE TIME REPEATER-OR-DELAY]`
 /// - `<DATE TIME-TIME REPEATER-OR-DELAY>`
 /// - `[DATE TIME-TIME REPEATER-OR-DELAY]`
-fn single_timestamp(i: OrgInput) -> OrgResult<Timestamp> {
+fn single_timestamp(i: OrgInput<'_>) -> OrgResult<'_, Timestamp> {
     to_failure!(
         i,
         do_parse!(
@@ -367,7 +367,7 @@ fn to_timestamp_range_time_range(
 /// Parses a complete timestamp in one of the accepted format.
 
 /// See [`Timestamp`].
-pub fn timestamp(i: OrgInput) -> OrgResult<Timestamp> {
+pub fn timestamp(i: OrgInput<'_>) -> OrgResult<'_, Timestamp> {
     to_failure!(
         i,
         map_res!(

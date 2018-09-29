@@ -72,22 +72,22 @@ impl AffiliatedKeywords {
         Self::default()
     }
 
-    pub fn captions(&self) -> Captions {
+    pub fn captions(&self) -> Captions<'_> {
         Captions {
             inner: self.captions.iter(),
         }
     }
-    pub fn spanned_captions(&self) -> SpannedCaptions {
+    pub fn spanned_captions(&self) -> SpannedCaptions<'_> {
         SpannedCaptions {
             inner: self.captions.iter(),
         }
     }
-    pub fn headers(&self) -> Headers {
+    pub fn headers(&self) -> Headers<'_> {
         Headers {
             inner: self.headers.iter(),
         }
     }
-    pub fn spanned_headers(&self) -> SpannedHeaders {
+    pub fn spanned_headers(&self) -> SpannedHeaders<'_> {
         SpannedHeaders {
             inner: self.headers.iter(),
         }
@@ -110,12 +110,12 @@ impl AffiliatedKeywords {
     pub fn spanned_results(&self) -> Option<&Spanned<Results>> {
         self.results.as_ref()
     }
-    pub fn attrs(&self) -> Attrs {
+    pub fn attrs(&self) -> Attrs<'_> {
         Attrs {
             inner: self.attrs.iter(),
         }
     }
-    pub fn spanned_attrs(&self) -> SpannedAttrs {
+    pub fn spanned_attrs(&self) -> SpannedAttrs<'_> {
         SpannedAttrs {
             inner: self.attrs.iter(),
         }

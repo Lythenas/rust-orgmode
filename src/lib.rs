@@ -24,18 +24,18 @@ extern crate pretty_assertions;
 
 #[macro_use]
 extern crate rust_orgmode_derive;
-extern crate chrono;
-extern crate regex;
+
+
 #[macro_use]
 extern crate nom;
 #[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
-extern crate itertools;
+
 #[macro_use]
 extern crate lazy_static;
-extern crate phf;
+
 
 pub mod entities;
 pub mod parsing;

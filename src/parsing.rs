@@ -55,7 +55,7 @@ impl Parser {
     pub fn parse_object<T, R, E1, E2>(
         &mut self,
         regex: &Regex,
-        collect_data: impl FnOnce(&mut Context, &Captures) -> Result<T, E1>,
+        collect_data: impl FnOnce(&mut Context, &Captures<'_>) -> Result<T, E1>,
         construct_result: impl FnOnce(T, SharedBehaviorData) -> Result<R, E2>,
     ) -> Result<R, ParseError>
     where
@@ -90,8 +90,8 @@ impl Parser {
     pub fn parse_block<'a, T, R, E1, E2, S>(
         &mut self,
         start_re: &Regex,
-        get_end_re: impl FnOnce(&Context, &Captures) -> &'a Regex,
-        collect_data: impl FnOnce(&mut Context, &Captures) -> Result<T, E1>,
+        get_end_re: impl FnOnce(&Context, &Captures<'_>) -> &'a Regex,
+        collect_data: impl FnOnce(&mut Context, &Captures<'_>) -> Result<T, E1>,
         construct_result: impl FnOnce(T, SharedBehaviorData, Spanned<AffiliatedKeywords>, ContentData<S>)
             -> Result<R, E2>,
     ) -> Result<R, ParseError>
@@ -209,14 +209,14 @@ impl Input {
         &self.text
     }
 
-    pub fn try_match<I>(&self, regex: &Regex, index: I) -> Option<Match>
+    pub fn try_match<I>(&self, regex: &Regex, index: I) -> Option<Match<'_>>
     where
         I: SliceIndex<str, Output = str>,
     {
         let text = self.text.get(index)?;
         regex.find(text)
     }
-    pub fn try_captures<I>(&self, regex: &Regex, index: I) -> Option<Captures>
+    pub fn try_captures<I>(&self, regex: &Regex, index: I) -> Option<Captures<'_>>
     where
         I: SliceIndex<str, Output = str>,
     {

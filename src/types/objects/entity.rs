@@ -50,7 +50,7 @@ impl Parse for Entity {
 impl Entity {
     fn collect_data(
         context: &mut Context,
-        captures: &regex::Captures,
+        captures: &regex::Captures<'_>,
     ) -> Result<(String, bool), !> {
         let name_group = captures
             .name("spaces")
@@ -84,7 +84,7 @@ impl Entity {
 }
 
 impl fmt::Display for Entity {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let brackets = if self.used_brackets { "{}" } else { "" };
         write!(f, r"\{}{}", self.name, brackets)
     }

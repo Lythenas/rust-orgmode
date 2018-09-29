@@ -42,11 +42,11 @@ impl Parse for Drawer {
             static ref RE_END: Regex = Regex::new(r"(?m)\A^(?P<indentation>\s*):END:").unwrap();
         }
 
-        fn get_end_re<'a>(_context: &Context, _captures: &regex::Captures) -> &'a Regex {
+        fn get_end_re<'a>(_context: &Context, _captures: &regex::Captures<'_>) -> &'a Regex {
             &RE_END
         }
 
-        fn collect_data(context: &mut Context, captures: &regex::Captures) -> Result<String, ()> {
+        fn collect_data(context: &mut Context, captures: &regex::Captures<'_>) -> Result<String, ()> {
             let _indentation = captures.name("indentation").unwrap();
             let name = captures.name("name").unwrap();
 
@@ -76,7 +76,7 @@ impl Parse for Drawer {
 }
 
 impl fmt::Display for Drawer {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, ":{}:", self.name)?;
         if !self.content().is_empty() {
             // TODO this should work once all elements impl Display (also impl Display for ElementSet)
