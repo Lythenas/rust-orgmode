@@ -24,15 +24,12 @@ extern crate pretty_assertions;
 
 #[macro_use]
 extern crate rust_orgmode_derive;
-
-
 #[macro_use]
 extern crate nom;
 #[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
-
 #[macro_use]
 extern crate lazy_static;
 
