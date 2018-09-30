@@ -28,7 +28,7 @@ use regex::Regex;
 pub struct SpecialBlock {
     shared_behavior_data: SharedBehaviorData,
     affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<String>,
+    content_data: ContentData<Spanned<String>>,
     pub name: String,
     // hiddenp: bool
 }
@@ -66,7 +66,7 @@ impl Parse for SpecialBlock {
             name: String,
             shared_behavior_data: SharedBehaviorData,
             affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-            content_data: ContentData<String>,
+            content_data: ContentData<Spanned<String>>,
         ) -> Result<SpecialBlock, !> {
             Ok(SpecialBlock {
                 shared_behavior_data,

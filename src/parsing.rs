@@ -24,15 +24,26 @@ pub struct Parser<'a> {
 
 impl<'a> From<Input<'a>> for Parser<'a> {
     fn from(input: Input<'a>) -> Parser<'a> {
-        let input_len = input.len();
+        let limit = input.len();
         Parser {
             input,
-            cursor: Cursor { pos: 0, input_len },
+            cursor: Cursor { pos: 0, limit },
         }
     }
 }
 
 impl Parser<'_> {
+    fn clone_with_cursor(&self, cursor: Cursor) -> Result<Parser<'_>, ParseError> {
+        if cursor.limit > self.cursor.limit {
+            Err(ParseError { kind: ParseErrorKind::Internal("tried to set higher limit") })
+        } else {
+            Ok(Parser {
+                input: self.input.clone(),
+                cursor,
+            })
+        }
+    }
+
     /// Helper function to make parsing easier.
     ///
     /// The [`Regex`] is used to capture groups. Use `(?m)` in your regex so you can use `^` and `$`
@@ -136,7 +147,8 @@ impl Parser<'_> {
         // TODO parse content
         let content_start = end_of_start;
         let content_end = content_start + end_match.start();
-        let content_data = ContentData::empty(Span::new(content_start, content_end));
+        let mut content_parser = self.clone_with_cursor(Cursor { pos: content_start, limit: content_end, })?;
+        let content_data = ContentData::parse(&mut content_parser)?;
 
         context.cursor.forward(end_match.end() + 1);
         let end = context.cursor.pos();
@@ -179,7 +191,7 @@ impl Parser<'_> {
     where
         ParseError: From<E1> + From<E2>,
         T: std::fmt::Debug,
-        S: std::fmt::Debug,
+        S: std::fmt::Debug + Parse,
         R: std::fmt::Debug,
     {
         // capture start line
@@ -211,7 +223,8 @@ impl Parser<'_> {
         // TODO parse content
         let content_start = end_of_start;
         let content_end = content_start + end_match.start();
-        let content_data = ContentData::empty(Span::new(content_start, content_end));
+        let mut content_parser = self.clone_with_cursor(Cursor { pos: content_start, limit: content_end, })?;
+        let content_data = ContentData::parse(&mut content_parser)?;
 
         context.cursor.forward(end_match.end() + 1);
         let end = context.cursor.pos();
@@ -247,6 +260,9 @@ impl Parser<'_> {
 
     pub fn cursor_pos(&self) -> usize {
         self.cursor.pos()
+    }
+    pub fn has_content_left_to_parse(&self) -> bool {
+        self.cursor.pos() < self.cursor.limit()
     }
 }
 
@@ -327,17 +343,21 @@ impl Input<'_> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Cursor {
     pos: usize,
-    input_len: usize,
+    limit: usize,
 }
 
 impl Cursor {
     pub fn pos(&self) -> usize {
         self.pos
     }
+    pub fn limit(&self) -> usize {
+        self.limit
+    }
+
     pub fn forward(&mut self, amount: usize) -> bool {
         self.pos += amount;
-        if self.pos > self.input_len {
-            self.pos = self.input_len;
+        if self.pos > self.limit {
+            self.pos = self.limit;
             false
         } else {
             true
@@ -367,6 +387,7 @@ pub struct ParseError {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ParseErrorKind {
     Unknown,
+    Internal(&'static str),
     CantFindStartOfBlock,
     CantFindEndOfBlock,
     CantFindObject,
@@ -390,8 +411,24 @@ pub trait Parse: Sized {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError>;
 }
 
-impl Parse for String {
-    fn parse(_parser: &mut Parser) -> Result<Self, ParseError> {
-        unimplemented!()
+impl Parse for Spanned<String> {
+    fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r".+\n*").unwrap();
+        }
+
+        fn collect_data(_: &mut Context, captures: &Captures) -> Result<String, ParseError> {
+            Ok(captures.get(0).unwrap().as_str().to_string())
+        }
+
+        fn from_collected_data(content: String, sbd: SharedBehaviorData) -> Result<Spanned<String>, ParseError> {
+            Ok(Spanned::new(sbd.to_span(), content))
+        }
+
+        parser.parse_object(
+            &RE,
+            collect_data,
+            from_collected_data,
+        )
     }
 }

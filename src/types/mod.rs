@@ -29,7 +29,7 @@ pub mod greater_elements;
 pub mod objects;
 
 use self::affiliated_keywords::AffiliatedKeywords;
-use super::parsing;
+use crate::parsing::{self, Parse, Parser, ParseError};
 use itertools::Itertools;
 use std::fmt;
 use std::str::pattern::Pattern;
@@ -81,6 +81,9 @@ pub struct SharedBehaviorData {
 impl SharedBehaviorData {
     pub(crate) fn new(span: Span, post_blank: usize) -> SharedBehaviorData {
         SharedBehaviorData { span, post_blank }
+    }
+    pub(crate) fn to_span(self) -> Span {
+        self.span
     }
 }
 
@@ -169,6 +172,25 @@ impl<T> ContentData<T> {
     }
 }
 
+impl<T: Parse> Parse for ContentData<T> {
+    fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
+        let mut content = Vec::new();
+        let content_start = parser.cursor_pos();
+
+        while parser.has_content_left_to_parse() {
+            let t = T::parse(parser)?;
+            content.push(t);
+        }
+
+        let content_end = parser.cursor_pos();
+
+        Ok(ContentData {
+            span: Span::new(content_start, content_end),
+            content,
+        })
+    }
+}
+
 impl<T: fmt::Display> fmt::Display for ContentData<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.content.iter().format("\n"))
@@ -222,6 +244,12 @@ impl<T> Spanned<T> {
     }
     pub fn value(&self) -> &T {
         &self.value
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Spanned<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.value.fmt(f)
     }
 }
 
@@ -382,4 +410,10 @@ pub enum ElementSet {
     SrcBlock(Box<elements::SrcBlock>),
     Table(Box<greater_elements::Table>),
     VerseBlock(Box<greater_elements::VerseBlock>),
+}
+
+impl Parse for ElementSet {
+    fn parse(_parser: &mut Parser) -> Result<Self, ParseError> {
+        unimplemented!()
+    }
 }
