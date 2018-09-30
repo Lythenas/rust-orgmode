@@ -3,7 +3,6 @@ use crate::types::affiliated_keywords::AffiliatedKeywords;
 use crate::types::*;
 use regex::{Captures, Match, Regex};
 use std::ops::Deref;
-use std::rc::Rc;
 use std::slice::SliceIndex;
 
 #[derive(Debug, Clone)]
@@ -92,7 +91,7 @@ impl Parser {
     pub fn parse_block_with_dynamic_end<'a, T, R, E1, E2, S>(
         &mut self,
         start_re: &Regex,
-        get_end_re: impl FnOnce(&Context, &Captures<'_>) -> Rc<Regex>,
+        get_end_re: impl FnOnce(&Context, &Captures<'_>) -> Regex,
         collect_data: impl FnOnce(&mut Context, &Captures<'_>) -> Result<T, E1>,
         construct_result: impl FnOnce(
             T,

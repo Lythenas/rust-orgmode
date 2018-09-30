@@ -1,7 +1,6 @@
 use super::*;
 use crate::parsing::{Context, Parse, ParseError, Parser};
 use regex::Regex;
-use std::rc::Rc;
 
 /// A special block.
 ///
@@ -42,15 +41,13 @@ impl Parse for SpecialBlock {
                     .unwrap();
         }
 
-        fn make_re_end<'a>(_context: &Context, captures: &regex::Captures) -> Rc<Regex> {
+        fn make_re_end<'a>(_context: &Context, captures: &regex::Captures) -> Regex {
             let name = captures.name("name").unwrap();
-            Rc::new(
-                Regex::new(&format!(
-                    r"(?m)\A^(?P<indentation>[ \t]*)#\+END_{}\n?",
-                    regex::escape(name.as_str())
-                ))
-                .unwrap(),
-            )
+            Regex::new(&format!(
+                r"(?m)\A^(?P<indentation>[ \t]*)#\+END_{}\n?",
+                regex::escape(name.as_str())
+            ))
+            .unwrap()
         }
 
         fn collect_data(
