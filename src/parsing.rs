@@ -3,6 +3,7 @@ use crate::types::affiliated_keywords::AffiliatedKeywords;
 use crate::types::*;
 use regex::{Captures, Match, Regex};
 use std::ops::Deref;
+use std::rc::Rc;
 use std::slice::SliceIndex;
 
 #[derive(Debug, Clone)]
@@ -87,10 +88,11 @@ impl Parser {
         Ok(result)
     }
 
-    pub fn parse_block<'a, T, R, E1, E2, S>(
+    // TODO find a way to reduce code duplicate
+    pub fn parse_block_with_dynamic_end<'a, T, R, E1, E2, S>(
         &mut self,
         start_re: &Regex,
-        get_end_re: impl FnOnce(&Context, &Captures<'_>) -> &'a Regex,
+        get_end_re: impl FnOnce(&Context, &Captures<'_>) -> Rc<Regex>,
         collect_data: impl FnOnce(&mut Context, &Captures<'_>) -> Result<T, E1>,
         construct_result: impl FnOnce(
             T,
@@ -118,6 +120,81 @@ impl Parser {
         // find end line
         // start search after the start line
         let end_re = get_end_re(&context, &captures);
+        let end_match = self
+            .input
+            .try_match(&end_re, end_of_start..)
+            .ok_or(ParseError)?;
+
+        // parse start line
+        // this also moves the cursor to after the content
+        let value = match collect_data(&mut context, &captures) {
+            Ok(value) => value,
+            Err(err) => {
+                return Err(ParseError::from(err));
+            }
+        };
+
+        // TODO parse content
+        let content_start = end_of_start;
+        let content_end = content_start + end_match.start();
+        let content_data = ContentData::empty(Span::new(content_start, content_end));
+
+        context.cursor.forward(end_match.end() + 1);
+        let end = context.cursor.pos();
+        let span = Span::new(start, end);
+
+        // count whitespace after the end
+        let post_blank = self.input.count_whitespace_newline(end..);
+        context.cursor.forward(post_blank);
+
+        let shared_behavior_data = SharedBehaviorData::new(span, post_blank);
+
+        // TODO get affiliated keywords from somewhere
+        // affiliated keywords are parsed before the element is parsed
+        let affiliated_keywords_data = Spanned::new(Span::new(0, 0), AffiliatedKeywords::default());
+
+        let result = construct_result(
+            value,
+            shared_behavior_data,
+            affiliated_keywords_data,
+            content_data,
+        )?;
+
+        self.cursor = context.cursor;
+
+        Ok(result)
+    }
+
+    pub fn parse_block<'a, T, R, E1, E2, S>(
+        &mut self,
+        start_re: &Regex,
+        end_re: &Regex,
+        collect_data: impl FnOnce(&mut Context, &Captures<'_>) -> Result<T, E1>,
+        construct_result: impl FnOnce(
+            T,
+            SharedBehaviorData,
+            Spanned<AffiliatedKeywords>,
+            ContentData<S>,
+        ) -> Result<R, E2>,
+    ) -> Result<R, ParseError>
+    where
+        ParseError: From<E1> + From<E2>,
+        T: std::fmt::Debug,
+        S: std::fmt::Debug,
+        R: std::fmt::Debug,
+    {
+        // capture start line
+        let start = self.cursor.pos();
+        let captures = self
+            .input
+            .try_captures(start_re, start..)
+            .ok_or(ParseError)?;
+        let end_of_start = captures.get(0).unwrap().end();
+
+        let mut context = self.create_context();
+
+        // find end line
+        // start search after the start line
         let end_match = self
             .input
             .try_match(end_re, end_of_start..)

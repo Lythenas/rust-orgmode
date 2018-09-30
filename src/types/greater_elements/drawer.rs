@@ -39,7 +39,7 @@ impl Parse for Drawer {
         lazy_static! {
             static ref RE_START: Regex =
                 Regex::new(r"(?m)\A^(?P<indentation>[ \t]*):(?P<name>[\w_-]+):[ \t]*\n").unwrap();
-            static ref RE_END: Regex = Regex::new(r"(?m)\A^(?P<indentation>\s*):END:").unwrap();
+            static ref RE_END: Regex = Regex::new(r"(?m)\A^(?P<indentation>[ \t]*):END:").unwrap();
         }
 
         fn collect_data(
@@ -70,16 +70,16 @@ impl Parse for Drawer {
             })
         }
 
-        parser.parse_block(&RE_START, |_, _| &RE_END, collect_data, from_collected_data)
+        parser.parse_block(&RE_START, &RE_END, collect_data, from_collected_data)
     }
 }
 
 impl fmt::Display for Drawer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, ":{}:", self.name)?;
-        if !self.content().is_empty() {
+        for _line in self.content() {
             // TODO this should work once all elements impl Display (also impl Display for ElementSet)
-            //writeln!(f, "{}", self.content_data)?;
+            //writeln!(f, "{}", line)?;
         }
         write!(f, ":END:")
     }
