@@ -63,7 +63,7 @@ impl Parser {
         ParseError: From<E1> + From<E2>,
     {
         let start = self.cursor.pos();
-        let captures = self.input.try_captures(regex, start..).ok_or(ParseError)?;
+        let captures = self.input.try_captures(regex, start..).ok_or(ParseError { kind: ParseErrorKind::CantFindObject })?;
 
         let mut context = self.create_context();
 
@@ -112,7 +112,7 @@ impl Parser {
         let captures = self
             .input
             .try_captures(start_re, start..)
-            .ok_or(ParseError)?;
+            .ok_or(ParseError { kind: ParseErrorKind::CantFindStartOfBlock })?;
         let end_of_start = captures.get(0).unwrap().end();
 
         let mut context = self.create_context();
@@ -123,7 +123,7 @@ impl Parser {
         let end_match = self
             .input
             .try_match(&end_re, end_of_start..)
-            .ok_or(ParseError)?;
+            .ok_or(ParseError { kind: ParseErrorKind::CantFindEndOfBlock })?;
 
         // parse start line
         // this also moves the cursor to after the content
@@ -188,7 +188,7 @@ impl Parser {
         let captures = self
             .input
             .try_captures(start_re, start..)
-            .ok_or(ParseError)?;
+            .ok_or(ParseError { kind: ParseErrorKind::CantFindStartOfBlock })?;
         let end_of_start = captures.get(0).unwrap().end();
 
         let mut context = self.create_context();
@@ -198,7 +198,7 @@ impl Parser {
         let end_match = self
             .input
             .try_match(end_re, end_of_start..)
-            .ok_or(ParseError)?;
+            .ok_or(ParseError { kind: ParseErrorKind::CantFindEndOfBlock })?;
 
         // parse start line
         // this also moves the cursor to after the content
@@ -359,13 +359,25 @@ impl Cursor {
 ///
 /// [`Document`]: `document::Document`
 ///
-/// TODO improve this probably make this an enum
+/// TODO improve this
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParseError;
+pub struct ParseError {
+    kind: ParseErrorKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ParseErrorKind {
+    Unknown,
+    CantFindStartOfBlock,
+    CantFindEndOfBlock,
+    CantFindObject,
+}
 
 impl From<()> for ParseError {
     fn from(_: ()) -> ParseError {
-        ParseError
+        ParseError {
+            kind: ParseErrorKind::Unknown
+        }
     }
 }
 
