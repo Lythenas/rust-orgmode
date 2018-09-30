@@ -17,13 +17,13 @@ impl Context {
 }
 
 #[derive(Debug)]
-pub struct Parser {
-    input: Input,
+pub struct Parser<'a> {
+    input: Input<'a>,
     cursor: Cursor,
 }
 
-impl From<Input> for Parser {
-    fn from(input: Input) -> Parser {
+impl<'a> From<Input<'a>> for Parser<'a> {
+    fn from(input: Input<'a>) -> Parser<'a> {
         let input_len = input.len();
         Parser {
             input,
@@ -32,7 +32,7 @@ impl From<Input> for Parser {
     }
 }
 
-impl Parser {
+impl Parser<'_> {
     /// Helper function to make parsing easier.
     ///
     /// The [`Regex`] is used to capture groups. Use `(?m)` in your regex so you can use `^` and `$`
@@ -103,7 +103,7 @@ impl Parser {
     where
         ParseError: From<E1> + From<E2>,
         T: std::fmt::Debug,
-        S: std::fmt::Debug,
+        S: std::fmt::Debug + Parse,
         R: std::fmt::Debug,
     {
         // capture start line
@@ -252,20 +252,20 @@ impl Parser {
 
 /// Input that can be parsed.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Input {
-    text: String,
+pub struct Input<'a> {
+    text: &'a str,
 }
 
-impl Deref for Input {
+impl Deref for Input<'_> {
     type Target = str;
     fn deref(&self) -> &str {
         &self.text
     }
 }
 
-impl Input {
-    pub fn new(text: impl Into<String>) -> Self {
-        Input { text: text.into() }
+impl Input<'_> {
+    pub fn new<'a>(text: &'a str) -> Input<'a> {
+        Input { text, }
     }
 
     pub fn text(&self) -> &str {
@@ -388,4 +388,10 @@ impl From<!> for ParseError {
 
 pub trait Parse: Sized {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError>;
+}
+
+impl Parse for String {
+    fn parse(_parser: &mut Parser) -> Result<Self, ParseError> {
+        unimplemented!()
+    }
 }
