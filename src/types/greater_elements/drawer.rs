@@ -61,7 +61,7 @@ impl Parse for Drawer {
             shared_behavior_data: SharedBehaviorData,
             affiliated_keywords_data: Spanned<AffiliatedKeywords>,
             content_data: ContentData<ElementSet>,
-        ) -> Result<Drawer, ()> {
+        ) -> Result<Drawer, !> {
             Ok(Drawer {
                 shared_behavior_data,
                 affiliated_keywords_data,
@@ -117,4 +117,6 @@ mod tests {
         assert_eq!(parser.cursor_pos(), 17);
         assert_eq!(parsed.to_string(), s);
     }
+
+    // TODO add more tests as soon as node property parsing is implemented
 }

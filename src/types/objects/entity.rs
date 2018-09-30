@@ -44,43 +44,42 @@ impl Parse for Entity {
             .unwrap();
         }
 
-        parser.parse_object(&RE, Entity::collect_data, Entity::from_collected_data)
-    }
-}
+        fn collect_data(
+            context: &mut Context,
+            captures: &regex::Captures<'_>,
+        ) -> Result<(String, bool), !> {
+            let name_group = captures
+                .name("spaces")
+                .or_else(|| captures.name("name"))
+                .unwrap();
+            let name = name_group.as_str().to_string();
+            let post_group = captures.name("post");
+            let post = post_group.map(|m| m.as_str());
 
-impl Entity {
-    fn collect_data(
-        context: &mut Context,
-        captures: &regex::Captures<'_>,
-    ) -> Result<(String, bool), !> {
-        let name_group = captures
-            .name("spaces")
-            .or_else(|| captures.name("name"))
-            .unwrap();
-        let name = name_group.as_str().to_string();
-        let post_group = captures.name("post");
-        let post = post_group.map(|m| m.as_str());
+            // skip over name
+            context.move_cursor_forward(name_group.end());
 
-        // skip over name
-        context.move_cursor_forward(name_group.end());
+            let used_brackets = post == Some("{}");
+            if used_brackets {
+                // skip over brackets
+                context.move_cursor_forward(2);
+            }
 
-        let used_brackets = post == Some("{}");
-        if used_brackets {
-            // skip over brackets
-            context.move_cursor_forward(2);
+            Ok((name, used_brackets))
         }
 
-        Ok((name, used_brackets))
-    }
-    fn from_collected_data(
-        (name, used_brackets): (String, bool),
-        shared_behavior_data: SharedBehaviorData,
-    ) -> Result<Self, !> {
-        Ok(Entity {
-            shared_behavior_data,
-            name,
-            used_brackets,
-        })
+        fn from_collected_data(
+            (name, used_brackets): (String, bool),
+            shared_behavior_data: SharedBehaviorData,
+        ) -> Result<Entity, !> {
+            Ok(Entity {
+                shared_behavior_data,
+                name,
+                used_brackets,
+            })
+        }
+
+        parser.parse_object(&RE, collect_data, from_collected_data)
     }
 }
 
