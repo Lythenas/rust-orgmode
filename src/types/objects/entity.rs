@@ -34,9 +34,10 @@ pub struct Entity {
 mod with_combine {
     use super::{Entity, SharedBehaviorData, Span};
     use combine::error::ParseError;
-    use combine::parser::char::{char, letter, space, string};
-    use combine::stream::Stream;
-    use combine::{choice, many, many1, one_of, optional, position, r#try, Parser};
+    use combine::parser::char::{char, space};
+    use combine::parser::regex::{captures, find};
+    use combine::stream::{FullRangeStream, Stream};
+    use combine::{choice, many, position, Parser};
 
     #[test]
     fn test_parse_entity() {
@@ -111,50 +112,28 @@ mod with_combine {
         })
     }
 
-    fn parse_entity<I>() -> impl Parser<Input = I, Output = Entity>
+    fn parse_entity<'a, I: 'a>() -> impl Parser<Input = I, Output = Entity> + 'a
     where
-        I: Stream<Item = char, Position = usize>,
+        I: Stream<Item = char, Range = &'a str, Position = usize> + FullRangeStream,
         I::Error: ParseError<I::Item, I::Range, I::Position>,
     {
+        use regex::Regex;
+
         shared_behavior_data(
             char('\\').with(choice((
-                r#try(char('_'))
-                    .and(many1(char(' ')))
-                    .map(|(underscore, spaces): (char, String)| {
-                        let mut s = underscore.to_string();
-                        s.push_str(&spaces);
-                        s
-                    })
-                    .map(|s| (s, None)),
-                r#try(string("there4").map(|s| s.to_string())).and(optional(string("{}"))),
-                r#try(string("sup").and(one_of("123".chars())).map(|(s, num)| {
-                    let mut s = s.to_string();
-                    s.push(num);
-                    s
-                }))
-                .and(optional(string("{}"))),
-                r#try(
-                    string("frac")
-                        .and(one_of("13".chars()))
-                        .and(one_of("24".chars()))
-                        .map(|((s, num1), num2)| {
-                            let mut s = s.to_string();
-                            s.push(num1);
-                            s.push(num2);
-                            s
-                        }),
-                )
-                .and(optional(string("{}"))),
-                r#try(many1::<String, _>(letter())).and(optional(string("{}"))),
+                find(Regex::new(r"_ +").unwrap()).map(|s: &str| (s.to_string(), false)),
+                captures(Regex::new(r"(there4|sup[123]|frac[13][24]|[[:alpha:]]+)(\{\})").unwrap())
+                    .map(|vec: Vec<&str>| {
+                        let name = vec[1];
+                        let brackets = vec[2];
+                        (name.to_string(), brackets == "{}")
+                    }),
             ))),
         )
-        .map(|(shared_behavior_data, (name, brackets))| {
-            let used_brackets = brackets.is_some();
-            Entity {
-                shared_behavior_data,
-                name,
-                used_brackets,
-            }
+        .map(|(shared_behavior_data, (name, used_brackets))| Entity {
+            shared_behavior_data,
+            name,
+            used_brackets,
         })
     }
 }
