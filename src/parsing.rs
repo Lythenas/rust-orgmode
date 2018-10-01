@@ -35,7 +35,9 @@ impl<'a> From<Input<'a>> for Parser<'a> {
 impl Parser<'_> {
     fn clone_with_cursor(&self, cursor: Cursor) -> Result<Parser<'_>, ParseError> {
         if cursor.limit > self.cursor.limit {
-            Err(ParseError { kind: ParseErrorKind::Internal("tried to set higher limit") })
+            Err(ParseError {
+                kind: ParseErrorKind::Internal("tried to set higher limit"),
+            })
         } else {
             Ok(Parser {
                 input: self.input.clone(),
@@ -73,7 +75,9 @@ impl Parser<'_> {
         ParseError: From<E1> + From<E2>,
     {
         let start = self.cursor.pos();
-        let captures = self.input.try_captures(regex, start..).ok_or(ParseError { kind: ParseErrorKind::CantFindObject })?;
+        let captures = self.input.try_captures(regex, start..).ok_or(ParseError {
+            kind: ParseErrorKind::CantFindObject,
+        })?;
 
         let mut context = self.create_context();
 
@@ -122,7 +126,9 @@ impl Parser<'_> {
         let captures = self
             .input
             .try_captures(start_re, start..)
-            .ok_or(ParseError { kind: ParseErrorKind::CantFindStartOfBlock })?;
+            .ok_or(ParseError {
+                kind: ParseErrorKind::CantFindStartOfBlock,
+            })?;
         let end_of_start = captures.get(0).unwrap().end();
 
         let mut context = self.create_context();
@@ -133,7 +139,9 @@ impl Parser<'_> {
         let end_match = self
             .input
             .try_match(&end_re, end_of_start..)
-            .ok_or(ParseError { kind: ParseErrorKind::CantFindEndOfBlock })?;
+            .ok_or(ParseError {
+                kind: ParseErrorKind::CantFindEndOfBlock,
+            })?;
 
         // parse start line
         // this also moves the cursor to after the content
@@ -147,7 +155,10 @@ impl Parser<'_> {
         // TODO parse content
         let content_start = end_of_start;
         let content_end = content_start + end_match.start();
-        let mut content_parser = self.clone_with_cursor(Cursor { pos: content_start, limit: content_end, })?;
+        let mut content_parser = self.clone_with_cursor(Cursor {
+            pos: content_start,
+            limit: content_end,
+        })?;
         let content_data = ContentData::parse(&mut content_parser)?;
 
         context.cursor.forward(end_match.end() + 1);
@@ -199,7 +210,9 @@ impl Parser<'_> {
         let captures = self
             .input
             .try_captures(start_re, start..)
-            .ok_or(ParseError { kind: ParseErrorKind::CantFindStartOfBlock })?;
+            .ok_or(ParseError {
+                kind: ParseErrorKind::CantFindStartOfBlock,
+            })?;
         let end_of_start = captures.get(0).unwrap().end();
 
         let mut context = self.create_context();
@@ -209,7 +222,9 @@ impl Parser<'_> {
         let end_match = self
             .input
             .try_match(end_re, end_of_start..)
-            .ok_or(ParseError { kind: ParseErrorKind::CantFindEndOfBlock })?;
+            .ok_or(ParseError {
+                kind: ParseErrorKind::CantFindEndOfBlock,
+            })?;
 
         // parse start line
         // this also moves the cursor to after the content
@@ -223,7 +238,10 @@ impl Parser<'_> {
         // TODO parse content
         let content_start = end_of_start;
         let content_end = content_start + end_match.start();
-        let mut content_parser = self.clone_with_cursor(Cursor { pos: content_start, limit: content_end, })?;
+        let mut content_parser = self.clone_with_cursor(Cursor {
+            pos: content_start,
+            limit: content_end,
+        })?;
         let content_data = ContentData::parse(&mut content_parser)?;
 
         context.cursor.forward(end_match.end() + 1);
@@ -281,7 +299,7 @@ impl Deref for Input<'_> {
 
 impl Input<'_> {
     pub fn new<'a>(text: &'a str) -> Input<'a> {
-        Input { text, }
+        Input { text }
     }
 
     pub fn text(&self) -> &str {
@@ -396,7 +414,7 @@ pub enum ParseErrorKind {
 impl From<()> for ParseError {
     fn from(_: ()) -> ParseError {
         ParseError {
-            kind: ParseErrorKind::Unknown
+            kind: ParseErrorKind::Unknown,
         }
     }
 }
@@ -421,14 +439,13 @@ impl Parse for Spanned<String> {
             Ok(captures.get(0).unwrap().as_str().to_string())
         }
 
-        fn from_collected_data(content: String, sbd: SharedBehaviorData) -> Result<Spanned<String>, ParseError> {
+        fn from_collected_data(
+            content: String,
+            sbd: SharedBehaviorData,
+        ) -> Result<Spanned<String>, ParseError> {
             Ok(Spanned::new(sbd.to_span(), content))
         }
 
-        parser.parse_object(
-            &RE,
-            collect_data,
-            from_collected_data,
-        )
+        parser.parse_object(&RE, collect_data, from_collected_data)
     }
 }

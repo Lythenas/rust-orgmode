@@ -30,6 +30,135 @@ pub struct Entity {
     pub used_brackets: bool,
 }
 
+// test implementation for entity parsing using the combine crate
+mod with_combine {
+    use super::{Entity, SharedBehaviorData, Span};
+    use combine::error::ParseError;
+    use combine::parser::char::{char, letter, space, string};
+    use combine::stream::Stream;
+    use combine::{choice, many, many1, one_of, optional, position, r#try, Parser};
+
+    #[test]
+    fn test_parse_entity() {
+        use combine::stream::state::IndexPositioner;
+        use combine::stream::state::State;
+
+        let text = r"\someentity{}  ";
+        let expected = Entity {
+            shared_behavior_data: SharedBehaviorData {
+                span: Span::new(0, 13),
+                post_blank: 2,
+            },
+            name: "someentity".to_string(),
+            used_brackets: true,
+        };
+        let result = parse_entity()
+            .easy_parse(State::with_positioner(text, IndexPositioner::new()))
+            .map(|t| t.0);
+        assert_eq!(result, Ok(expected));
+    }
+    #[test]
+    fn test_parse_entity_spaces() {
+        use combine::stream::state::IndexPositioner;
+        use combine::stream::state::State;
+
+        let text = r"\_  ";
+        let expected = Entity {
+            shared_behavior_data: SharedBehaviorData {
+                span: Span::new(0, 4),
+                post_blank: 0,
+            },
+            name: "_  ".to_string(),
+            used_brackets: false,
+        };
+        let result = parse_entity()
+            .easy_parse(State::with_positioner(text, IndexPositioner::new()))
+            .map(|t| t.0);
+        assert_eq!(result, Ok(expected));
+    }
+
+    fn spanned<I, P>(p: P) -> impl Parser<Input = I, Output = (Span, P::Output)>
+    where
+        I: Stream<Position = usize>,
+        P: Parser<Input = I>,
+        I::Error: ParseError<I::Item, I::Range, I::Position>,
+    {
+        (position(), p, position()).map(|(start, content, end)| (Span::new(start, end), content))
+    }
+
+    #[derive(Debug, Default)]
+    struct Counter(usize);
+
+    impl<A> Extend<A> for Counter {
+        fn extend<T>(&mut self, iter: T)
+        where
+            T: IntoIterator<Item = A>,
+        {
+            self.0 += iter.into_iter().count();
+        }
+    }
+
+    fn shared_behavior_data<I, P>(
+        p: P,
+    ) -> impl Parser<Input = I, Output = (SharedBehaviorData, P::Output)>
+    where
+        I: Stream<Item = char, Position = usize>,
+        P: Parser<Input = I>,
+        I::Error: ParseError<I::Item, I::Range, I::Position>,
+    {
+        (spanned(p), many::<Counter, _>(space())).map(|((span, content), Counter(post_blank))| {
+            (SharedBehaviorData { span, post_blank }, content)
+        })
+    }
+
+    fn parse_entity<I>() -> impl Parser<Input = I, Output = Entity>
+    where
+        I: Stream<Item = char, Position = usize>,
+        I::Error: ParseError<I::Item, I::Range, I::Position>,
+    {
+        shared_behavior_data(
+            char('\\').with(choice((
+                r#try(char('_'))
+                    .and(many1(char(' ')))
+                    .map(|(underscore, spaces): (char, String)| {
+                        let mut s = underscore.to_string();
+                        s.push_str(&spaces);
+                        s
+                    })
+                    .map(|s| (s, None)),
+                r#try(string("there4").map(|s| s.to_string())).and(optional(string("{}"))),
+                r#try(string("sup").and(one_of("123".chars())).map(|(s, num)| {
+                    let mut s = s.to_string();
+                    s.push(num);
+                    s
+                }))
+                .and(optional(string("{}"))),
+                r#try(
+                    string("frac")
+                        .and(one_of("13".chars()))
+                        .and(one_of("24".chars()))
+                        .map(|((s, num1), num2)| {
+                            let mut s = s.to_string();
+                            s.push(num1);
+                            s.push(num2);
+                            s
+                        }),
+                )
+                .and(optional(string("{}"))),
+                r#try(many1::<String, _>(letter())).and(optional(string("{}"))),
+            ))),
+        )
+        .map(|(shared_behavior_data, (name, brackets))| {
+            let used_brackets = brackets.is_some();
+            Entity {
+                shared_behavior_data,
+                name,
+                used_brackets,
+            }
+        })
+    }
+}
+
 impl Parse for Entity {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
         lazy_static! {

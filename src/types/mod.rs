@@ -29,7 +29,7 @@ pub mod greater_elements;
 pub mod objects;
 
 use self::affiliated_keywords::AffiliatedKeywords;
-use crate::parsing::{self, Parse, Parser, ParseError};
+use crate::parsing::{self, Parse, ParseError, Parser};
 use itertools::Itertools;
 use std::fmt;
 use std::str::pattern::Pattern;
