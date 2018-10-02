@@ -1,6 +1,7 @@
 //! Contains the types and traits needed for parsing.
 use combine::parser::char::space;
-use combine::{many, position, ParseError, Parser, Stream};
+use combine::stream::FullRangeStream;
+use combine::{many, position, value, ParseError, Parser, Stream};
 use crate::types::affiliated_keywords::AffiliatedKeywords;
 use crate::types::*;
 use regex::{Captures, Match, Regex};
@@ -46,6 +47,20 @@ where
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     shared_behavior_data(p)
+}
+
+pub fn content_data<'a, I, T>() -> impl Parser<Input = I, Output = ContentData<T>> + 'a
+where
+    I: Stream<Item = char, Range = &'a str, Position = usize> + FullRangeStream + 'a,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+    T: Clone + 'a,
+{
+    // TODO replace value(()) with actual content parsing
+    (position(), value(()), position()).map(|(start, _content, end)| {
+        let span = Span::new(start, end);
+        //ContentData::new(span, content)
+        ContentData::empty(span)
+    })
 }
 
 #[derive(Debug, Clone)]
