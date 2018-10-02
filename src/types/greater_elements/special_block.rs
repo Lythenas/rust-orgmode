@@ -1,8 +1,10 @@
 use super::*;
 use combine::error::ParseError;
+use combine::parser::range::recognize;
 use combine::parser::regex::{captures, find};
-use combine::stream::{FullRangeStream, Stream};
-use combine::{value, Parser};
+use combine::parser::repeat::skip_until;
+use combine::stream::{FullRangeStream, Stream, StreamOnce};
+use combine::{position, value, Parser};
 use crate::parsing::{content_data, shared_behavior_data};
 use regex::Regex;
 
@@ -39,8 +41,10 @@ pub struct SpecialBlock {
 
 fn parse_special_block<'a, I: 'a>() -> impl Parser<Input = I, Output = SpecialBlock> + 'a
 where
-    I: Stream<Item = char, Range = &'a str, Position = usize> + FullRangeStream,
-    I::Error: ParseError<I::Item, I::Range, I::Position>,
+    I: Stream<Item = char, Range = &'a str, Position = usize>
+        + FullRangeStream
+        + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>, // + From<StringStreamError>
 {
     lazy_static! {
         static ref RE_START: Regex = Regex::new(r"([ \t]*)#\+BEGIN_(\S+)[ \t]*\n").unwrap();
@@ -52,11 +56,26 @@ where
             .then(|name| {
                 let re =
                     Regex::new(&format!(r"([ \t]*)#\+END_{}\n?", regex::escape(&name))).unwrap();
-                (value(name), content_data(), find(re))
+                (
+                    value(name),
+                    position(),
+                    recognize(skip_until(find(re.clone()))),
+                )
+                    .flat_map(|(name, position, content_str): (String, usize, &str)| {
+                        use combine::stream::state::{IndexPositioner, State};
+                        let input = State::with_positioner(
+                            content_str,
+                            IndexPositioner::new_with_position(position),
+                        );
+                        content_data()
+                            .easy_parse(input)
+                            .map(|(content_data, _rest)| (name, content_data))
+                    })
+                    .skip(find(re))
             }),
     )
     .map(
-        |(shared_behavior_data, (name, content_data, _))| SpecialBlock {
+        |(shared_behavior_data, (name, content_data))| SpecialBlock {
             shared_behavior_data,
             affiliated_keywords_data: Spanned::new(Span::new(0, 0), AffiliatedKeywords::default()),
             content_data,
