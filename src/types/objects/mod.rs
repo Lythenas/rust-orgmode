@@ -1,8 +1,6 @@
 //! Contains all objects.
 
-use super::parsing::{Context, Parse, ParseError, Parser};
 use super::*;
-use std::fmt;
 
 mod entity;
 mod export_snippet;

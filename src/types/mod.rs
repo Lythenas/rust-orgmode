@@ -29,7 +29,6 @@ pub mod greater_elements;
 pub mod objects;
 
 use self::affiliated_keywords::AffiliatedKeywords;
-use crate::parsing::{self, Parse, ParseError, Parser};
 use itertools::Itertools;
 use std::fmt;
 use std::str::pattern::Pattern;
@@ -164,32 +163,39 @@ pub struct ContentData<T> {
 }
 
 impl<T> ContentData<T> {
+    pub fn new(span: Span, content: Vec<T>) -> Self {
+        ContentData { span, content }
+    }
     pub fn empty(span: Span) -> Self {
-        ContentData {
-            span,
-            content: Vec::new(),
-        }
+        Self::new(span, Vec::new())
+    }
+
+    pub fn content(&self) -> &[T] {
+        &self.content
+    }
+    pub fn span(&self) -> &Span {
+        &self.span
     }
 }
 
-impl<T: Parse> Parse for ContentData<T> {
-    fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
-        let mut content = Vec::new();
-        let content_start = parser.cursor_pos();
-
-        while parser.has_content_left_to_parse() {
-            let t = T::parse(parser)?;
-            content.push(t);
-        }
-
-        let content_end = parser.cursor_pos();
-
-        Ok(ContentData {
-            span: Span::new(content_start, content_end),
-            content,
-        })
-    }
-}
+// impl<T: Parse> Parse for ContentData<T> {
+//     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
+//         let mut content = Vec::new();
+//         let content_start = parser.cursor_pos();
+//
+//         while parser.has_content_left_to_parse() {
+//             let t = T::parse(parser)?;
+//             content.push(t);
+//         }
+//
+//         let content_end = parser.cursor_pos();
+//
+//         Ok(ContentData {
+//             span: Span::new(content_start, content_end),
+//             content,
+//         })
+//     }
+// }
 
 impl<T: fmt::Display> fmt::Display for ContentData<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -410,10 +416,4 @@ pub enum ElementSet {
     SrcBlock(Box<elements::SrcBlock>),
     Table(Box<greater_elements::Table>),
     VerseBlock(Box<greater_elements::VerseBlock>),
-}
-
-impl Parse for ElementSet {
-    fn parse(_parser: &mut Parser) -> Result<Self, ParseError> {
-        unimplemented!()
-    }
 }
