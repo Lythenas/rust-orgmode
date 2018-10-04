@@ -5,7 +5,7 @@ use combine::parser::range::{range, recognize};
 use combine::parser::regex::captures;
 use combine::parser::repeat::skip_until;
 use combine::stream::{FullRangeStream, Stream, StreamOnce};
-use combine::{one_of, optional, position, value, Parser};
+use combine::{one_of, optional, position, value, Parser, skip_many};
 use crate::parsing::{content_data, shared_behavior_data};
 use regex::Regex;
 
@@ -57,7 +57,7 @@ where
     I: Stream<Item = char, Range = &'a str, Position = usize>
         + FullRangeStream
         + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
-    I::Error: ParseError<I::Item, I::Range, I::Position>, // + From<StringStreamError>
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     lazy_static! {
         static ref RE_START: Regex = Regex::new(r"([ \t]*)#\+BEGIN_(\S+)[ \t]*\n").unwrap();
@@ -69,9 +69,10 @@ where
             .then(|name| {
                 let find_end = || {
                     (
-                        optional(one_of(" \t".chars())),
+                        skip_many(one_of(" \t".chars())),
                         string("#+END_"),
                         range(name),
+                        skip_many(one_of(" \t".chars())),
                         optional(string("\n")),
                     )
                 };
