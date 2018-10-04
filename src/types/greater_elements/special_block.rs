@@ -1,10 +1,11 @@
 use super::*;
 use combine::error::ParseError;
-use combine::parser::range::recognize;
-use combine::parser::regex::{captures, find};
+use combine::parser::char::string;
+use combine::parser::range::{range, recognize};
+use combine::parser::regex::captures;
 use combine::parser::repeat::skip_until;
 use combine::stream::{FullRangeStream, Stream, StreamOnce};
-use combine::{position, value, Parser};
+use combine::{one_of, optional, position, value, Parser};
 use crate::parsing::{content_data, shared_behavior_data};
 use regex::Regex;
 
@@ -39,6 +40,18 @@ pub struct SpecialBlock {
     // hiddenp: bool
 }
 
+// use combine::stream::RangeStreamOnce;
+// fn owned_string<'a, I: 'a>(s: String) -> impl Parser<Input = I, Output = &'a str>
+// where
+//     I: Stream<Item = char, Range = &'a str> + RangeStreamOnce,
+//     I::Error: ParseError<I::Item, I::Range, I::Position>,
+// {
+//     use combine::tokens2;
+//     recognize(
+//         tokens2(|l,r| l == r, s.chars().collect::<Vec<_>>().into_iter())
+//     )
+// }
+
 fn parse_special_block<'a, I: 'a>() -> impl Parser<Input = I, Output = SpecialBlock> + 'a
 where
     I: Stream<Item = char, Range = &'a str, Position = usize>
@@ -52,15 +65,17 @@ where
 
     shared_behavior_data(
         captures(&*RE_START)
-            .map(|vec: Vec<&str>| vec[2].to_string())
+            .map(|vec: Vec<&str>| vec[2])
             .then(|name| {
-                let re =
-                    Regex::new(&format!(r"([ \t]*)#\+END_{}\n?", regex::escape(&name))).unwrap();
-                (
-                    value(name),
-                    position(),
-                    recognize(skip_until(find(re.clone()))),
-                )
+                let find_end = || {
+                    (
+                        optional(one_of(" \t".chars())),
+                        string("#+END_"),
+                        range(name),
+                        optional(string("\n")),
+                    )
+                };
+                (value(name.to_string()), position(), recognize(skip_until(find_end())))
                     .flat_map(|(name, position, content_str): (String, usize, &str)| {
                         use combine::stream::state::{IndexPositioner, State};
                         let input = State::with_positioner(
@@ -71,7 +86,7 @@ where
                             .easy_parse(input)
                             .map(|(content_data, _rest)| (name, content_data))
                     })
-                    .skip(find(re))
+                    .skip(find_end())
             }),
     )
     .map(
