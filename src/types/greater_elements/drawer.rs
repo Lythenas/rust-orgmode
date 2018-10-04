@@ -1,6 +1,11 @@
 use super::*;
-use regex::Regex;
 use std::fmt;
+use combine::{Parser, ParseError, skip_many, token, optional, one_of, position, value};
+use combine::parser::repeat::skip_until;
+use combine::parser::range::recognize;
+use combine::parser::char::string;
+use combine::stream::{Stream, StreamOnce, FullRangeStream};
+use crate::parsing::{shared_behavior_data, content_data};
 
 /// A drawer to hide content.
 ///
@@ -33,45 +38,52 @@ pub struct Drawer {
     // hiddenp: bool,
 }
 
-// impl Parse for Drawer {
-//     fn parse(parser: &mut Parser) -> Result<Drawer, ParseError> {
-//         lazy_static! {
-//             static ref RE_START: Regex =
-//                 Regex::new(r"(?m)\A^(?P<indentation>[ \t]*):(?P<name>[\w_-]+):[ \t]*\n").unwrap();
-//             static ref RE_END: Regex = Regex::new(r"(?m)\A^(?P<indentation>[ \t]*):END:").unwrap();
-//         }
-//
-//         fn collect_data(
-//             context: &mut Context,
-//             captures: &regex::Captures<'_>,
-//         ) -> Result<String, ()> {
-//             let _indentation = captures.name("indentation").unwrap();
-//             let name = captures.name("name").unwrap();
-//
-//             // TODO add indentation to context (not sure if this is important)
-//
-//             context.move_cursor_forward(captures.get(0).unwrap().end());
-//
-//             Ok(name.as_str().into())
-//         }
-//
-//         fn from_collected_data(
-//             name: String,
-//             shared_behavior_data: SharedBehaviorData,
-//             affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-//             content_data: ContentData<ElementSet>,
-//         ) -> Result<Drawer, !> {
-//             Ok(Drawer {
-//                 shared_behavior_data,
-//                 affiliated_keywords_data,
-//                 content_data,
-//                 name,
-//             })
-//         }
-//
-//         parser.parse_block(&RE_START, &RE_END, collect_data, from_collected_data)
-//     }
-// }
+fn parse_drawer<'a, I: 'a>() -> impl Parser<Input = I, Output = Drawer> + 'a
+where
+    I: Stream<Item = char, Range = &'a str, Position = usize>
+        + FullRangeStream
+        + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    shared_behavior_data(
+        (
+            skip_many(one_of(" \t".chars())),
+            token(':'),
+        ).with(recognize(skip_until(token(':')))).skip((
+            token(':'),
+            skip_many(one_of(" \t".chars())),
+            string("\n"),
+        )).then(|name: &str| {
+            let find_end = || (
+                skip_many(one_of(" \t".chars())),
+                string(":END:"),
+                skip_many(one_of(" \t".chars())),
+                optional(string("\n")),
+            );
+
+            (value(name.to_string()), position(), recognize(skip_until(find_end())))
+                .flat_map(|(name, position, content_str)| {
+                    use combine::stream::state::{IndexPositioner, State};
+                    let input = State::with_positioner(
+                        content_str,
+                        IndexPositioner::new_with_position(position),
+                    );
+                    content_data()
+                        .easy_parse(input)
+                        .map(|(content_data, _rest)| (name, content_data))
+                })
+                .skip(find_end())
+        })
+    )
+    .map(
+        |(shared_behavior_data, (name, content_data))| Drawer {
+            shared_behavior_data,
+            affiliated_keywords_data: Spanned::new(Span::new(0, 0), AffiliatedKeywords::default()),
+            content_data,
+            name,
+        }
+    )
+}
 
 impl fmt::Display for Drawer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -87,34 +99,28 @@ impl fmt::Display for Drawer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use combine::stream::state::{IndexPositioner, State};
 
-    // #[test]
-    // fn test_drawer_empty() {
-    //     let s = ":something:\n:END:";
-    //     let mut parser = Input::new(s).into();
-    //     let parsed = Drawer::parse(&mut parser).unwrap();
-
-    //     assert_eq!(
-    //         parsed,
-    //         Drawer {
-    //             shared_behavior_data: SharedBehaviorData {
-    //                 span: Span::new(0, 17),
-    //                 post_blank: 0,
-    //             },
-    //             affiliated_keywords_data: Spanned::new(
-    //                 Span::new(0, 0),
-    //                 AffiliatedKeywords::default()
-    //             ),
-    //             content_data: ContentData {
-    //                 span: Span::new(12, 12),
-    //                 content: Vec::default(),
-    //             },
-    //             name: "something".to_string(),
-    //         }
-    //     );
-    //     assert_eq!(parser.cursor_pos(), 17);
-    //     assert_eq!(parsed.to_string(), s);
-    // }
+    #[test]
+    fn test_drawer_empty() {
+        let text = ":something:\n:END:";
+        let expected = Drawer {
+            shared_behavior_data: SharedBehaviorData {
+                span: Span::new(0, 17),
+                post_blank: 0,
+            },
+            affiliated_keywords_data: Spanned::new(
+                Span::new(0, 0),
+                AffiliatedKeywords::default()
+            ),
+            content_data: ContentData::empty(Span::new(12, 12)),
+            name: "something".to_string(),
+        };
+        let result = parse_drawer()
+            .easy_parse(State::with_positioner(text, IndexPositioner::new()))
+            .map(|t| t.0);
+        assert_eq!(result, Ok(expected));
+    }
 
     // TODO add more tests as soon as node property parsing is implemented
 }
