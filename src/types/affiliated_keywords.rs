@@ -67,19 +67,13 @@ pub struct AffiliatedKeywords {
     attrs: Vec<Spanned<Attr>>,
 }
 
-pub enum AffiliatedKeyword {
-    Caption(Spanned<Caption>),
-    Header(Spanned<String>),
-    Name(Spanned<String>),
-    Plot(Spanned<String>),
-    Results(Spanned<Results>),
-    Attr(Spanned<Attr>),
-}
-
 impl<A> std::iter::FromIterator<A> for AffiliatedKeywords
 where
     A: Into<AffiliatedKeyword>,
 {
+    /// `AffiliatedKeywords` can only hold one of [`AffiliatedKeyword::Name`],
+    /// [`AffiliatedKeyword::Plot`] and [`AffiliatedKeyword::Results`]. If there are multiple in
+    /// the iterator only the last of each (if any) will be kept.
     fn from_iter<T>(iter: T) -> Self
     where
         T: IntoIterator<Item = A>,
@@ -94,6 +88,9 @@ impl<A> Extend<A> for AffiliatedKeywords
 where
     A: Into<AffiliatedKeyword>,
 {
+    /// `AffiliatedKeywords` can only hold one of [`AffiliatedKeyword::Name`],
+    /// [`AffiliatedKeyword::Plot`] and [`AffiliatedKeyword::Results`]. If there are multiple in
+    /// the iterator only the last of each (if any) will be kept.
     fn extend<T>(&mut self, iter: T)
     where
         T: IntoIterator<Item = A>,
@@ -104,11 +101,57 @@ where
     }
 }
 
+impl IntoIterator for AffiliatedKeywords {
+    type Item = AffiliatedKeyword;
+    type IntoIter = IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            inner: self
+                .captions
+                .into_iter()
+                .map(AffiliatedKeyword::Caption as fn(Spanned<Caption>) -> AffiliatedKeyword)
+                .chain(
+                    self.headers
+                        .into_iter()
+                        .map(AffiliatedKeyword::Header as fn(Spanned<String>) -> AffiliatedKeyword),
+                )
+                .chain(
+                    self.name
+                        .into_iter()
+                        .map(AffiliatedKeyword::Name as fn(Spanned<String>) -> AffiliatedKeyword),
+                )
+                .chain(
+                    self.plot
+                        .into_iter()
+                        .map(AffiliatedKeyword::Plot as fn(Spanned<String>) -> AffiliatedKeyword),
+                )
+                .chain(
+                    self.results.into_iter().map(
+                        AffiliatedKeyword::Results as fn(Spanned<Results>) -> AffiliatedKeyword,
+                    ),
+                )
+                .chain(
+                    self.attrs
+                        .into_iter()
+                        .map(AffiliatedKeyword::Attr as fn(Spanned<Attr>) -> AffiliatedKeyword),
+                ),
+        }
+    }
+}
+
 impl AffiliatedKeywords {
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Adds a single [`AffiliatedKeyword`] to the `AffiliatedKeywords` struct.
+    ///
+    /// `AffiliatedKeywords` can only hold one of [`AffiliatedKeyword::Name`],
+    /// [`AffiliatedKeyword::Plot`] and [`AffiliatedKeyword::Results`]. These will overwrite the
+    /// values that are already present (if any). The replaces value will be returned. If there are
+    /// multiple occurenses of `Name`, `Plot` or `Results` in the iterator only the last of each
+    /// (if any) will be kept.
     pub fn push(&mut self, other: impl Into<AffiliatedKeyword>) -> Option<AffiliatedKeyword> {
         match other.into() {
             AffiliatedKeyword::Caption(caption) => {
@@ -186,6 +229,17 @@ impl AffiliatedKeywords {
     }
 }
 
+/// Represents a single affiliated keyword.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum AffiliatedKeyword {
+    Caption(Spanned<Caption>),
+    Header(Spanned<String>),
+    Name(Spanned<String>),
+    Plot(Spanned<String>),
+    Results(Spanned<Results>),
+    Attr(Spanned<Attr>),
+}
+
 /// Parsed from: `#+CAPTION[OPTIONAL]: VALUE`.
 ///
 /// See [`AffiliatedKeywords`].
@@ -244,98 +298,251 @@ pub struct Attr {
     value: String,
 }
 
-/// An iterator over [`Caption`]s.
-///
-/// This struct is created by the [`captions`][`AffiliatedKeywords::captions`] method
-/// on [`AffiliatedKeywords`].
-pub struct Captions<'a> {
-    inner: slice::Iter<'a, Spanned<Caption>>,
-}
+/// Iterators for the different fields of `AffiliatedKeywords`.
+mod iter {
+    use super::*;
+    use std::iter::{Chain, Map};
+    use std::option;
+    use std::vec;
 
-impl<'a> Iterator for Captions<'a> {
-    type Item = &'a Caption;
+    // XXX: This type is humongous. But this is easier than implementing some sort of state to know
+    // what field we are currently in and where in that field if it is a vector and where to go to next
+    // and what happens if one of the fields is empty.
+    pub struct IntoIter {
+        pub(super) inner: Chain<
+            Chain<
+                Chain<
+                    Chain<
+                        Chain<
+                            Map<
+                                vec::IntoIter<Spanned<Caption>>,
+                                fn(Spanned<Caption>) -> AffiliatedKeyword,
+                            >,
+                            Map<
+                                vec::IntoIter<Spanned<String>>,
+                                fn(Spanned<String>) -> AffiliatedKeyword,
+                            >,
+                        >,
+                        Map<
+                            option::IntoIter<Spanned<String>>,
+                            fn(Spanned<String>) -> AffiliatedKeyword,
+                        >,
+                    >,
+                    Map<
+                        option::IntoIter<Spanned<String>>,
+                        fn(Spanned<String>) -> AffiliatedKeyword,
+                    >,
+                >,
+                Map<option::IntoIter<Spanned<Results>>, fn(Spanned<Results>) -> AffiliatedKeyword>,
+            >,
+            Map<vec::IntoIter<Spanned<Attr>>, fn(Spanned<Attr>) -> AffiliatedKeyword>,
+        >,
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|spanned| spanned.value())
+    impl Iterator for IntoIter {
+        type Item = AffiliatedKeyword;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.inner.next()
+        }
+    }
+
+    /// An iterator over [`Caption`]s.
+    ///
+    /// This struct is created by the [`captions`][`AffiliatedKeywords::captions`] method
+    /// on [`AffiliatedKeywords`].
+    pub struct Captions<'a> {
+        pub(super) inner: slice::Iter<'a, Spanned<Caption>>,
+    }
+
+    impl<'a> Iterator for Captions<'a> {
+        type Item = &'a Caption;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.inner.next().map(|spanned| spanned.value())
+        }
+    }
+
+    /// An iterator over [`Caption`]s wrapped in [`SpannedValue`].
+    ///
+    /// This struct is created by the [`spanned_captions`][`AffiliatedKeywords::spanned_captions`] method
+    /// on [`AffiliatedKeywords`].
+    pub struct SpannedCaptions<'a> {
+        pub(super) inner: slice::Iter<'a, Spanned<Caption>>,
+    }
+
+    impl<'a> Iterator for SpannedCaptions<'a> {
+        type Item = &'a Spanned<Caption>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.inner.next()
+        }
+    }
+
+    /// An iterator over headers.
+    ///
+    /// This struct is created by the [`headers`][`AffiliatedKeywords::headers`] method
+    /// on [`AffiliatedKeywords`].
+    pub struct Headers<'a> {
+        pub(super) inner: slice::Iter<'a, Spanned<String>>,
+    }
+
+    impl<'a> Iterator for Headers<'a> {
+        type Item = &'a String;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.inner.next().map(|spanned| spanned.value())
+        }
+    }
+
+    /// An iterator over headers wrapped in [`SpannedValue`].
+    ///
+    /// This struct is created by the [`spanned_headers`][`AffiliatedKeywords::spanned_headers`] method
+    /// on [`AffiliatedKeywords`].
+    pub struct SpannedHeaders<'a> {
+        pub(super) inner: slice::Iter<'a, Spanned<String>>,
+    }
+
+    impl<'a> Iterator for SpannedHeaders<'a> {
+        type Item = &'a Spanned<String>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.inner.next()
+        }
+    }
+
+    /// An iterator over [`Attr`]s.
+    ///
+    /// This struct is created by the [`attrs`][`AffiliatedKeywords::attrs`] method
+    /// on [`AffiliatedKeywords`].
+    pub struct Attrs<'a> {
+        pub(super) inner: slice::Iter<'a, Spanned<Attr>>,
+    }
+
+    impl<'a> Iterator for Attrs<'a> {
+        type Item = &'a Attr;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.inner.next().map(|spanned| spanned.value())
+        }
+    }
+
+    /// An iterator over [`Attr`]s wrapped in [`SpannedValue`].
+    ///
+    /// This struct is created by the [`spanned_attrs`][`AffiliatedKeywords::spanned_attrs`] method
+    /// on [`AffiliatedKeywords`].
+    pub struct SpannedAttrs<'a> {
+        pub(super) inner: slice::Iter<'a, Spanned<Attr>>,
+    }
+
+    impl<'a> Iterator for SpannedAttrs<'a> {
+        type Item = &'a Spanned<Attr>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.inner.next()
+        }
     }
 }
+pub use self::iter::{
+    Attrs, Captions, Headers, IntoIter, SpannedAttrs, SpannedCaptions, SpannedHeaders,
+};
 
-/// An iterator over [`Caption`]s wrapped in [`SpannedValue`].
-///
-/// This struct is created by the [`spanned_captions`][`AffiliatedKeywords::spanned_captions`] method
-/// on [`AffiliatedKeywords`].
-pub struct SpannedCaptions<'a> {
-    inner: slice::Iter<'a, Spanned<Caption>>,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+    use std::collections::HashSet;
 
-impl<'a> Iterator for SpannedCaptions<'a> {
-    type Item = &'a Spanned<Caption>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+    fn span() -> impl Strategy<Value = Span> {
+        any::<usize>()
+            .prop_flat_map(|start| (Just(start), start..))
+            .prop_map(|(start, end)| Span::new(start, end))
     }
-}
 
-/// An iterator over headers.
-///
-/// This struct is created by the [`headers`][`AffiliatedKeywords::headers`] method
-/// on [`AffiliatedKeywords`].
-pub struct Headers<'a> {
-    inner: slice::Iter<'a, Spanned<String>>,
-}
-
-impl<'a> Iterator for Headers<'a> {
-    type Item = &'a String;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|spanned| spanned.value())
+    prop_compose! {
+        fn caption()(
+            span in span(),
+            optional in any::<Option<String>>(),
+            value in any::<String>()
+        ) -> Spanned<Caption> {
+            let value = SecondaryString::with_one(StandardSet::RawString(value));
+            let optional = optional.map(|value| SecondaryString::with_one(StandardSet::RawString(value)));
+            let caption = Caption::with_option_optional(value, optional);
+            Spanned::new(span, caption)
+        }
     }
-}
-
-/// An iterator over headers wrapped in [`SpannedValue`].
-///
-/// This struct is created by the [`spanned_headers`][`AffiliatedKeywords::spanned_headers`] method
-/// on [`AffiliatedKeywords`].
-pub struct SpannedHeaders<'a> {
-    inner: slice::Iter<'a, Spanned<String>>,
-}
-
-impl<'a> Iterator for SpannedHeaders<'a> {
-    type Item = &'a Spanned<String>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+    prop_compose! {
+        fn header()(
+            span in span(),
+            value in any::<String>()
+        ) -> Spanned<String> {
+            Spanned::new(span, value)
+        }
     }
-}
-
-/// An iterator over [`Attr`]s.
-///
-/// This struct is created by the [`attrs`][`AffiliatedKeywords::attrs`] method
-/// on [`AffiliatedKeywords`].
-pub struct Attrs<'a> {
-    inner: slice::Iter<'a, Spanned<Attr>>,
-}
-
-impl<'a> Iterator for Attrs<'a> {
-    type Item = &'a Attr;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|spanned| spanned.value())
+    prop_compose! {
+        fn name()(
+            span in span(),
+            value in any::<String>()
+        ) -> Spanned<String> {
+            Spanned::new(span, value)
+        }
     }
-}
+    prop_compose! {
+        fn plot()(
+            span in span(),
+            value in any::<String>()
+        ) -> Spanned<String> {
+            Spanned::new(span, value)
+        }
+    }
+    prop_compose! {
+        fn results()(
+            span in span(),
+            optional in any::<Option<String>>(),
+            value in any::<String>()
+        ) -> Spanned<Results> {
+            let caption = Results { value, optional, };
+            Spanned::new(span, caption)
+        }
+    }
+    prop_compose! {
+        fn attr()(
+            span in span(),
+            backend in any::<String>(),
+            value in any::<String>()
+        ) -> Spanned<Attr> {
+            let attr = Attr { backend, value, };
+            Spanned::new(span, attr)
+        }
+    }
 
-/// An iterator over [`Attr`]s wrapped in [`SpannedValue`].
-///
-/// This struct is created by the [`spanned_attrs`][`AffiliatedKeywords::spanned_attrs`] method
-/// on [`AffiliatedKeywords`].
-pub struct SpannedAttrs<'a> {
-    inner: slice::Iter<'a, Spanned<Attr>>,
-}
-
-impl<'a> Iterator for SpannedAttrs<'a> {
-    type Item = &'a Spanned<Attr>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+    proptest! {
+        #[test]
+        fn test_affiliated_keywords_into_iter(
+            captions in prop::collection::vec(caption(), 0..10),
+            headers in prop::collection::vec(header(), 0..10),
+            name in prop::option::of(name()),
+            plot in prop::option::of(plot()),
+            results in prop::option::of(results()),
+            attrs in prop::collection::vec(attr(), 0..10),
+        ) {
+            let expected: HashSet<_> = captions.clone().into_iter().map(AffiliatedKeyword::Caption)
+                .chain(headers.clone().into_iter().map(AffiliatedKeyword::Header))
+                .chain(name.clone().into_iter().map(AffiliatedKeyword::Name))
+                .chain(plot.clone().into_iter().map(AffiliatedKeyword::Plot))
+                .chain(results.clone().into_iter().map(AffiliatedKeyword::Results))
+                .chain(attrs.clone().into_iter().map(AffiliatedKeyword::Attr))
+                .collect();
+            let aks = AffiliatedKeywords {
+                captions,
+                headers,
+                name,
+                plot,
+                results,
+                attrs,
+            };
+            let actual: HashSet<_> = aks.into_iter().collect();
+            assert_eq!(expected, actual);
+        }
     }
 }

@@ -247,6 +247,9 @@ impl<T: AsRawString> SecondaryString<T> {
     pub fn new() -> Self {
         SecondaryString(Vec::new())
     }
+    pub fn with_one(t: T) -> Self {
+        SecondaryString(vec![t])
+    }
 
     /// Returns `true` if this `SecondaryString` starts with a raw string and the given pattern matches
     /// a prefix of this string.
