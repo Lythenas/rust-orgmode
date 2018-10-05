@@ -16,6 +16,7 @@
 #![feature(pattern)]
 #![feature(const_vec_new)]
 #![feature(never_type)]
+#![feature(option_replace)]
 #![plugin(phf_macros)]
 
 #[cfg(test)]

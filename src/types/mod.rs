@@ -81,9 +81,6 @@ impl SharedBehaviorData {
     pub(crate) fn new(span: Span, post_blank: usize) -> SharedBehaviorData {
         SharedBehaviorData { span, post_blank }
     }
-    pub(crate) fn to_span(self) -> Span {
-        self.span
-    }
 }
 
 /// Represents where in the file the a object or element is.
@@ -177,25 +174,6 @@ impl<T> ContentData<T> {
         &self.span
     }
 }
-
-// impl<T: Parse> Parse for ContentData<T> {
-//     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
-//         let mut content = Vec::new();
-//         let content_start = parser.cursor_pos();
-//
-//         while parser.has_content_left_to_parse() {
-//             let t = T::parse(parser)?;
-//             content.push(t);
-//         }
-//
-//         let content_end = parser.cursor_pos();
-//
-//         Ok(ContentData {
-//             span: Span::new(content_start, content_end),
-//             content,
-//         })
-//     }
-// }
 
 impl<T: fmt::Display> fmt::Display for ContentData<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

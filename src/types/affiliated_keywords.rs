@@ -67,9 +67,73 @@ pub struct AffiliatedKeywords {
     attrs: Vec<Spanned<Attr>>,
 }
 
+pub enum AffiliatedKeyword {
+    Caption(Spanned<Caption>),
+    Header(Spanned<String>),
+    Name(Spanned<String>),
+    Plot(Spanned<String>),
+    Results(Spanned<Results>),
+    Attr(Spanned<Attr>),
+}
+
+impl<A> std::iter::FromIterator<A> for AffiliatedKeywords
+where
+    A: Into<AffiliatedKeyword>,
+{
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = A>,
+    {
+        let mut ak = AffiliatedKeywords::default();
+        ak.extend(iter);
+        ak
+    }
+}
+
+impl<A> Extend<A> for AffiliatedKeywords
+where
+    A: Into<AffiliatedKeyword>,
+{
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = A>,
+    {
+        for elem in iter {
+            self.push(elem);
+        }
+    }
+}
+
 impl AffiliatedKeywords {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn push(&mut self, other: impl Into<AffiliatedKeyword>) -> Option<AffiliatedKeyword> {
+        match other.into() {
+            AffiliatedKeyword::Caption(caption) => {
+                self.captions.push(caption);
+                None
+            }
+            AffiliatedKeyword::Header(header) => {
+                self.headers.push(header);
+                None
+            }
+            AffiliatedKeyword::Name(name) => {
+                self.name.replace(name).map(|x| AffiliatedKeyword::Name(x))
+            }
+            AffiliatedKeyword::Plot(plot) => {
+                self.plot.replace(plot).map(|x| AffiliatedKeyword::Plot(x))
+            }
+            AffiliatedKeyword::Results(results) => self
+                .results
+                .replace(results)
+                .map(|x| AffiliatedKeyword::Results(x)),
+            AffiliatedKeyword::Attr(attr) => {
+                self.attrs.push(attr);
+                None
+            }
+        }
     }
 
     pub fn captions(&self) -> Captions<'_> {
@@ -146,6 +210,12 @@ impl Caption {
             optional: Some(optional),
             value,
         }
+    }
+    pub fn with_option_optional(
+        value: SecondaryString<StandardSet>,
+        optional: Option<SecondaryString<StandardSet>>,
+    ) -> Caption {
+        Caption { value, optional }
     }
 
     pub fn optional(&self) -> &Option<SecondaryString<StandardSet>> {
