@@ -49,7 +49,7 @@ static ORG_LINK_TYPES: () = ();
 /// The actual data is stored in the convenience struct [`SharedBehaviorData`]. The implementing
 /// structs only need to implement `shared_behavior_data()` and this trait will provide the
 /// getters for the fields of the `SharedBehaviorData` struct.
-pub trait SharedBehavior {
+pub trait SharedBehavior: crate::private::Sealed {
     /// Returns a reference to the data of the shared behavior.
     ///
     /// You should most likely not use this method. It is just a proxy for the other methods on
