@@ -1,6 +1,7 @@
 //! Contains the types and traits needed for parsing.
 use combine::parser::char::space;
-use combine::stream::FullRangeStream;
+use combine::stream::state::{IndexPositioner, State};
+use combine::stream::{easy, FullRangeStream};
 use combine::{many, position, value, ParseError, Parser, Stream};
 use crate::types::affiliated_keywords::AffiliatedKeywords;
 use crate::types::*;
@@ -49,7 +50,7 @@ where
     shared_behavior_data(p)
 }
 
-pub fn content_data<'a, I, T>() -> impl Parser<Input = I, Output = ContentData<T>> + 'a
+fn _content_data<'a, I, T>() -> impl Parser<Input = I, Output = ContentData<T>> + 'a
 where
     I: Stream<Item = char, Range = &'a str, Position = usize> + FullRangeStream + 'a,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
@@ -61,6 +62,17 @@ where
         //ContentData::new(span, content)
         ContentData::empty(span)
     })
+}
+
+pub fn content_data<'a, T: Clone + 'a>(
+    input: &'a str,
+    position: usize,
+) -> Result<
+    (ContentData<T>, State<&'a str, IndexPositioner>),
+    easy::ParseError<State<&'a str, IndexPositioner>>,
+> {
+    let input = State::with_positioner(input, IndexPositioner::new_with_position(position));
+    _content_data().easy_parse(input)
 }
 
 #[derive(Debug, Clone)]

@@ -5,7 +5,7 @@ use combine::parser::range::{range, recognize};
 use combine::parser::regex::captures;
 use combine::parser::repeat::skip_until;
 use combine::stream::{FullRangeStream, Stream, StreamOnce};
-use combine::{one_of, optional, position, value, Parser, skip_many};
+use combine::{one_of, optional, position, skip_many, value, Parser};
 use crate::parsing::{content_data, shared_behavior_data};
 use regex::Regex;
 
@@ -76,15 +76,13 @@ where
                         optional(string("\n")),
                     )
                 };
-                (value(name.to_string()), position(), recognize(skip_until(find_end())))
+                (
+                    value(name.to_string()),
+                    position(),
+                    recognize(skip_until(find_end())),
+                )
                     .flat_map(|(name, position, content_str): (String, usize, &str)| {
-                        use combine::stream::state::{IndexPositioner, State};
-                        let input = State::with_positioner(
-                            content_str,
-                            IndexPositioner::new_with_position(position),
-                        );
-                        content_data()
-                            .easy_parse(input)
+                        content_data(content_str, position)
                             .map(|(content_data, _rest)| (name, content_data))
                     })
                     .skip(find_end())

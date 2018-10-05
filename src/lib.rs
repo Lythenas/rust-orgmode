@@ -395,7 +395,7 @@ mod private {
     macro_rules! impl_sealed {
         ($ty:ty) => {
             impl crate::private::Sealed for $ty {}
-        }
+        };
     }
 
     impl_sealed!(crate::types::objects::Entity);
