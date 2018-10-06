@@ -17,11 +17,14 @@ use super::*;
 ///
 /// `CONTENTS` can contain anything except a line `#+END_VERSE` on its own. Lines beginning
 /// with stars must be quoted by comma. `CONTENTS` will be parsed as objects.
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VerseBlock {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<StandardSet>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    content: Spanned<Vec<StandardSet>>,
+}
+
+impl Parent<Vec<StandardSet>> for VerseBlock {
+    fn content(&self) -> Option<&Spanned<Vec<StandardSet>>> {
+        Some(&self.content)
+    }
 }

@@ -25,13 +25,10 @@ use super::*;
 /// `:name value` or `:name`.
 ///
 /// `CONTENTS` is auto-generated and will not be parsed.
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DynamicBlock {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<ElementSet>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    content: Spanned<Vec<ElementSet>>,
     /// The name of the function that can update this block.
     pub name: String,
     /// The parameters to pass to the function updating this block.
@@ -41,4 +38,10 @@ pub struct DynamicBlock {
     /// If the function needs the current content of the block add a parameter `:content`.
     pub parameters: String, // TODO maybe parse this as a list
                             // hiddenp: bool
+}
+
+impl Parent<Vec<ElementSet>> for DynamicBlock {
+    fn content(&self) -> Option<&Spanned<Vec<ElementSet>>> {
+        Some(&self.content)
+    }
 }

@@ -43,15 +43,18 @@ use super::*;
 /// |  200 |  300 |  500 |
 /// +------+------+------+
 /// ```
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Table {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
     // TODO make more type safe, org and table.el can't be mixed in one table.
-    content_data: ContentData<TableContent>,
+    content: Spanned<Vec<TableContent>>,
     pub kind: TableKind,
+}
+
+impl Parent<Vec<TableContent>> for Table {
+    fn content(&self) -> Option<&Spanned<Vec<TableContent>>> {
+        Some(&self.content)
+    }
 }
 
 /// The set of objects that can be in a [`Table`].

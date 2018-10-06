@@ -19,9 +19,8 @@ use super::*;
 /// plus sign (`+`).
 ///
 /// `VALUE` can contain anything but a newline character.
-#[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NodeProperty {
-    shared_behavior_data: SharedBehaviorData,
     pub name: String,
     pub value: String,
 }

@@ -37,9 +37,8 @@ use chrono::{NaiveDate, NaiveTime};
 ///
 /// There can be two `REPEATERORYEAR` in the timestamp. One as a repeater and on as a warning
 /// delay.
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Timestamp {
-    shared_behavior_data: SharedBehaviorData,
     pub kind: TimestampKind,
 }
 

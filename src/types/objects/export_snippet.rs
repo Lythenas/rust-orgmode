@@ -16,9 +16,8 @@ use super::*;
 /// `BACKEND` can contain any alpha-numeric character and hyphens.
 ///
 /// `VALUE` can contain anything but the `@@` string.
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportSnippet {
-    shared_behavior_data: SharedBehaviorData,
     pub backend: String,
     pub value: String,
 }

@@ -19,9 +19,8 @@ use super::*;
 /// `ARGUMENTS` can contain any character besides `)` and newline.
 ///
 /// Both `HEADER`s are optional. But then there are also no square brackets.
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineBabelCall {
-    shared_behavior_data: SharedBehaviorData,
     pub call: String,
     pub inside_header: String,
     pub arguments: String,

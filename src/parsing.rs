@@ -16,47 +16,34 @@ where
     (position(), p, position()).map(|(start, content, end)| (Span::new(start, end), content))
 }
 
-pub fn shared_behavior_data<I, P>(
-    p: P,
-) -> impl Parser<Input = I, Output = (SharedBehaviorData, P::Output)>
+pub fn object<I, P>(p: P) -> impl Parser<Input = I, Output = (Span, P::Output)>
 where
     I: Stream<Item = char, Position = usize>,
     P: Parser<Input = I>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
-    spanned(p).map(|(span, content)| {
-        (SharedBehaviorData::new(span), content)
-    })
+    spanned(p)
 }
 
-pub fn object<I, P>(p: P) -> impl Parser<Input = I, Output = (SharedBehaviorData, P::Output)>
-where
-    I: Stream<Item = char, Position = usize>,
-    P: Parser<Input = I>,
-    I::Error: ParseError<I::Item, I::Range, I::Position>,
-{
-    shared_behavior_data(p)
-}
-
-fn _content_data<'a, I, T>() -> impl Parser<Input = I, Output = ContentData<T>> + 'a
+fn _content_data<'a, I, T>() -> impl Parser<Input = I, Output = Spanned<T>> + 'a
 where
     I: Stream<Item = char, Range = &'a str, Position = usize> + FullRangeStream + 'a,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
-    T: Clone + 'a,
+    T: Clone + Default + 'a,
 {
     // TODO replace value(()) with actual content parsing
     (position(), value(()), position()).map(|(start, _content, end)| {
         let span = Span::new(start, end);
-        //ContentData::new(span, content)
-        ContentData::empty(span)
+        // Spanned::new(span, content)
+        Spanned::new(span, T::default())
     })
 }
 
-pub fn content_data<'a, T: Clone + 'a>(
+pub fn content_data<'a, T: Clone + Default + 'a>(
     input: &'a str,
     position: usize,
 ) -> Result<
-    (ContentData<T>, State<&'a str, IndexPositioner>),
+    (Spanned<T>, State<&'a str, IndexPositioner>),
     easy::ParseError<State<&'a str, IndexPositioner>>,
 > {
     let input = State::with_positioner(input, IndexPositioner::new_with_position(position));

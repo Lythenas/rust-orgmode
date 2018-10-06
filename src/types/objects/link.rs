@@ -50,9 +50,8 @@ use super::*;
 /// link unless it is a plain or angle link. (See [`LinkDescriptionSetOfObjects`]).
 ///
 /// Whitespace and newlines in the link are replaced with a single space.
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Link {
-    shared_behavior_data: SharedBehaviorData,
     pub link: LinkFormat,
 }
 
@@ -76,7 +75,7 @@ pub enum LinkFormat {
 ///
 /// Linkss can't contain [`FootnoteReference`], [`LineBreak`], [`Target`], [`Target`] and
 /// [`Timestamp`].
-#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LinkDescriptionSetOfObjects {
     RawString(String),
     Entity(objects::Entity),
@@ -91,6 +90,16 @@ pub enum LinkDescriptionSetOfObjects {
     Subscript(objects::Subscript),
     Superscript(objects::Superscript),
     TextMarkup(objects::TextMarkup),
+}
+
+impl AsRawString for LinkDescriptionSetOfObjects {
+    fn as_raw_string(&self) -> Option<&str> {
+        if let LinkDescriptionSetOfObjects::RawString(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
 }
 
 /// The kind and data of a bracket link in [`LinkFormat`].

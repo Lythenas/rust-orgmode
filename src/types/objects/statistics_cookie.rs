@@ -20,9 +20,8 @@ use super::*;
 /// [`Inlinetask`]: `greater_elements::Inlinetask`
 /// [`Item`]: `greater_elements::Item`
 /// [`PlainList`]: `greater_elements::PlainList`
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StatisticsCookie {
-    shared_behavior_data: SharedBehaviorData,
     pub cookie: CookieKind,
 }
 

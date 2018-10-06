@@ -17,16 +17,15 @@ use super::*;
 ///
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will be parsed as a [`SecondaryString`].
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RadioTarget {
-    shared_behavior_data: SharedBehaviorData,
     pub target: SecondaryString<StandardSet>,
 }
 
 /// The set of objects a [`RadioTarget`] can contain.
 ///
 /// Radio targets content is limited to easy to parse objects. Mainly just markup and raw strings.
-#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RadioTargetSetOfObjects {
     RawString(String),
     Entity(objects::Entity),
@@ -34,4 +33,14 @@ pub enum RadioTargetSetOfObjects {
     Subscript(objects::Subscript),
     Superscript(objects::Superscript),
     TextMarkup(objects::TextMarkup),
+}
+
+impl AsRawString for RadioTargetSetOfObjects {
+    fn as_raw_string(&self) -> Option<&str> {
+        if let RadioTargetSetOfObjects::RawString(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
 }

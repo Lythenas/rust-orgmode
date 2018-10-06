@@ -35,9 +35,8 @@ use super::*;
 /// The part `BORDER BODY BORDER` is parsed as a [`SecondaryString`] and can contain the
 /// standard set of objects when the markup is bold, italic, strike through or udnerline. The
 /// content of verbatim and code is not parsed.
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TextMarkup {
-    shared_behavior_data: SharedBehaviorData,
     pub kind: TextMarkupKind,
 }
 

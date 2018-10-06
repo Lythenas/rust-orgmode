@@ -6,7 +6,7 @@ use combine::parser::regex::captures;
 use combine::parser::repeat::skip_until;
 use combine::stream::{FullRangeStream, Stream, StreamOnce};
 use combine::{one_of, optional, position, skip_many, value, Parser};
-use crate::parsing::{content_data, shared_behavior_data};
+use crate::parsing::{content_data, spanned};
 use regex::Regex;
 
 /// A special block.
@@ -29,16 +29,25 @@ use regex::Regex;
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 ///
 /// TODO not sure if this is actually a greater element
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SpecialBlock {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<Spanned<String>>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    content: Spanned<String>,
     pub name: String,
     // hiddenp: bool
 }
+impl Parent<String> for SpecialBlock {
+    fn content(&self) -> Option<&Spanned<String>> {
+        Some(&self.content)
+    }
+}
+impl HasAffiliatedKeywords for SpecialBlock {
+    fn affiliated_keywords(&self) -> Option<&Spanned<AffiliatedKeywords>> {
+        self.affiliated_keywords.as_ref()
+    }
+}
+impl Element for SpecialBlock {}
+impl GreaterElement for SpecialBlock {}
 
 // use combine::stream::RangeStreamOnce;
 // fn owned_string<'a, I: 'a>(s: String) -> impl Parser<Input = I, Output = &'a str>
@@ -52,7 +61,7 @@ pub struct SpecialBlock {
 //     )
 // }
 
-fn parse_special_block<'a, I: 'a>() -> impl Parser<Input = I, Output = SpecialBlock> + 'a
+fn parse_special_block<'a, I: 'a>() -> impl Parser<Input = I, Output = Spanned<SpecialBlock>> + 'a
 where
     I: Stream<Item = char, Range = &'a str, Position = usize>
         + FullRangeStream
@@ -63,7 +72,7 @@ where
         static ref RE_START: Regex = Regex::new(r"([ \t]*)#\+BEGIN_(\S+)[ \t]*\n").unwrap();
     }
 
-    shared_behavior_data(
+    spanned(
         captures(&*RE_START)
             .map(|vec: Vec<&str>| vec[2])
             .then(|name| {
@@ -88,14 +97,16 @@ where
                     .skip(find_end())
             }),
     )
-    .map(
-        |(shared_behavior_data, (name, content_data))| SpecialBlock {
-            shared_behavior_data,
-            affiliated_keywords_data: Spanned::new(Span::new(0, 0), AffiliatedKeywords::default()),
-            content_data,
-            name,
-        },
-    )
+    .map(|(span, (name, content))| {
+        Spanned::new(
+            span,
+            SpecialBlock {
+                affiliated_keywords: None,
+                content,
+                name,
+            },
+        )
+    })
 }
 
 impl fmt::Display for SpecialBlock {
@@ -112,18 +123,17 @@ impl fmt::Display for SpecialBlock {
 mod tests {
     use super::*;
     use combine::stream::state::{IndexPositioner, State};
+    use crate::types::IntoSpanned;
 
     #[test]
     fn test_special_block_empty() {
         let text = "#+BEGIN_something\n#+END_something";
         let expected = SpecialBlock {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 33),
-            },
-            affiliated_keywords_data: Spanned::new(Span::new(0, 0), AffiliatedKeywords::default()),
-            content_data: ContentData::empty(Span::new(18, 18)),
+            affiliated_keywords: None,
+            content: Spanned::new(Span::new(18, 18), String::new()),
             name: "something".to_string(),
-        };
+        }
+        .into_spanned(Span::new(0, 33));
         let result = parse_special_block()
             .easy_parse(State::with_positioner(text, IndexPositioner::new()))
             .map(|t| t.0);

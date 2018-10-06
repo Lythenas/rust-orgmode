@@ -18,13 +18,16 @@ use super::*;
 /// `CONTENTS` can contain any element except another footnote definition and a [`Headline`].
 /// It ends at the next footnote definition, headline, with two consecutive empty lines or the
 /// end of the buffer.
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteDefinition {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<ElementSet>, // TODO
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    content: Spanned<Vec<ElementSet>>, // TODO
     pub label: String,
     // pre_blank: u32 // TODO (maybe) blank lines after `[LABEL]`
+}
+
+impl Parent<Vec<ElementSet>> for FootnoteDefinition {
+    fn content(&self) -> Option<&Spanned<Vec<ElementSet>>> {
+        Some(&self.content)
+    }
 }

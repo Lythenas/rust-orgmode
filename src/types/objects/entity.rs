@@ -22,9 +22,8 @@ use regex::Regex;
 /// whitespace). It isn't separated from `NAME` by any whitespace.
 ///
 /// [`entities`]: ../../entities/index.html
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Entity {
-    shared_behavior_data: SharedBehaviorData,
     pub name: String,
     /// True if the entity ended with `{}`.
     pub used_brackets: bool,
@@ -37,7 +36,7 @@ use combine::stream::{FullRangeStream, Stream};
 use combine::{choice, Parser};
 use crate::parsing::object;
 
-fn parse_entity<'a, I: 'a>() -> impl Parser<Input = I, Output = Entity> + 'a
+fn parse_entity<'a, I: 'a>() -> impl Parser<Input = I, Output = Spanned<Entity>> + 'a
 where
     I: Stream<Item = char, Range = &'a str, Position = usize> + FullRangeStream,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
@@ -55,10 +54,14 @@ where
             (name.to_string(), brackets == "{}")
         }),
     ))))
-    .map(|(shared_behavior_data, (name, used_brackets))| Entity {
-        shared_behavior_data,
-        name,
-        used_brackets,
+    .map(|(span, (name, used_brackets))| {
+        Spanned::new(
+            span,
+            Entity {
+                name,
+                used_brackets,
+            },
+        )
     })
 }
 
@@ -74,17 +77,16 @@ mod tests {
     use super::*;
     use combine::stream::state::IndexPositioner;
     use combine::stream::state::State;
+    use crate::types::IntoSpanned;
 
     #[test]
     fn test_parse_entity_with_brackets() {
         let text = r"\someentity{}";
         let expected = Entity {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 13),
-            },
             name: "someentity".to_string(),
             used_brackets: true,
-        };
+        }
+        .into_spanned(Span::new(0, 13));
         let result = parse_entity()
             .easy_parse(State::with_positioner(text, IndexPositioner::new()))
             .map(|t| t.0);
@@ -95,12 +97,10 @@ mod tests {
     fn test_parse_entity_with_post_blank() {
         let text = r"\someentity  ";
         let expected = Entity {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 11),
-            },
             name: "someentity".to_string(),
             used_brackets: false,
-        };
+        }
+        .into_spanned(Span::new(0, 11));
         let result = parse_entity()
             .easy_parse(State::with_positioner(text, IndexPositioner::new()))
             .map(|t| t.0);
@@ -111,12 +111,10 @@ mod tests {
     fn test_parse_entity_with_brackets_and_post_blank() {
         let text = r"\someentity{}  ";
         let expected = Entity {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 13),
-            },
             name: "someentity".to_string(),
             used_brackets: true,
-        };
+        }
+        .into_spanned(Span::new(0, 13));
         let result = parse_entity()
             .easy_parse(State::with_positioner(text, IndexPositioner::new()))
             .map(|t| t.0);
@@ -125,17 +123,12 @@ mod tests {
 
     #[test]
     fn test_parse_spaces_entity() {
-        use combine::stream::state::IndexPositioner;
-        use combine::stream::state::State;
-
         let text = r"\_  ";
         let expected = Entity {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 4),
-            },
             name: "_  ".to_string(),
             used_brackets: false,
-        };
+        }
+        .into_spanned(Span::new(0, 4));
         let result = parse_entity()
             .easy_parse(State::with_positioner(text, IndexPositioner::new()))
             .map(|t| t.0);

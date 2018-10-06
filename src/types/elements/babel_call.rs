@@ -14,10 +14,9 @@ use super::*;
 ///
 /// `FUNCTION` is the name of a [`SrcBlock`] to execute. `INSIDE-HEADER`, `ARGUEMENTS` and
 /// `END-HEADER` can contain everything except a newline (and their respective closing char).
-#[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BabelCall {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
     /// The code block to call
     pub call: String,
     pub inside_header: String,

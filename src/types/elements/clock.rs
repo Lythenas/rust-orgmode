@@ -22,9 +22,8 @@ use super::*;
 ///
 /// `DURATION` follows the pattern `=> HH:MM` where `HH` is a number containing any number of
 /// digits and `MM` is a two digit number.
-#[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Clock {
-    shared_behavior_data: SharedBehaviorData,
     pub timestamp: Option<objects::Timestamp>,
     pub duration: Option<(u64, u8)>,
 }

@@ -17,9 +17,14 @@ use super::*;
 /// ```
 ///
 /// `CONTENTS` consists of zero or more [`elements::NodeProperty`].
-#[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PropertyDrawer {
-    shared_behavior_data: SharedBehaviorData,
-    content_data: ContentData<elements::NodeProperty>,
+    content: Spanned<Vec<elements::NodeProperty>>,
     // hiddenp: bool
+}
+
+impl Parent<Vec<elements::NodeProperty>> for PropertyDrawer {
+    fn content(&self) -> Option<&Spanned<Vec<elements::NodeProperty>>> {
+        Some(&self.content)
+    }
 }

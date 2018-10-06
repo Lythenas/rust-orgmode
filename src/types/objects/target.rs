@@ -17,8 +17,7 @@ use super::*;
 ///
 /// `TARGET` can contain any character except `<`, `>` and newline. It can't start or end with
 /// a whitespace character. It will not be parsed.
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Target {
-    shared_behavior_data: SharedBehaviorData,
     pub target: String,
 }

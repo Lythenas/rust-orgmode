@@ -20,9 +20,8 @@ use super::*;
 /// `DEFINITION` can contain any character. Opening and closing square brackets must be
 /// balanced in it. It can contain the standard set of objects, even other footnote references.
 /// Will be parsed as a secondary string and can contain the standard set of objects.
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FootnoteReference {
-    shared_behavior_data: SharedBehaviorData,
     pub kind: FootnoteReferenceKind,
 }
 

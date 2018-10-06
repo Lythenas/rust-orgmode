@@ -13,8 +13,7 @@ use super::*;
 /// ```text
 /// -----
 /// ```
-#[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HorizontalRule {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
 }

@@ -16,11 +16,14 @@ use super::*;
 ///
 /// `CONTENTS` can contain anything except a line `#+END_CENTER` on its own. Lines beginning
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CenterBlock {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<String>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    content: Spanned<String>,
+}
+
+impl Parent<String> for CenterBlock {
+    fn content(&self) -> Option<&Spanned<String>> {
+        Some(&self.content)
+    }
 }

@@ -18,30 +18,25 @@ use super::*;
 ///   ```text
 ///   |--------|
 ///   ```
-#[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableRow {
-    shared_behavior_data: SharedBehaviorData,
     pub kind: TableRowKind,
 }
 
-impl GreaterElement<objects::TableCell> for TableRow {}
-impl HasContent<objects::TableCell> for TableRow {
-    fn content_data(&self) -> &ContentData<objects::TableCell> {
+impl Element for TableRow {}
+impl GreaterElement for TableRow {}
+impl Parent<Vec<objects::TableCell>> for TableRow {
+    fn content(&self) -> Option<&Spanned<Vec<objects::TableCell>>> {
         match self.kind {
-            TableRowKind::Normal(ref content) => &content,
-            TableRowKind::Rule => &EMPTY_CONTENT_DATA_FOR_TABLE_ROWS,
+            TableRowKind::Normal(ref content) => Some(&content),
+            TableRowKind::Rule => None,
         }
     }
 }
 
-static EMPTY_CONTENT_DATA_FOR_TABLE_ROWS: ContentData<objects::TableCell> = ContentData {
-    span: Span { start: 0, end: 0 },
-    content: Vec::new(),
-};
-
 /// The kind of a [`TableRow`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TableRowKind {
-    Normal(ContentData<objects::TableCell>),
+    Normal(Spanned<Vec<objects::TableCell>>),
     Rule,
 }

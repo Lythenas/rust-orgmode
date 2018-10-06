@@ -17,18 +17,23 @@ use super::*;
 /// affiliated keyword.
 ///
 /// `VALUE` can contain any character except a newline.
-#[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyword {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
+    affiliated_keywords: Spanned<AffiliatedKeywords>,
     pub key: String,
-    pub value: ContentData<KeywordValueSetOfObjects>,
+    pub value: Spanned<Vec<KeywordValueSetOfObjects>>,
+}
+impl Element for Keyword {}
+impl HasAffiliatedKeywords for Keyword {
+    fn affiliated_keywords(&self) -> Option<&Spanned<AffiliatedKeywords>> {
+        Some(&self.affiliated_keywords)
+    }
 }
 
 /// The set of objects a [`Keyword`] can contain.
 ///
 /// Keywords can't contain [`objects::FootnoteReference`].
-#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum KeywordValueSetOfObjects {
     RawString(String),
     Entity(objects::Entity),
@@ -46,4 +51,14 @@ pub enum KeywordValueSetOfObjects {
     Target(objects::Target),
     TextMarkup(objects::TextMarkup),
     Timestamp(objects::Timestamp),
+}
+
+impl AsRawString for KeywordValueSetOfObjects {
+    fn as_raw_string(&self) -> Option<&str> {
+        if let KeywordValueSetOfObjects::RawString(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
 }

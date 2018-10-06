@@ -18,12 +18,15 @@ use super::*;
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 ///
 /// TODO not sure if this is actually a greater element
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QuoteBlock {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<ElementSet>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    content: Spanned<Vec<ElementSet>>,
     // hiddenp: bool
+}
+
+impl Parent<Vec<ElementSet>> for QuoteBlock {
+    fn content(&self) -> Option<&Spanned<Vec<ElementSet>>> {
+        Some(&self.content)
+    }
 }

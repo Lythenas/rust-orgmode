@@ -18,8 +18,6 @@ itertools = "0.7"
 mopa = "0.2"
 combine = { version = "3.5", features = ["std", "regex"] }
 
-rust-orgmode-derive = { path = "rust-orgmode-derive" }
-
 [dev-dependencies]
 pretty_assertions = "0.5"
 proptest = "0.8"

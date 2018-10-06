@@ -19,10 +19,9 @@ use super::*;
 /// contain labels with the pattern `(ref:LABEL)`. **Labels are not recognized.**
 ///
 /// `FLAGS` see [`BlockFlags`].
-#[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExampleBlock {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
     pub value: String,
     pub flags: BlockFlags,
 }

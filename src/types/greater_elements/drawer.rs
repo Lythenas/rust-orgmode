@@ -5,7 +5,7 @@ use combine::parser::repeat::skip_until;
 use combine::stream::state::{IndexPositioner, State};
 use combine::stream::{easy, FullRangeStream, Stream, StreamOnce};
 use combine::{one_of, optional, position, skip_many, token, value, ParseError, Parser};
-use crate::parsing::{content_data, shared_behavior_data};
+use crate::parsing::{content_data, spanned};
 use std::fmt;
 
 /// A drawer to hide content.
@@ -28,18 +28,25 @@ use std::fmt;
 /// `CONTENTS` can contain any element except a [`Headline`] and another drawer.
 ///
 /// Drawers can be indented.
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Drawer {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<ElementSet>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    content: Spanned<Vec<ElementSet>>,
     pub name: String,
     // hiddenp: bool,
 }
 
-fn parse_drawer<'a, I: 'a>() -> impl Parser<Input = I, Output = Drawer> + 'a
+impl Parent<Vec<ElementSet>> for Drawer {
+    fn content(&self) -> Option<&Spanned<Vec<ElementSet>>> {
+        Some(&self.content)
+    }
+}
+
+impl Element for Drawer {}
+impl GreaterElement for Drawer {}
+// impl HasAffiliatedKeywords
+
+fn parse_drawer<'a, I: 'a>() -> impl Parser<Input = I, Output = Spanned<Drawer>> + 'a
 where
     I: Stream<Item = char, Range = &'a str, Position = usize>
         + FullRangeStream
@@ -58,7 +65,7 @@ where
         )
     };
 
-    shared_behavior_data(first_line.then(move |name: &str| {
+    spanned(first_line.then(move |name: &str| {
         (
             value(name.to_string()),
             position(),
@@ -71,11 +78,15 @@ where
             })
             .skip(end_line())
     }))
-    .map(|(shared_behavior_data, (name, content_data))| Drawer {
-        shared_behavior_data,
-        affiliated_keywords_data: Spanned::new(Span::new(0, 0), AffiliatedKeywords::default()),
-        content_data,
-        name,
+    .map(|(span, (name, content))| {
+        Spanned::new(
+            span,
+            Drawer {
+                affiliated_keywords: None,
+                content,
+                name,
+            },
+        )
     })
 }
 
@@ -94,18 +105,17 @@ impl fmt::Display for Drawer {
 mod tests {
     use super::*;
     use combine::stream::state::{IndexPositioner, State};
+    use crate::types::IntoSpanned;
 
     #[test]
     fn test_drawer_empty() {
         let text = ":something:\n:END:";
         let expected = Drawer {
-            shared_behavior_data: SharedBehaviorData {
-                span: Span::new(0, 17),
-            },
-            affiliated_keywords_data: Spanned::new(Span::new(0, 0), AffiliatedKeywords::default()),
-            content_data: ContentData::empty(Span::new(12, 12)),
+            affiliated_keywords: None,
+            content: Spanned::new(Span::new(12, 12), Vec::new()),
             name: "something".to_string(),
-        };
+        }
+        .into_spanned(Span::new(0, 17));
         let result = parse_drawer()
             .easy_parse(State::with_positioner(text, IndexPositioner::new()))
             .map(|t| t.0);

@@ -43,9 +43,8 @@ use super::*;
 /// `BORDER2` is any non-whitespace character except `.`, `,` and `$`.
 ///
 /// [`entities`]: ../../entities/index.html
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexFragment {
-    shared_behavior_data: SharedBehaviorData,
     /// Contains the entire parsed string, except the `PRE` and `POST` parts.
     pub value: String,
 }

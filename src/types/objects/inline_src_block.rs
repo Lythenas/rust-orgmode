@@ -17,9 +17,8 @@ use super::*;
 /// `OPTIONS` and `BODY` can contain any character but a newline.
 ///
 /// `OPTIONS` is optional. But then there are also not quote brackets.
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineSrcBlock {
-    shared_behavior_data: SharedBehaviorData,
     pub lang: String,
     pub value: String,
     pub options: String,

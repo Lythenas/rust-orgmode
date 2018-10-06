@@ -15,8 +15,13 @@ use super::*;
 /// section. Also content before the first headline in a document belongs to a section.
 ///
 /// A section ends at the beginning of the next headline or the end of the file.
-#[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Section {
-    shared_behavior_data: SharedBehaviorData,
-    content_data: ContentData<ElementSet>,
+    content: Spanned<Vec<ElementSet>>,
+}
+
+impl Parent<Vec<ElementSet>> for Section {
+    fn content(&self) -> Option<&Spanned<Vec<ElementSet>>> {
+        Some(&self.content)
+    }
 }

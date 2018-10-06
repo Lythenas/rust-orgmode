@@ -46,9 +46,8 @@ use super::*;
 /// backslash directly before the comma it has to be escaped with another backslash).
 ///
 /// Multiple whitespace and newline characters in `ARGUMENTS` are replaced by a single space.
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Macro {
-    shared_behavior_data: SharedBehaviorData,
     pub name: String,
     pub arguments: Vec<String>,
 }

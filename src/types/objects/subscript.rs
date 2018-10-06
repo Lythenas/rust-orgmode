@@ -35,9 +35,8 @@ use super::*;
 /// TODO this is recursive object. figure out how to handle recursive objects because some can
 /// only contain specific objects and therefore other recursive objects in them may contain
 /// less objects than they can usually contain
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
-    shared_behavior_data: SharedBehaviorData,
     pub used_brackets: bool,
     pub content: SecondaryString<StandardSet>,
 }

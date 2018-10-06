@@ -23,10 +23,9 @@ use super::*;
 /// `FLAGS` see [`BlockFlags`].
 ///
 /// `ARGUMENTS` can contain any character except a newline.
-#[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SrcBlock {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
     pub language: String,
     pub flags: BlockFlags,
     pub arguments: String,

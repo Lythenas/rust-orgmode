@@ -19,10 +19,9 @@ use super::*;
 /// is only at the end.
 ///
 /// `CONTENT` can be anything except `\end{ENVIRONMENT}`.
-#[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexEnvironment {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
     /// Contains everything including `\begin...` and `\end`.
     pub value: String,
 }

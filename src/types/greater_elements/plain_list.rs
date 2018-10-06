@@ -14,14 +14,17 @@ use super::*;
 /// If the dirst item has a `COUNTER` in its `BULLET` the plain list is be an *ordered plain
 /// list*. If it contains a tag it is be a *descriptive list*. Otherwise it is be an
 /// *unordered list*.
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PlainList {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<Item>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    content: Spanned<Vec<Item>>,
     // structure ?
+}
+
+impl Parent<Vec<Item>> for PlainList {
+    fn content(&self) -> Option<&Spanned<Vec<Item>>> {
+        Some(&self.content)
+    }
 }
 
 impl PlainList {

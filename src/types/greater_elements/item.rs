@@ -29,16 +29,20 @@ use super::*;
 /// An item ends before the next item, the first line that is less or equally indented that its
 /// starting line or two consecutive empty lines. Indentation of lines within other greater
 /// elements including inlinetask boundaries are ignored.
-#[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Item {
-    shared_behavior_data: SharedBehaviorData,
-    content_data: ContentData<StandardSetNoLineBreak>,
+    content: Spanned<Vec<StandardSetNoLineBreak>>,
     pub kind: ItemKind,
     pub checkbox: Option<Checkbox>,
     // structure ?
     // hiddenp: bool
 }
 
+impl Parent<Vec<StandardSetNoLineBreak>> for Item {
+    fn content(&self) -> Option<&Spanned<Vec<StandardSetNoLineBreak>>> {
+        Some(&self.content)
+    }
+}
 /// The kind of an [`Item`] (and it's metadata).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ItemKind {

@@ -20,9 +20,8 @@ use super::*;
 /// `TIMESTAMP` is a [`objects::Timestamp`].
 ///
 /// Consecutive planning items are aggregated into one.
-#[derive(Element, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Planning {
-    shared_behavior_data: SharedBehaviorData,
     pub closed: Option<objects::Timestamp>,
     pub deadline: Option<objects::Timestamp>,
     pub scheduled: Option<objects::Timestamp>,

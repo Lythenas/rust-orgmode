@@ -39,13 +39,10 @@ use super::*;
 /// hash signs and percent signs. Tags are separated and surrounded by `:`s. There can be an
 /// arbitraty amount of whitespace (except newlines) between `TITLE` and `TAGS`. Tags are
 /// usually right aligned at a specified column by the editor.
-#[derive(
-    Element, HasContent, GreaterElement, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Headline {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
-    content_data: ContentData<HeadlineContentSet>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    content: Spanned<Vec<HeadlineContentSet>>,
     pub level: u32,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct
@@ -56,6 +53,12 @@ pub struct Headline {
     // quotedp ?
     // hiddenp: bool,
     // pre_blank: u32 // TODO (maybe) blank lines before the content starts
+}
+
+impl Parent<Vec<HeadlineContentSet>> for Headline {
+    fn content(&self) -> Option<&Spanned<Vec<HeadlineContentSet>>> {
+        Some(&self.content)
+    }
 }
 
 impl Headline {
@@ -111,14 +114,19 @@ pub enum TodoKeyword {
 /// Inline tasks can be ended with a line of *org-inlinetask-min-level* asterisks followed by a
 /// space and the string `END`. This should start at the beginning of a line but that is not
 /// required.
-#[derive(Element, HasContent, GreaterElement, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inlinetask {
-    shared_behavior_data: SharedBehaviorData,
-    content_data: ContentData<HeadlineContentSet>,
+    content: Spanned<Vec<HeadlineContentSet>>,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct (maybe use old enum)
     pub title: Option<SecondaryString<StandardSetNoLineBreak>>,
     pub tags: Vec<String>,
     // hiddenp: bool,
     // pre_blank: u32 // blank lines before the content starts
+}
+
+impl Parent<Vec<HeadlineContentSet>> for Inlinetask {
+    fn content(&self) -> Option<&Spanned<Vec<HeadlineContentSet>>> {
+        Some(&self.content)
+    }
 }

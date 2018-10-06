@@ -18,10 +18,9 @@ use super::*;
 /// with stars must be quoted by comma. `CONTENTS` will not be parsed.
 ///
 /// `BACKEND` can contain any alpha-numerical character. Case is ignored.
-#[derive(Element, HasAffiliatedKeywords, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportBlock {
-    shared_behavior_data: SharedBehaviorData,
-    affiliated_keywords_data: Spanned<AffiliatedKeywords>,
+    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
     pub value: String,
     /// Always lowercase.
     pub backend: String,

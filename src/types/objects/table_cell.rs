@@ -21,17 +21,18 @@ use super::*;
 ///
 /// TODO recusrive object. can contain: export snippet, footnote reference, latex fragment,
 /// entity, link, macro, radio target, sub/superscript, target, text markup, timestamp
-#[derive(Object, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableCell {
-    shared_behavior_data: SharedBehaviorData,
-    pub content: ContentData<TableCellSetOfObjects>,
+    pub content: Spanned<TableCellSetOfObjects>,
 }
+
+impl Object for TableCell {}
 
 /// The set of objects [`TableCell`] can contain.
 ///
 /// Table cells can't contain [`InlineBabelCall`], [`InlineSrcBlock`] because formulas are
 /// possible. Also they can't contain [`LineBreak`] and [`StatisticsCookie`].
-#[derive(AsRawString, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TableCellSetOfObjects {
     RawString(String),
     Entity(objects::Entity),
@@ -46,4 +47,14 @@ pub enum TableCellSetOfObjects {
     Target(objects::Target),
     TextMarkup(objects::TextMarkup),
     Timestamp(objects::Timestamp),
+}
+
+impl AsRawString for TableCellSetOfObjects {
+    fn as_raw_string(&self) -> Option<&str> {
+        if let TableCellSetOfObjects::RawString(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
 }

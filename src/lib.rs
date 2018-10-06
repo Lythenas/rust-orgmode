@@ -11,6 +11,12 @@
 //! This library is aimed to support most org mode features. But org mode is very comprehensive.
 //!
 //! Currently only parsing of the major outline and timestamp is supported.
+//!
+//! # Todo
+//!
+//! - impl Object for every object
+//! - impl Element for every element and greater element
+//! - impl GreaterElement for every greater element
 #![feature(plugin)]
 #![feature(min_const_fn)]
 #![feature(pattern)]
@@ -26,8 +32,6 @@ extern crate pretty_assertions;
 #[macro_use]
 extern crate proptest;
 
-#[macro_use]
-extern crate rust_orgmode_derive;
 #[macro_use]
 extern crate nom;
 #[macro_use]
