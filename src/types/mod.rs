@@ -62,10 +62,6 @@ pub trait SharedBehavior: crate::private::Sealed {
     fn span(&self) -> &Span {
         &self.shared_behavior_data().span
     }
-
-    fn post_blank(&self) -> usize {
-        self.shared_behavior_data().post_blank
-    }
 }
 
 /// Helper struct that contains the data for the shared behavior. See [`SharedBehavior`].
@@ -74,12 +70,11 @@ pub trait SharedBehavior: crate::private::Sealed {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SharedBehaviorData {
     span: Span,
-    post_blank: usize,
 }
 
 impl SharedBehaviorData {
-    pub(crate) fn new(span: Span, post_blank: usize) -> SharedBehaviorData {
-        SharedBehaviorData { span, post_blank }
+    pub(crate) fn new(span: Span) -> SharedBehaviorData {
+        SharedBehaviorData { span, }
     }
 }
 

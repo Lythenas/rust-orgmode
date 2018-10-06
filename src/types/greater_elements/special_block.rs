@@ -119,7 +119,6 @@ mod tests {
         let expected = SpecialBlock {
             shared_behavior_data: SharedBehaviorData {
                 span: Span::new(0, 33),
-                post_blank: 0,
             },
             affiliated_keywords_data: Spanned::new(Span::new(0, 0), AffiliatedKeywords::default()),
             content_data: ContentData::empty(Span::new(18, 18)),

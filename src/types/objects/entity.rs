@@ -81,7 +81,6 @@ mod tests {
         let expected = Entity {
             shared_behavior_data: SharedBehaviorData {
                 span: Span::new(0, 13),
-                post_blank: 0,
             },
             name: "someentity".to_string(),
             used_brackets: true,
@@ -98,7 +97,6 @@ mod tests {
         let expected = Entity {
             shared_behavior_data: SharedBehaviorData {
                 span: Span::new(0, 11),
-                post_blank: 2,
             },
             name: "someentity".to_string(),
             used_brackets: false,
@@ -115,7 +113,6 @@ mod tests {
         let expected = Entity {
             shared_behavior_data: SharedBehaviorData {
                 span: Span::new(0, 13),
-                post_blank: 2,
             },
             name: "someentity".to_string(),
             used_brackets: true,
@@ -135,7 +132,6 @@ mod tests {
         let expected = Entity {
             shared_behavior_data: SharedBehaviorData {
                 span: Span::new(0, 4),
-                post_blank: 0,
             },
             name: "_  ".to_string(),
             used_brackets: false,
