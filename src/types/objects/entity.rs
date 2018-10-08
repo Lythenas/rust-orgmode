@@ -44,7 +44,7 @@ where
     lazy_static! {
         static ref RE_SPACES: Regex = Regex::new(r"_ +").unwrap();
         static ref RE_OTHER: Regex =
-            Regex::new(r"(there4|sup[123]|frac[13][24]|[[:alpha:]]+)((?:\{\})?)").unwrap();
+            Regex::new(r"^(there4|sup[123]|frac[13][24]|[[:alpha:]]+)((?:\{\})?)").unwrap();
     };
     object(char('\\').with(choice((
         find(&*RE_SPACES).map(|s: &str| (s.to_string(), false)),
@@ -80,7 +80,7 @@ mod tests {
     use crate::types::IntoSpanned;
 
     #[test]
-    fn test_parse_entity_with_brackets() {
+    fn with_brackets() {
         let text = r"\someentity{}";
         let expected = Entity {
             name: "someentity".to_string(),
@@ -94,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_entity_with_post_blank() {
+    fn with_post_blank() {
         let text = r"\someentity  ";
         let expected = Entity {
             name: "someentity".to_string(),
@@ -108,7 +108,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_entity_with_brackets_and_post_blank() {
+    fn with_brackets_and_post_blank() {
         let text = r"\someentity{}  ";
         let expected = Entity {
             name: "someentity".to_string(),
@@ -122,7 +122,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_spaces_entity() {
+    fn spaces_entity() {
         let text = r"\_  ";
         let expected = Entity {
             name: "_  ".to_string(),
@@ -133,6 +133,15 @@ mod tests {
             .easy_parse(State::with_positioner(text, IndexPositioner::new()))
             .map(|t| t.0);
         assert_eq!(result, Ok(expected));
+    }
+
+    #[test]
+    fn fails_when_there_is_something_in_front() {
+        let text = r"fail\someentity{}";
+        let result = parse_entity()
+            .easy_parse(State::with_positioner(text, IndexPositioner::new()))
+            .map(|t| t.0);
+        assert!(result.is_err());
     }
 
 }

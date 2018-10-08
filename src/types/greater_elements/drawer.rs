@@ -1,11 +1,13 @@
 use super::*;
 use combine::parser::char::string;
 use combine::parser::range::recognize;
+use combine::parser::regex::{captures, find};
 use combine::parser::repeat::skip_until;
 use combine::stream::state::{IndexPositioner, State};
 use combine::stream::{easy, FullRangeStream, Stream, StreamOnce};
 use combine::{one_of, optional, position, skip_many, token, value, ParseError, Parser};
 use crate::parsing::{content_data, spanned};
+use regex::Regex;
 use std::fmt;
 
 /// A drawer to hide content.
@@ -53,31 +55,28 @@ where
         + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
-    let first_line = (skip_many(one_of(" \t".chars())), token(':'))
-        .with(recognize(skip_until(token(':'))))
-        .skip((token(':'), skip_many(one_of(" \t".chars())), string("\n")));
-    let end_line = || {
-        (
-            skip_many(one_of(" \t".chars())),
-            string(":END:"),
-            skip_many(one_of(" \t".chars())),
-            optional(string("\n")),
-        )
-    };
+    lazy_static! {
+        static ref RE_START: Regex = Regex::new(r"^[ \t]*:(\S+):[ \t]*\n").unwrap();
+        static ref RE_END: Regex = Regex::new(r"^[ \t]*:END:[ \t]*\n?").unwrap();
+    }
 
-    spanned(first_line.then(move |name: &str| {
-        (
-            value(name.to_string()),
-            position(),
-            recognize(skip_until(end_line())),
-        )
-            .flat_map(|(name, position, content_str)| {
-                content_data(content_str, position)
-                    .map(|(content_data, _rest)| (name, content_data))
-                // TODO figure out what to do when there is still a res
-            })
-            .skip(end_line())
-    }))
+    spanned(
+        captures(&*RE_START)
+            .map(|vec: Vec<&str>| vec[1])
+            .then(|name: &str| {
+                (
+                    value(name.to_string()),
+                    position(),
+                    recognize(skip_until(find(&*RE_END))),
+                )
+                    .flat_map(|(name, position, content_str)| {
+                        content_data(content_str, position)
+                            .map(|(content_data, _rest)| (name, content_data))
+                        // TODO figure out what to do when there is still a res
+                    })
+                    .skip(find(&*RE_END))
+            }),
+    )
     .map(|(span, (name, content))| {
         Spanned::new(
             span,
@@ -108,7 +107,7 @@ mod tests {
     use crate::types::IntoSpanned;
 
     #[test]
-    fn test_drawer_empty() {
+    fn empty_drawer() {
         let text = ":something:\n:END:";
         let expected = Drawer {
             affiliated_keywords: None,
@@ -120,6 +119,15 @@ mod tests {
             .easy_parse(State::with_positioner(text, IndexPositioner::new()))
             .map(|t| t.0);
         assert_eq!(result, Ok(expected));
+    }
+
+    #[test]
+    fn fails_when_there_is_something_in_front_of_the_drawer() {
+        let text = "fail:something:\n:END:";
+        let result = parse_drawer()
+            .easy_parse(State::with_positioner(text, IndexPositioner::new()))
+            .map(|t| t.0);
+        assert!(result.is_err());
     }
 
     // TODO add more tests as soon as node property parsing is implemented

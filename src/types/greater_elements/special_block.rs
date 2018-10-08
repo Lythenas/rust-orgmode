@@ -69,7 +69,7 @@ where
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
     lazy_static! {
-        static ref RE_START: Regex = Regex::new(r"([ \t]*)#\+BEGIN_(\S+)[ \t]*\n").unwrap();
+        static ref RE_START: Regex = Regex::new(r"^([ \t]*)#\+BEGIN_(\S+)[ \t]*\n").unwrap();
     }
 
     spanned(
@@ -126,7 +126,7 @@ mod tests {
     use crate::types::IntoSpanned;
 
     #[test]
-    fn test_special_block_empty() {
+    fn empty_block() {
         let text = "#+BEGIN_something\n#+END_something";
         let expected = SpecialBlock {
             affiliated_keywords: None,
@@ -138,6 +138,15 @@ mod tests {
             .easy_parse(State::with_positioner(text, IndexPositioner::new()))
             .map(|t| t.0);
         assert_eq!(result, Ok(expected));
+    }
+
+    #[test]
+    fn fails_when_there_is_something_in_front_of_the_block() {
+        let text = "fail#+BEGIN_something\n#+END_something";
+        let result = parse_special_block()
+            .easy_parse(State::with_positioner(text, IndexPositioner::new()))
+            .map(|t| t.0);
+        assert!(result.is_err());
     }
 
     // TODO add more tests once content parsing is implemented
