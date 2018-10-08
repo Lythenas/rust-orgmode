@@ -108,6 +108,9 @@ impl<T> Spanned<T> {
     pub fn value(&self) -> &T {
         &self.value
     }
+    pub fn to_value(self) -> T {
+        self.value
+    }
 }
 
 trait IntoSpanned<T> {
@@ -131,6 +134,12 @@ impl<T: fmt::Display> fmt::Display for Spanned<T> {
 /// It is used for attributes of elements that can contain objects.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SecondaryString<T: AsRawString>(Vec<T>);
+
+impl<T: fmt::Display + AsRawString> fmt::Display for SecondaryString<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0.iter().format(" "))
+    }
+}
 
 impl<T: AsRawString> SecondaryString<T> {
     pub fn new() -> Self {
@@ -223,6 +232,15 @@ pub enum StandardSet {
     Target(objects::Target),
     TextMarkup(objects::TextMarkup),
     Timestamp(objects::Timestamp),
+}
+
+impl fmt::Display for StandardSet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            StandardSet::RawString(s) => write!(f, "{}", s),
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl AsRawString for StandardSet {

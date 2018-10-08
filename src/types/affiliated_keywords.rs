@@ -1,6 +1,7 @@
 //! `AffiliatedKeywords` holds the attributes affiliated with an element.
 
 use super::*;
+use std::fmt;
 use std::slice;
 
 /// Contains all affiliated keywords for one element/object.
@@ -65,6 +66,37 @@ pub struct AffiliatedKeywords {
     plot: Option<Spanned<String>>,
     results: Option<Spanned<Results>>,
     attrs: Vec<Spanned<Attr>>,
+}
+
+use combine::stream::{FullRangeStream, Stream, StreamOnce};
+use combine::{choice, many1, value, ParseError, Parser};
+use crate::parsing::spanned;
+
+fn parse_affiliated_keywords<'a, I: 'a>(
+) -> impl Parser<Input = I, Output = Spanned<AffiliatedKeywords>> + 'a
+where
+    I: Stream<Item = char, Range = &'a str, Position = usize>
+        + FullRangeStream
+        + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    spanned(value(AffiliatedKeywords::new())).map(|(span, ak)| Spanned::new(span, ak))
+}
+
+fn parse_caption<'a, I: 'a>() -> impl Parser<Input = I, Output = Spanned<Caption>> + 'a
+where
+    I: Stream<Item = char, Range = &'a str, Position = usize>
+        + FullRangeStream
+        + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
+    I::Error: ParseError<I::Item, I::Range, I::Position>,
+{
+    spanned(value(Caption::default())).map(|(span, ak)| Spanned::new(span, ak))
+}
+
+impl fmt::Display for AffiliatedKeywords {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.iter().format("\n"))
+    }
 }
 
 impl<A> std::iter::FromIterator<A> for AffiliatedKeywords
@@ -227,6 +259,17 @@ impl AffiliatedKeywords {
             inner: self.attrs.iter(),
         }
     }
+
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = AffiliatedKeyword> + 'a {
+        self.captions
+            .iter()
+            .map(AffiliatedKeyword::from_borrowed_caption)
+            .chain(self.headers.iter().map(AffiliatedKeyword::from_borrowed_header))
+            .chain(self.name.iter().map(AffiliatedKeyword::from_borrowed_name))
+            .chain(self.plot.iter().map(AffiliatedKeyword::from_borrowed_plot))
+            .chain(self.results.iter().map(AffiliatedKeyword::from_borrowed_results))
+            .chain(self.attrs.iter().map(AffiliatedKeyword::from_borrowed_attr))
+    }
 }
 
 /// Represents a single affiliated keyword.
@@ -240,6 +283,40 @@ pub enum AffiliatedKeyword {
     Attr(Spanned<Attr>),
 }
 
+impl fmt::Display for AffiliatedKeyword {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AffiliatedKeyword::Caption(caption) => write!(f, "{}", caption.value()),
+            AffiliatedKeyword::Header(header) => write!(f, "{}", header.value()),
+            AffiliatedKeyword::Name(name) => write!(f, "{}", name.value()),
+            AffiliatedKeyword::Plot(plot) => write!(f, "{}", plot.value()),
+            AffiliatedKeyword::Results(results) => write!(f, "{}", results.value()),
+            AffiliatedKeyword::Attr(attr) => write!(f, "{}", attr.value()),
+        }
+    }
+}
+
+impl AffiliatedKeyword {
+    fn from_borrowed_caption(caption: &Spanned<Caption>) -> AffiliatedKeyword {
+        AffiliatedKeyword::Caption(caption.clone())
+    }
+    fn from_borrowed_header(header: &Spanned<String>) -> AffiliatedKeyword {
+        AffiliatedKeyword::Header(header.clone())
+    }
+    fn from_borrowed_name(name: &Spanned<String>) -> AffiliatedKeyword {
+        AffiliatedKeyword::Name(name.clone())
+    }
+    fn from_borrowed_plot(plot: &Spanned<String>) -> AffiliatedKeyword {
+        AffiliatedKeyword::Plot(plot.clone())
+    }
+    fn from_borrowed_results(results: &Spanned<Results>) -> AffiliatedKeyword {
+        AffiliatedKeyword::Results(results.clone())
+    }
+    fn from_borrowed_attr(attr: &Spanned<Attr>) -> AffiliatedKeyword {
+        AffiliatedKeyword::Attr(attr.clone())
+    }
+}
+
 /// Parsed from: `#+CAPTION[OPTIONAL]: VALUE`.
 ///
 /// See [`AffiliatedKeywords`].
@@ -247,6 +324,15 @@ pub enum AffiliatedKeyword {
 pub struct Caption {
     optional: Option<SecondaryString<StandardSet>>,
     value: SecondaryString<StandardSet>,
+}
+
+impl fmt::Display for Caption {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self.optional {
+            Some(optional) => write!(f, "#+CAPTION[{}]: {}", optional, self.value),
+            None => write!(f, "#+CAPTION: {}", self.value)
+        }
+    }
 }
 
 impl Caption {
@@ -289,6 +375,15 @@ pub struct Results {
     value: String,
 }
 
+impl fmt::Display for Results {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self.optional {
+            Some(optional) => write!(f, "#+RESULTS[{}]: {}", optional, self.value),
+            None => write!(f, "#+RESULTS: {}", self.value)
+        }
+    }
+}
+
 /// Parsed from: `#+ATTR_BACKEND: VALUE`.
 ///
 /// See [`AffiliatedKeywords`].
@@ -296,6 +391,12 @@ pub struct Results {
 pub struct Attr {
     backend: String,
     value: String,
+}
+
+impl fmt::Display for Attr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "#+ATTR_{}: {}", self.backend, self.value)
+    }
 }
 
 /// Iterators for the different fields of `AffiliatedKeywords`.
@@ -543,6 +644,39 @@ mod tests {
             };
             let actual: HashSet<_> = aks.into_iter().collect();
             assert_eq!(expected, actual);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_parse_affiliated_keywords(
+            captions in prop::collection::vec(caption(), 0..2),
+            headers in prop::collection::vec(header(), 0..2),
+            name in prop::option::of(name()),
+            plot in prop::option::of(plot()),
+            results in prop::option::of(results()),
+            attrs in prop::collection::vec(attr(), 0..4),
+        ) {
+            use combine::stream::state::{State, IndexPositioner};
+            let expected = AffiliatedKeywords {
+                captions,
+                headers,
+                name,
+                plot,
+                results,
+                attrs,
+            };
+            let text = expected.to_string();
+            let result = parse_affiliated_keywords()
+                .easy_parse(State::with_positioner(text.as_str(), IndexPositioner::new()))
+                .map(|t| t.0.to_value()).unwrap();
+
+            assert_eq!(expected.captions().collect::<HashSet<_>>(), result.captions().collect());
+            assert_eq!(expected.headers().collect::<HashSet<_>>(), result.headers().collect());
+            assert_eq!(expected.name(), result.name());
+            assert_eq!(expected.plot(), result.plot());
+            assert_eq!(expected.results(), result.results());
+            assert_eq!(expected.attrs().collect::<HashSet<_>>(), result.attrs().collect());
         }
     }
 }
