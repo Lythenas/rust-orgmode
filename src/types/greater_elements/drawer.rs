@@ -46,7 +46,11 @@ impl Parent<Vec<ElementSet>> for Drawer {
 
 impl Element for Drawer {}
 impl GreaterElement for Drawer {}
-// impl HasAffiliatedKeywords
+impl HasAffiliatedKeywords for Drawer {
+    fn affiliated_keywords(&self) -> Option<&Spanned<AffiliatedKeywords>> {
+        self.affiliated_keywords.as_ref()
+    }
+}
 
 fn parse_drawer<'a, I: 'a>() -> impl Parser<Input = I, Output = Spanned<Drawer>> + 'a
 where
