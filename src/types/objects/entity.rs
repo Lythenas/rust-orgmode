@@ -54,14 +54,11 @@ where
             (name.to_string(), brackets == "{}")
         }),
     ))))
-    .map(|(span, (name, used_brackets))| {
-        Spanned::new(
-            span,
-            Entity {
-                name,
-                used_brackets,
-            },
-        )
+    .map(|spanned| {
+        spanned.map_value(|(name, used_brackets)| Entity {
+            name,
+            used_brackets,
+        })
     })
 }
 

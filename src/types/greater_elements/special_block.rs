@@ -97,15 +97,12 @@ where
                     .skip(find_end())
             }),
     )
-    .map(|(span, (name, content))| {
-        Spanned::new(
-            span,
-            SpecialBlock {
-                affiliated_keywords: None,
-                content,
-                name,
-            },
-        )
+    .map(|spanned| {
+        spanned.map_value(|(name, content)| SpecialBlock {
+            affiliated_keywords: None,
+            content,
+            name,
+        })
     })
 }
 

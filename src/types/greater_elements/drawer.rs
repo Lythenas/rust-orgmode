@@ -81,15 +81,12 @@ where
                     .skip(find(&*RE_END))
             }),
     )
-    .map(|(span, (name, content))| {
-        Spanned::new(
-            span,
-            Drawer {
-                affiliated_keywords: None,
-                content,
-                name,
-            },
-        )
+    .map(|spanned| {
+        spanned.map_value(|(name, content)| Drawer {
+            affiliated_keywords: None,
+            content,
+            name,
+        })
     })
 }
 

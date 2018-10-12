@@ -80,7 +80,8 @@ where
         + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
-    spanned(value(AffiliatedKeywords::new())).map(|(span, ak)| Spanned::new(span, ak))
+    // TODO
+    spanned(value(AffiliatedKeywords::new()))
 }
 
 fn parse_caption<'a, I: 'a>() -> impl Parser<Input = I, Output = Spanned<Caption>> + 'a
@@ -90,7 +91,7 @@ where
         + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
-    spanned(value(Caption::default())).map(|(span, ak)| Spanned::new(span, ak))
+    spanned(value(Caption::default()))
 }
 
 impl fmt::Display for AffiliatedKeywords {
@@ -264,10 +265,18 @@ impl AffiliatedKeywords {
         self.captions
             .iter()
             .map(AffiliatedKeyword::from_borrowed_caption)
-            .chain(self.headers.iter().map(AffiliatedKeyword::from_borrowed_header))
+            .chain(
+                self.headers
+                    .iter()
+                    .map(AffiliatedKeyword::from_borrowed_header),
+            )
             .chain(self.name.iter().map(AffiliatedKeyword::from_borrowed_name))
             .chain(self.plot.iter().map(AffiliatedKeyword::from_borrowed_plot))
-            .chain(self.results.iter().map(AffiliatedKeyword::from_borrowed_results))
+            .chain(
+                self.results
+                    .iter()
+                    .map(AffiliatedKeyword::from_borrowed_results),
+            )
             .chain(self.attrs.iter().map(AffiliatedKeyword::from_borrowed_attr))
     }
 }
@@ -330,7 +339,7 @@ impl fmt::Display for Caption {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.optional {
             Some(optional) => write!(f, "#+CAPTION[{}]: {}", optional, self.value),
-            None => write!(f, "#+CAPTION: {}", self.value)
+            None => write!(f, "#+CAPTION: {}", self.value),
         }
     }
 }
@@ -379,7 +388,7 @@ impl fmt::Display for Results {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.optional {
             Some(optional) => write!(f, "#+RESULTS[{}]: {}", optional, self.value),
-            None => write!(f, "#+RESULTS: {}", self.value)
+            None => write!(f, "#+RESULTS: {}", self.value),
         }
     }
 }

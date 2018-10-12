@@ -7,16 +7,17 @@ use crate::types::affiliated_keywords::{self, AffiliatedKeyword, AffiliatedKeywo
 use crate::types::*;
 use regex::{Captures, Match, Regex};
 
-pub fn spanned<I, P>(p: P) -> impl Parser<Input = I, Output = (Span, P::Output)>
+pub fn spanned<I, P>(p: P) -> impl Parser<Input = I, Output = Spanned<P::Output>>
 where
     I: Stream<Position = usize>,
     P: Parser<Input = I>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
-    (position(), p, position()).map(|(start, content, end)| (Span::new(start, end), content))
+    (position(), p, position())
+        .map(|(start, content, end)| Spanned::new(Span::new(start, end), content))
 }
 
-pub fn object<I, P>(p: P) -> impl Parser<Input = I, Output = (Span, P::Output)>
+pub fn object<I, P>(p: P) -> impl Parser<Input = I, Output = Spanned<P::Output>>
 where
     I: Stream<Item = char, Position = usize>,
     P: Parser<Input = I>,

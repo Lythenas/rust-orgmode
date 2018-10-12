@@ -111,6 +111,15 @@ impl<T> Spanned<T> {
     pub fn to_value(self) -> T {
         self.value
     }
+    pub fn map_value<F, U>(self, f: F) -> Spanned<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        Spanned {
+            span: self.span,
+            value: f(self.value),
+        }
+    }
 }
 
 trait IntoSpanned<T> {
