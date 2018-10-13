@@ -68,9 +68,11 @@ pub struct AffiliatedKeywords {
     attrs: Vec<Spanned<Attr>>,
 }
 
+use combine::parser::regex::captures;
 use combine::stream::{FullRangeStream, Stream, StreamOnce};
 use combine::{choice, many1, value, ParseError, Parser};
 use crate::parsing::spanned;
+use regex::Regex;
 
 fn parse_affiliated_keywords<'a, I: 'a>(
 ) -> impl Parser<Input = I, Output = Spanned<AffiliatedKeywords>> + 'a
@@ -80,18 +82,66 @@ where
         + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
     I::Error: ParseError<I::Item, I::Range, I::Position>,
 {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(
+            r"^([ \t]*)#\+(CAPTION|HEADER|NAME|PLOT|RESULTS|ATTR_\S+)(\[(\S+)\])?: (\S+)[ \t]*\n?"
+        )
+        .unwrap();
+    }
     // TODO
-    spanned(value(AffiliatedKeywords::new()))
-}
+    spanned(many1::<AffiliatedKeywords, _>(
+        spanned(captures(&*RE)).flat_map(|spanned: Spanned<Vec<&str>>| {
+            let vec = spanned.value();
+            let span = spanned.span();
+            let name = vec[1];
+            let optional = vec.get(2);
+            let value = vec[3];
 
-fn parse_caption<'a, I: 'a>() -> impl Parser<Input = I, Output = Spanned<Caption>> + 'a
-where
-    I: Stream<Item = char, Range = &'a str, Position = usize>
-        + FullRangeStream
-        + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
-    I::Error: ParseError<I::Item, I::Range, I::Position>,
-{
-    spanned(value(Caption::default()))
+            if name == "CAPTION" {
+                Ok(AffiliatedKeyword::Caption(Spanned::new(
+                    span.clone(),
+                    Caption::with_option_optional(
+                        SecondaryString::with_one(StandardSet::RawString(value.to_string())),
+                        optional.map(|s| {
+                            SecondaryString::with_one(StandardSet::RawString(s.to_string()))
+                        }),
+                    ),
+                )))
+            } else if name == "HEADER" {
+                assert!(optional.is_none());
+                Ok(AffiliatedKeyword::Header(Spanned::new(
+                    span.clone(),
+                    value.to_string(),
+                )))
+            } else if name == "NAME" {
+                assert!(optional.is_none());
+                Ok(AffiliatedKeyword::Name(Spanned::new(
+                    span.clone(),
+                    value.to_string(),
+                )))
+            } else if name == "PLOT" {
+                assert!(optional.is_none());
+                Ok(AffiliatedKeyword::Plot(Spanned::new(
+                    span.clone(),
+                    value.to_string(),
+                )))
+            } else if name == "RESULTS" {
+                Ok(AffiliatedKeyword::Results(Spanned::new(
+                    span.clone(),
+                    Results::new(value.to_string(), optional.map(|s| s.to_string())),
+                )))
+            } else if name.starts_with("ATTR_") {
+                assert!(optional.is_none());
+                Ok(AffiliatedKeyword::Attr(Spanned::new(
+                    span.clone(),
+                    Attr::new(name[5..].to_string(), value.to_string()),
+                )))
+            // else if ...
+            } else {
+                Err(combine::stream::easy::Errors::empty(span.start()))
+            }
+        }),
+    ))
 }
 
 impl fmt::Display for AffiliatedKeywords {
@@ -176,6 +226,15 @@ impl IntoIterator for AffiliatedKeywords {
 impl AffiliatedKeywords {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.captions.is_empty()
+            && self.headers.is_empty()
+            && self.name.is_none()
+            && self.plot.is_none()
+            && self.results.is_none()
+            && self.attrs.is_empty()
     }
 
     /// Adds a single [`AffiliatedKeyword`] to the `AffiliatedKeywords` struct.
@@ -380,8 +439,14 @@ impl Caption {
 /// See [`AffiliatedKeywords`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct Results {
-    optional: Option<String>,
     value: String,
+    optional: Option<String>,
+}
+
+impl Results {
+    pub fn new(value: String, optional: Option<String>) -> Self {
+        Results { value, optional }
+    }
 }
 
 impl fmt::Display for Results {
@@ -400,6 +465,12 @@ impl fmt::Display for Results {
 pub struct Attr {
     backend: String,
     value: String,
+}
+
+impl Attr {
+    pub fn new(backend: String, value: String) -> Self {
+        Attr { backend, value }
+    }
 }
 
 impl fmt::Display for Attr {
@@ -675,6 +746,7 @@ mod tests {
                 results,
                 attrs,
             };
+            prop_assume!(!expected.is_empty());
             let text = expected.to_string();
             let result = parse_affiliated_keywords()
                 .easy_parse(State::with_positioner(text.as_str(), IndexPositioner::new()))
