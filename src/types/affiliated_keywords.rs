@@ -84,7 +84,7 @@ where
 {
     lazy_static! {
         static ref RE: Regex = Regex::new(
-            r"^([ \t]*)#\+(CAPTION|HEADER|NAME|PLOT|RESULTS|ATTR_\S+)(\[(\S+)\])?: (\S+)[ \t]*\n?"
+            r"^[ \t]*#\+(CAPTION|HEADER|NAME|PLOT|RESULTS|ATTR_\S+)(\[\S*\])?: (\S+)[ \t]*\n?"
         )
         .unwrap();
     }
@@ -94,8 +94,13 @@ where
             let vec = spanned.value();
             let span = spanned.span();
             let name = vec[1];
-            let optional = vec.get(2);
-            let value = vec[3];
+            let (optional, value) = match (vec.get(2), vec.get(3)) {
+                (Some(o), Some(v)) => (Some(o), v),
+                (Some(v), None) => (None, v),
+                (None, Some(v)) => (None, v),
+                _ => unreachable!(),
+            };
+            let optional = optional.map(|s| &s[1..s.len()-1]);
 
             if name == "CAPTION" {
                 Ok(AffiliatedKeyword::Caption(Spanned::new(
@@ -136,7 +141,6 @@ where
                     span.clone(),
                     Attr::new(name[5..].to_string(), value.to_string()),
                 )))
-            // else if ...
             } else {
                 Err(combine::stream::easy::Errors::empty(span.start()))
             }
@@ -355,9 +359,9 @@ impl fmt::Display for AffiliatedKeyword {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             AffiliatedKeyword::Caption(caption) => write!(f, "{}", caption.value()),
-            AffiliatedKeyword::Header(header) => write!(f, "{}", header.value()),
-            AffiliatedKeyword::Name(name) => write!(f, "{}", name.value()),
-            AffiliatedKeyword::Plot(plot) => write!(f, "{}", plot.value()),
+            AffiliatedKeyword::Header(header) => write!(f, "#+HEADER: {}", header.value()),
+            AffiliatedKeyword::Name(name) => write!(f, "#+NAME: {}", name.value()),
+            AffiliatedKeyword::Plot(plot) => write!(f, "#+PLOT: {}", plot.value()),
             AffiliatedKeyword::Results(results) => write!(f, "{}", results.value()),
             AffiliatedKeyword::Attr(attr) => write!(f, "{}", attr.value()),
         }
@@ -643,8 +647,8 @@ mod tests {
     prop_compose! {
         fn caption()(
             span in span(),
-            optional in any::<Option<String>>(),
-            value in any::<String>()
+            optional in "[a-zA-Z_]{1,}".prop_perturb(|o, mut rng| if rng.gen() { Some(o) } else { None }),
+            value in "[a-zA-Z_]{1,}"
         ) -> Spanned<Caption> {
             let value = SecondaryString::with_one(StandardSet::RawString(value));
             let optional = optional.map(|value| SecondaryString::with_one(StandardSet::RawString(value)));
@@ -655,7 +659,7 @@ mod tests {
     prop_compose! {
         fn header()(
             span in span(),
-            value in any::<String>()
+            value in "[a-zA-Z_]{1,}"
         ) -> Spanned<String> {
             Spanned::new(span, value)
         }
@@ -663,7 +667,7 @@ mod tests {
     prop_compose! {
         fn name()(
             span in span(),
-            value in any::<String>()
+            value in "[a-zA-Z_]{1,}"
         ) -> Spanned<String> {
             Spanned::new(span, value)
         }
@@ -671,7 +675,7 @@ mod tests {
     prop_compose! {
         fn plot()(
             span in span(),
-            value in any::<String>()
+            value in "[a-zA-Z_]{1,}"
         ) -> Spanned<String> {
             Spanned::new(span, value)
         }
@@ -679,8 +683,8 @@ mod tests {
     prop_compose! {
         fn results()(
             span in span(),
-            optional in any::<Option<String>>(),
-            value in any::<String>()
+            optional in "[a-zA-Z_]{1,}".prop_perturb(|o, mut rng| if rng.gen() { Some(o) } else { None }),
+            value in "[a-zA-Z_]{1,}"
         ) -> Spanned<Results> {
             let caption = Results { value, optional, };
             Spanned::new(span, caption)
@@ -689,8 +693,8 @@ mod tests {
     prop_compose! {
         fn attr()(
             span in span(),
-            backend in any::<String>(),
-            value in any::<String>()
+            backend in "[a-zA-Z_]{1,}",
+            value in "[a-zA-Z_]{1,}"
         ) -> Spanned<Attr> {
             let attr = Attr { backend, value, };
             Spanned::new(span, attr)
@@ -748,10 +752,12 @@ mod tests {
             };
             prop_assume!(!expected.is_empty());
             let text = expected.to_string();
+            println!("{}", text);
             let result = parse_affiliated_keywords()
                 .easy_parse(State::with_positioner(text.as_str(), IndexPositioner::new()))
                 .map(|t| t.0.to_value()).unwrap();
 
+            assert_eq!(text, result.to_string());
             assert_eq!(expected.captions().collect::<HashSet<_>>(), result.captions().collect());
             assert_eq!(expected.headers().collect::<HashSet<_>>(), result.headers().collect());
             assert_eq!(expected.name(), result.name());
@@ -759,5 +765,22 @@ mod tests {
             assert_eq!(expected.results(), result.results());
             assert_eq!(expected.attrs().collect::<HashSet<_>>(), result.attrs().collect());
         }
+    }
+
+    #[test]
+    fn test_parse_affiliated_keywords_attr() {
+        use combine::stream::state::{State, IndexPositioner};
+        let text = "#+ATTR_something: value";
+        let result = parse_affiliated_keywords()
+            .easy_parse(State::with_positioner(text, IndexPositioner::new()))
+            .map(|t| t.0.to_value()).unwrap();
+        let mut expected = AffiliatedKeywords::new();
+        expected.push(AffiliatedKeyword::Attr(Spanned::new(Span::new(0, 23), Attr {
+            backend: String::from("something"),
+            value: String::from("value"),
+        })));
+
+        assert_eq!(expected, result);
+        assert_eq!(text, result.to_string());
     }
 }
