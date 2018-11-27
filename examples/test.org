@@ -1,0 +1,14 @@
+Some content
+
+#+ATTR_TEST: TEST
+* [#A] Test 1									:tag1:tag2:
+:PROPERTIES:
+:KEY1: VALUE1
+:END:
+
+Some content
+
+** Test 2										     :tag3:
+
+*** Test 3
+

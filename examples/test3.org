@@ -1,0 +1,13 @@
+* Headline
+
+#+BEGIN_CENTER
+some text
+
+<http://google.de>
+
+** Fake headline
+
+#+BEGIN_CENTER
+
+#+END_CENTER
+#+END_CENTER
