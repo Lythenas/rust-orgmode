@@ -1,0 +1,22 @@
+stars = { "*"+ }
+keyword = { "TODO" | "DONE" | "NEXT" }
+priority = { "[#" ~ ('A'..'Z') ~ "]" }
+title = { (!":" ~ ANY)+ }
+tag = { ":" ~ (!":" ~ ANY)+ ~ ":" }
+tags = { tag ~ (" " ~ tag)* }
+headline_first_line = { stars ~ (" " ~ keyword)? ~ (" " ~ priority)? ~ title ~ tags? }
+clock = { clock_keyword ~ ": " ~ timestamp }
+clock_keyword = { "SCHEDULED" | "DEADLINE" | "CLOSED" }
+timestamp = { (active_timestamp ~ ("--" ~ active_timestamp)?) | (inactive_timestamp ~ ("--" ~ inactive_timestamp)?) }
+active_timestamp = { "<" ~ inner_timestamp ~ ">" }
+inactive_timestamp = { "[" ~ inner_timestamp ~ "]" }
+inner_timestamp = { date ~ (" " ~ time ~ ("--" ~ time)?)? ~ (" " ~ repeater)? ~ (" " ~ warning)? }
+date = { ASCII_DIGIT{4} ~ "-" ~ ASCII_DIGIT{2} ~ "-" ~ ASCII_DIGIT{2} }
+time = { ASCII_DIGIT{2} ~ ":" ~ ASCII_DIGIT{2} }
+repeater = { repeater_kind ~ ASCII_DIGIT ~ unit }
+repeater_kind = { "++" | "+" | ".+" }
+unit = { "h" | "d" | "w" | "m" }
+warning = { warning_kind ~ ASCII_DIGIT ~ unit }
+warning_kind = { "--" | "-" }
+
+headline = { headline_first_line ~ ("\n" ~ clock){0,3} }

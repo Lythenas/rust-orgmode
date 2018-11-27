@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+xs 766383586 1612008157 2611461695 648289686 # shrinks to captions = [], headers = [], name = None, plot = None, results = None, attrs = []
+xs 823460182 530781302 1407383482 1880360556 # shrinks to captions = [], headers = [], name = None, plot = None, results = Some(Spanned { span: Span { start: 0, end: 0 }, value: Results { value: "A", optional: Some(" ") } }), attrs = []

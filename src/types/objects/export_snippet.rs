@@ -1,5 +1,3 @@
-use super::*;
-
 /// An export snippet.
 ///
 /// # Semantics

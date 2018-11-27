@@ -1,5 +1,3 @@
-use super::*;
-
 /// A statistics cookie.
 ///
 /// # Semantics

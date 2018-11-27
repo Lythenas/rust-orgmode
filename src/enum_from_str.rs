@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_enum_from_str() {
-        enum_from_str!{TestEnum => One, Two, Three};
+        enum_from_str! {TestEnum => One, Two, Three};
 
         let one = TestEnum::from_str("One").unwrap();
         assert_eq!(one, TestEnum::One);

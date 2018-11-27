@@ -68,86 +68,6 @@ pub struct AffiliatedKeywords {
     attrs: Vec<Spanned<Attr>>,
 }
 
-use combine::parser::regex::captures;
-use combine::stream::{FullRangeStream, Stream, StreamOnce};
-use combine::{choice, many1, value, ParseError, Parser};
-use crate::parsing::spanned;
-use regex::Regex;
-
-fn parse_affiliated_keywords<'a, I: 'a>(
-) -> impl Parser<Input = I, Output = Spanned<AffiliatedKeywords>> + 'a
-where
-    I: Stream<Item = char, Range = &'a str, Position = usize>
-        + FullRangeStream
-        + StreamOnce<Error = combine::easy::Errors<char, &'a str, usize>>,
-    I::Error: ParseError<I::Item, I::Range, I::Position>,
-{
-    lazy_static! {
-        static ref RE: Regex = Regex::new(
-            r"^[ \t]*#\+(CAPTION|HEADER|NAME|PLOT|RESULTS|ATTR_\S+)(\[\S*\])?: (\S+)[ \t]*\n?"
-        )
-        .unwrap();
-    }
-    // TODO
-    spanned(many1::<AffiliatedKeywords, _>(
-        spanned(captures(&*RE)).flat_map(|spanned: Spanned<Vec<&str>>| {
-            let vec = spanned.value();
-            let span = spanned.span();
-            let name = vec[1];
-            let (optional, value) = match (vec.get(2), vec.get(3)) {
-                (Some(o), Some(v)) => (Some(o), v),
-                (Some(v), None) => (None, v),
-                (None, Some(v)) => (None, v),
-                _ => unreachable!(),
-            };
-            let optional = optional.map(|s| &s[1..s.len()-1]);
-
-            if name == "CAPTION" {
-                Ok(AffiliatedKeyword::Caption(Spanned::new(
-                    span.clone(),
-                    Caption::with_option_optional(
-                        SecondaryString::with_one(StandardSet::RawString(value.to_string())),
-                        optional.map(|s| {
-                            SecondaryString::with_one(StandardSet::RawString(s.to_string()))
-                        }),
-                    ),
-                )))
-            } else if name == "HEADER" {
-                assert!(optional.is_none());
-                Ok(AffiliatedKeyword::Header(Spanned::new(
-                    span.clone(),
-                    value.to_string(),
-                )))
-            } else if name == "NAME" {
-                assert!(optional.is_none());
-                Ok(AffiliatedKeyword::Name(Spanned::new(
-                    span.clone(),
-                    value.to_string(),
-                )))
-            } else if name == "PLOT" {
-                assert!(optional.is_none());
-                Ok(AffiliatedKeyword::Plot(Spanned::new(
-                    span.clone(),
-                    value.to_string(),
-                )))
-            } else if name == "RESULTS" {
-                Ok(AffiliatedKeyword::Results(Spanned::new(
-                    span.clone(),
-                    Results::new(value.to_string(), optional.map(|s| s.to_string())),
-                )))
-            } else if name.starts_with("ATTR_") {
-                assert!(optional.is_none());
-                Ok(AffiliatedKeyword::Attr(Spanned::new(
-                    span.clone(),
-                    Attr::new(name[5..].to_string(), value.to_string()),
-                )))
-            } else {
-                Err(combine::stream::easy::Errors::empty(span.start()))
-            }
-        }),
-    ))
-}
-
 impl fmt::Display for AffiliatedKeywords {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.iter().format("\n"))
@@ -702,7 +622,9 @@ mod tests {
     }
 
     proptest! {
+        // TODO un-ignore when parsing is implemented
         #[test]
+        #[ignore]
         fn test_affiliated_keywords_into_iter(
             captions in prop::collection::vec(caption(), 0..10),
             headers in prop::collection::vec(header(), 0..10),
@@ -732,7 +654,9 @@ mod tests {
     }
 
     proptest! {
+        // TODO un-ignore when parsing is implemented
         #[test]
+        #[ignore]
         fn test_parse_affiliated_keywords(
             captions in prop::collection::vec(caption(), 0..2),
             headers in prop::collection::vec(header(), 0..2),
@@ -741,7 +665,6 @@ mod tests {
             results in prop::option::of(results()),
             attrs in prop::collection::vec(attr(), 0..4),
         ) {
-            use combine::stream::state::{State, IndexPositioner};
             let expected = AffiliatedKeywords {
                 captions,
                 headers,
@@ -753,9 +676,7 @@ mod tests {
             prop_assume!(!expected.is_empty());
             let text = expected.to_string();
             println!("{}", text);
-            let result = parse_affiliated_keywords()
-                .easy_parse(State::with_positioner(text.as_str(), IndexPositioner::new()))
-                .map(|t| t.0.to_value()).unwrap();
+            let result: AffiliatedKeywords = unimplemented!(); // parse text
 
             assert_eq!(text, result.to_string());
             assert_eq!(expected.captions().collect::<HashSet<_>>(), result.captions().collect());
@@ -767,18 +688,20 @@ mod tests {
         }
     }
 
+    // TODO un-ignore when parsing is implemented
     #[test]
+    #[ignore]
     fn test_parse_affiliated_keywords_attr() {
-        use combine::stream::state::{State, IndexPositioner};
         let text = "#+ATTR_something: value";
-        let result = parse_affiliated_keywords()
-            .easy_parse(State::with_positioner(text, IndexPositioner::new()))
-            .map(|t| t.0.to_value()).unwrap();
+        let result = unimplemented!();
         let mut expected = AffiliatedKeywords::new();
-        expected.push(AffiliatedKeyword::Attr(Spanned::new(Span::new(0, 23), Attr {
-            backend: String::from("something"),
-            value: String::from("value"),
-        })));
+        expected.push(AffiliatedKeyword::Attr(Spanned::new(
+            Span::new(0, 23),
+            Attr {
+                backend: String::from("something"),
+                value: String::from("value"),
+            },
+        )));
 
         assert_eq!(expected, result);
         assert_eq!(text, result.to_string());

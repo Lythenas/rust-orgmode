@@ -1,5 +1,3 @@
-use super::*;
-
 /// An inline src block.
 ///
 /// # Semantics

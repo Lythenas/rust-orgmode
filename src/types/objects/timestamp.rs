@@ -1,4 +1,3 @@
-use super::*;
 use chrono::{NaiveDate, NaiveTime};
 
 /// A timestamp.
