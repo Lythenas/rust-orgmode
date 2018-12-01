@@ -1,22 +1,126 @@
-stars = { "*"+ }
-keyword = { "TODO" | "DONE" | "NEXT" }
-priority = { "[#" ~ ('A'..'Z') ~ "]" }
-title = { (!":" ~ ANY)+ }
-tag = { ":" ~ (!":" ~ ANY)+ ~ ":" }
-tags = { tag ~ (" " ~ tag)* }
-headline_first_line = { stars ~ (" " ~ keyword)? ~ (" " ~ priority)? ~ title ~ tags? }
-clock = { clock_keyword ~ ": " ~ timestamp }
-clock_keyword = { "SCHEDULED" | "DEADLINE" | "CLOSED" }
-timestamp = { (active_timestamp ~ ("--" ~ active_timestamp)?) | (inactive_timestamp ~ ("--" ~ inactive_timestamp)?) }
-active_timestamp = { "<" ~ inner_timestamp ~ ">" }
-inactive_timestamp = { "[" ~ inner_timestamp ~ "]" }
-inner_timestamp = { date ~ (" " ~ time ~ ("--" ~ time)?)? ~ (" " ~ repeater)? ~ (" " ~ warning)? }
-date = { ASCII_DIGIT{4} ~ "-" ~ ASCII_DIGIT{2} ~ "-" ~ ASCII_DIGIT{2} }
-time = { ASCII_DIGIT{2} ~ ":" ~ ASCII_DIGIT{2} }
-repeater = { repeater_kind ~ ASCII_DIGIT ~ unit }
-repeater_kind = { "++" | "+" | ".+" }
-unit = { "h" | "d" | "w" | "m" }
-warning = { warning_kind ~ ASCII_DIGIT ~ unit }
-warning_kind = { "--" | "-" }
+// TODO: add rule for blanks and insert at the right places
+document = {
+  SOI ~
+  document_property* ~
+  (preface ~ (EOI | NEWLINE))? ~
+  headline* ~
+  EOI
+}
+document_property = {
+  ("AUTHOR" | "DATE" | "TITLE") ~
+  ":" ~ " "? ~ value
+}
+preface = { section }
+headline =  {
+  (affiliated_keyword ~ NEWLINE)* ~
+  stars ~
+  (" " ~ todo_keyword)? ~
+  (" " ~ priority)? ~
+  " " ~ title ~
+  (tag ~ " ")* ~
+  (NEWLINE | EOI) ~
+  (planning ~ (NEWLINE | EOI))? ~
+  property_drawer? ~
+  (EOI | headline | section)
+}
+section = { TODO }
 
-headline = { headline_first_line ~ ("\n" ~ clock){0,3} }
+secondary_string = { (text | object)* }
+text = { TODO }
+object = { TODO }
+
+affiliated_keyword = {
+  "#+" ~
+  (attr | caption | results | other) ~
+  ":" ~ " "? ~ value
+}
+  attr = { "ATTR_" ~ backend }
+    backend = { TODO }
+  caption = {
+    "CAPTION" ~
+    ("[" ~ secondary_string ~ "]")?
+  }
+  results = {
+    ("RESULTS" | "RESULT") ~
+    ("[" ~ secondary_string ~ "]")?
+  }
+  other = { "NAME" | "LABEL" | "SRCNAME" | "TBLNAME" | "DATA" | "RESNAME" | "SOURCE" | "PLOT" | "HEADER" | "HEADERS" }
+  value = { TODO }
+
+stars = { "*"+ }
+todo_keyword = { "TODO" | "DONE" | "NEXT" }
+priority = { "[#" ~ priority_value ~ "]" }
+  priority_value = { 'A'..'Z' | 'a'..'z' }
+title = { ANY* } // TODO: just takes everything
+tag = { ":" ~ ANY+ ~ ":" } // TODO: just matches everything
+planning = { TODO }
+property_drawer = { TODO }
+
+TODO = { "// TODO" }
+
+element = {
+  block |
+  babel_call |
+  clock |
+  comment |
+  diary_sexp |
+  fixed_width |
+  horizontal_rule |
+  keyword |
+  latex_environment |
+  node |
+  paragraph |
+  table_row
+}
+babel_call = { TODO }
+clock = { TODO }
+comment = { TODO }
+diary_sexp = { TODO }
+fixed_width = { TODO }
+horizontal_rule = { TODO }
+keyword = { TODO }
+latex_environment = { TODO }
+node = { TODO }
+paragraph = { TODO }
+table_row = { TODO }
+block = {
+    comment_block |
+    example_block |
+    export_block |
+    src_block |
+    verse_block
+}
+comment_block = { TODO }
+example_block = { TODO }
+export_block = { TODO }
+src_block = { TODO }
+verse_block = { TODO }
+greater_block = {
+  center_block |
+  dynamic_block |
+  quote_block |
+  special_block
+}
+greater_element = {
+  greater_block |
+  drawer |
+  footnote_definition |
+  headline |
+  inlinetask |
+  item |
+  plain_list |
+  property_drawer |
+  section |
+  table
+}
+center_block = { TODO }
+drawer = { TODO }
+dynamic_block = { TODO }
+footnote_definition = { TODO }
+inlinetask = { TODO }
+item = { TODO }
+plain_list = { TODO }
+//property_drawer = { TODO }
+quote_block = { TODO }
+special_block = { TODO }
+table = { TODO }

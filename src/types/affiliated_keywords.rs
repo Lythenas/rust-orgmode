@@ -573,7 +573,7 @@ mod tests {
             let value = SecondaryString::with_one(StandardSet::RawString(value));
             let optional = optional.map(|value| SecondaryString::with_one(StandardSet::RawString(value)));
             let caption = Caption::with_option_optional(value, optional);
-            Spanned::new(span, caption)
+            Spanned::with_span(caption, span)
         }
     }
     prop_compose! {
@@ -581,7 +581,7 @@ mod tests {
             span in span(),
             value in "[a-zA-Z_]{1,}"
         ) -> Spanned<String> {
-            Spanned::new(span, value)
+            Spanned::with_span(value, span)
         }
     }
     prop_compose! {
@@ -589,7 +589,7 @@ mod tests {
             span in span(),
             value in "[a-zA-Z_]{1,}"
         ) -> Spanned<String> {
-            Spanned::new(span, value)
+            Spanned::with_span(value, span)
         }
     }
     prop_compose! {
@@ -597,7 +597,7 @@ mod tests {
             span in span(),
             value in "[a-zA-Z_]{1,}"
         ) -> Spanned<String> {
-            Spanned::new(span, value)
+            Spanned::with_span(value, span)
         }
     }
     prop_compose! {
@@ -607,7 +607,7 @@ mod tests {
             value in "[a-zA-Z_]{1,}"
         ) -> Spanned<Results> {
             let caption = Results { value, optional, };
-            Spanned::new(span, caption)
+            Spanned::with_span(caption, span)
         }
     }
     prop_compose! {
@@ -617,7 +617,7 @@ mod tests {
             value in "[a-zA-Z_]{1,}"
         ) -> Spanned<Attr> {
             let attr = Attr { backend, value, };
-            Spanned::new(span, attr)
+            Spanned::with_span(attr, span)
         }
     }
 
@@ -695,15 +695,16 @@ mod tests {
         let text = "#+ATTR_something: value";
         let result = unimplemented!();
         let mut expected = AffiliatedKeywords::new();
-        expected.push(AffiliatedKeyword::Attr(Spanned::new(
-            Span::new(0, 23),
+        expected.push(AffiliatedKeyword::Attr(Spanned::with_span(
             Attr {
                 backend: String::from("something"),
                 value: String::from("value"),
             },
+            Span::new(0, 23),
         )));
 
         assert_eq!(expected, result);
         assert_eq!(text, result.to_string());
     }
 }
+

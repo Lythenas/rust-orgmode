@@ -94,15 +94,24 @@ pub trait HasAffiliatedKeywords: Element {
 /// artificially and is not part of a file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Spanned<T> {
-    span: Span,
     value: T,
+    span: Option<Span>,
 }
 
 impl<T> Spanned<T> {
-    pub fn new(span: Span, value: T) -> Self {
-        Spanned { span, value }
+    pub fn new(value: T) -> Self {
+        Spanned { span: None, value }
     }
-    pub fn span(&self) -> &Span {
+    pub fn with_span(value: T, span: Span) -> Self {
+        Spanned {
+            value,
+            span: Some(span),
+        }
+    }
+    pub fn with_optional_span(value: T, span: Option<Span>) -> Self {
+        Spanned { value, span }
+    }
+    pub fn span(&self) -> &Option<Span> {
         &self.span
     }
     pub fn value(&self) -> &T {
@@ -123,12 +132,12 @@ impl<T> Spanned<T> {
 }
 
 trait IntoSpanned<T> {
-    fn into_spanned(self, span: Span) -> Spanned<T>;
+    fn into_spanned(self, span: Option<Span>) -> Spanned<T>;
 }
 
 impl<T> IntoSpanned<T> for T {
-    fn into_spanned(self, span: Span) -> Spanned<T> {
-        Spanned::new(span, self)
+    fn into_spanned(self, span: Option<Span>) -> Spanned<T> {
+        Spanned::with_optional_span(self, span)
     }
 }
 

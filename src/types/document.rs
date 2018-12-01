@@ -23,13 +23,12 @@ impl Document {
 }
 
 use crate::parsing::Rule;
-use std::iter::FromIterator;
 use pest::iterators::Pair;
+use std::iter::FromIterator;
 impl<'a> FromIterator<Pair<'a, Rule>> for Document {
-    fn from_iter<I: IntoIterator<Item=Pair<'a, Rule>>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = Pair<'a, Rule>>>(_iter: I) -> Self {
         unimplemented!();
     }
-
 }
 
 /// An iterator over all [`Keyword`]s in the [`Document::preface`].
@@ -52,4 +51,3 @@ impl<'a> Iterator for Keywords<'a> {
         unimplemented!()
     }
 }
-
