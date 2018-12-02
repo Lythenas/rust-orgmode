@@ -20,8 +20,6 @@
 //! - impl GreaterElement for every greater element
 #![feature(plugin)]
 #![feature(pattern)]
-#![feature(const_vec_new)]
-#![feature(never_type)]
 #![plugin(phf_macros)]
 
 #[cfg(test)]
@@ -31,12 +29,12 @@ extern crate pretty_assertions;
 #[macro_use]
 extern crate proptest;
 
-#[macro_use]
-extern crate failure;
-#[macro_use]
-extern crate failure_derive;
-#[macro_use]
-extern crate lazy_static;
+//#[macro_use]
+//extern crate failure;
+//#[macro_use]
+//extern crate failure_derive;
+//#[macro_use]
+//extern crate lazy_static;
 
 extern crate pest;
 #[macro_use]
@@ -47,13 +45,6 @@ pub mod parsing;
 pub mod types;
 #[macro_use]
 pub mod macros;
-#[macro_use]
-mod enum_from_str;
-
-enum_from_str!(
-    #[doc="Represents a priority of a [`Headline`]."]
-    Priority => A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
-);
 
 mod private {
     pub trait Sealed {}
@@ -118,16 +109,5 @@ mod private {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn test_a_to_z_is_parseable_to_priority() {
-        use std::char;
-
-        for i in 'A' as u32..('Z' as u32 + 1) {
-            let prio = &char::from_u32(i).unwrap().to_string().parse::<Priority>();
-            assert!(prio.is_ok());
-        }
-    }
-
+    //use super::*;
 }

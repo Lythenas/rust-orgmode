@@ -1,4 +1,6 @@
-use super::*;
+use crate::types::{
+    AffiliatedKeywords, Element, ElementSet, GreaterElement, HasAffiliatedKeywords, Parent, Spanned,
+};
 use std::fmt;
 
 /// A drawer to hide content.
@@ -56,5 +58,5 @@ impl fmt::Display for Drawer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    //use super::*;
 }

@@ -1,4 +1,4 @@
-use super::*;
+use std::fmt;
 
 /// An entity.
 ///
@@ -37,5 +37,5 @@ impl fmt::Display for Entity {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    //use super::*;
 }

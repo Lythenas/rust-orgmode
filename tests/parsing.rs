@@ -1,8 +1,8 @@
-extern crate rust_orgmode;
 extern crate pest;
+extern crate rust_orgmode;
 
-use rust_orgmode::parsing::{OrgModeParser, Rule};
 use pest::Parser;
+use rust_orgmode::parsing::{OrgModeParser, Rule};
 use std::fs::{self, File};
 use std::io::Read;
 
@@ -29,7 +29,7 @@ fn test_files() -> impl Iterator<Item = File> {
 fn parsing_succeeds() {
     test_files().for_each(|mut file| {
         let mut contents = String::new();
-        file.read_to_string(&mut contents);
+        file.read_to_string(&mut contents).unwrap();
         OrgModeParser::parse(Rule::document, &contents).unwrap();
     })
 }

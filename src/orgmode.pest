@@ -1,33 +1,28 @@
 // TODO: add rule for blanks and insert at the right places
+BLANK = { " " | "\t" }
+
 document = {
   SOI ~
-  document_property* ~
-  (preface ~ (EOI | NEWLINE))? ~
+  preface? ~
   headline* ~
   EOI
 }
-document_property = {
-  ("AUTHOR" | "DATE" | "TITLE") ~
-  ":" ~ " "? ~ value
-}
-preface = { section }
+preface = { section ~ (EOI | NEWLINE) }
 headline =  {
   (affiliated_keyword ~ NEWLINE)* ~
   stars ~
-  (" " ~ todo_keyword)? ~
-  (" " ~ priority)? ~
-  " " ~ title ~
-  (tag ~ " ")* ~
-  (NEWLINE | EOI) ~
-  (planning ~ (NEWLINE | EOI))? ~
-  property_drawer? ~
+  title ~
+  (EOI | NEWLINE) ~
+  (planning ~ (EOI | NEWLINE))? ~
   (EOI | headline | section)
 }
+  stars = { "*"+ ~ BLANK+ }
+  title = { (!NEWLINE ~ ANY)* ~ BLANK* }
+
 section = { TODO }
 
 secondary_string = { (text | object)* }
 text = { TODO }
-object = { TODO }
 
 affiliated_keyword = {
   "#+" ~
@@ -47,30 +42,35 @@ affiliated_keyword = {
   other = { "NAME" | "LABEL" | "SRCNAME" | "TBLNAME" | "DATA" | "RESNAME" | "SOURCE" | "PLOT" | "HEADER" | "HEADERS" }
   value = { TODO }
 
-stars = { "*"+ }
-todo_keyword = { "TODO" | "DONE" | "NEXT" }
-priority = { "[#" ~ priority_value ~ "]" }
-  priority_value = { 'A'..'Z' | 'a'..'z' }
-title = { ANY* } // TODO: just takes everything
-tag = { ":" ~ ANY+ ~ ":" } // TODO: just matches everything
-planning = { TODO }
-property_drawer = { TODO }
-
 TODO = { "// TODO" }
 
 element = {
-  block |
   babel_call |
+  center_block |
   clock |
   comment |
+  comment_block |
   diary_sexp |
+  drawer |
+  dynamic_block |
+  example_block |
+  export_block |
   fixed_width |
+  footnote_definition |
   horizontal_rule |
+  inlinetask |
   keyword |
   latex_environment |
-  node |
   paragraph |
-  table_row
+  plain_list |
+  planning |
+  property_drawer |
+  quote_block |
+  section |
+  special_block |
+  src_block |
+  table |
+  verse_block
 }
 babel_call = { TODO }
 clock = { TODO }
@@ -82,6 +82,7 @@ keyword = { TODO }
 latex_environment = { TODO }
 node = { TODO }
 paragraph = { TODO }
+planning = { TODO }
 table_row = { TODO }
 block = {
     comment_block |
@@ -120,7 +121,45 @@ footnote_definition = { TODO }
 inlinetask = { TODO }
 item = { TODO }
 plain_list = { TODO }
-//property_drawer = { TODO }
+property_drawer = { TODO }
 quote_block = { TODO }
 special_block = { TODO }
 table = { TODO }
+
+object = { 
+  entity |
+  export_snippet |
+  footnote_reference |
+  inline_babel_call |
+  inline_src_block |
+  latex_fragment |
+  line_break |
+  link |
+  macro_replacement |
+  radio_target |
+  statistics_cookie |
+  subscript |
+  superscript |
+  target |
+  text_markup |
+  timestamp |
+  raw_string
+}
+
+entity = { TODO }
+export_snippet = { TODO }
+footnote_reference = { TODO }
+inline_babel_call = { TODO }
+inline_src_block = { TODO }
+latex_fragment = { TODO }
+line_break = { TODO }
+link = { TODO }
+macro_replacement = { TODO }
+radio_target = { TODO }
+statistics_cookie = { TODO }
+subscript = { TODO }
+superscript = { TODO }
+target = { TODO }
+text_markup = { TODO }
+timestamp = { TODO }
+raw_string = { TODO }
