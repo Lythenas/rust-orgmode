@@ -24,47 +24,27 @@ impl From<pest::error::Error<Rule>> for ParseError {
 
 pub fn parse_document(s: &str) -> Result<Document, ParseError> {
     if let Some(pair) = OrgModeParser::parse(Rule::document, &s)?.next() {
-        return Document::try_from_iter(pair.into_inner());
-    }
-    // The document rule can't fail. Worst case it is just "SOI ~ EOI".
-    unreachable!("document rule can't fail")
-}
+        let mut rules = pair.into_inner().peekable();
 
-trait TryFromIterator<A> {
-    type Result;
-    type Error;
-    fn try_from_iter<T>(iter: T) -> Result<Self::Result, Self::Error>
-    where
-        T: IntoIterator<Item = A>;
-}
-
-impl<'i> TryFromIterator<Pair<'i, Rule>> for Document {
-    type Result = Document;
-    type Error = ParseError;
-    fn try_from_iter<T>(iter: T) -> Result<Self::Result, Self::Error>
-    where
-        T: IntoIterator<Item = Pair<'i, Rule>>,
-    {
-        let mut preface = None;
-        let mut headlines = Vec::new();
-
-        for pair in iter {
-            match pair.as_rule() {
-                Rule::preface => {
-                    if preface.is_none() {
-                        preface = Some(parse_preface(pair.into_inner())?);
-                    } else {
-                        // TODO check if this can happen
-                        return Err(ParseError::StructuralError("found two prefaces"));
-                    }
-                }
-                Rule::headline => headlines.push(parse_headline(pair.into_inner())?),
-                _ => unreachable!("document rule can only contain preface and headlines"),
+        let preface = match rules.peek() {
+            Some(pair) if pair.as_rule() == Rule::preface => {
+                Some(parse_preface(rules.next().unwrap().into_inner())?)
             }
-        }
+            _ => None,
+        };
 
-        Ok(Document { preface, headlines })
+        // Try to parse all headlines and fails at the first Err
+        // TODO maybe collect all errors and return them all instead of
+        // just the first (using Itertools::partition_map)
+        let headlines: Vec<_> = rules
+            .skip_while(|pair| pair.as_rule() == Rule::preface)
+            .map(|pair| parse_headline(pair.into_inner()))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        return Ok(Document { preface, headlines });
     }
+    // The document rule can't fail. Worst case it is just empty ("SOI ~ EOI").
+    unreachable!("document rule can't fail")
 }
 
 fn parse_preface<'i, I>(_pairs: I) -> Result<Section, ParseError>
