@@ -7,7 +7,7 @@ document = {
   headline* ~
   EOI
 }
-preface = { section ~ (EOI | NEWLINE) }
+preface = { section }
 headline =  {
   (affiliated_keyword ~ NEWLINE)* ~
   stars ~
@@ -19,7 +19,10 @@ headline =  {
   stars = { "*"+ ~ BLANK+ }
   title = { (!NEWLINE ~ ANY)* ~ BLANK* }
 
-section = { TODO }
+// TODO extend this to recognize greater elements, elements and objects
+section = {
+  (paragraph ~ NEWLINE+)+
+}
 
 secondary_string = { (text | object)* }
 text = { TODO }
@@ -66,7 +69,6 @@ element = {
   planning |
   property_drawer |
   quote_block |
-  section |
   special_block |
   src_block |
   table |
@@ -81,7 +83,8 @@ horizontal_rule = { TODO }
 keyword = { TODO }
 latex_environment = { TODO }
 node = { TODO }
-paragraph = { TODO }
+// TODO add objects to the paragraph
+paragraph = { (!"*" ~ ANY) ~ (!NEWLINE ~ ANY)* }
 planning = { TODO }
 table_row = { TODO }
 block = {
@@ -111,8 +114,8 @@ greater_element = {
   item |
   plain_list |
   property_drawer |
-  section |
-  table
+  table |
+  section
 }
 center_block = { TODO }
 drawer = { TODO }

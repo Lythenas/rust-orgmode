@@ -1,4 +1,4 @@
-use super::*;
+use crate::types::{ElementSet, Parent, Spanned};
 
 /// A section.
 ///
@@ -18,6 +18,12 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Section {
     content: Spanned<Vec<ElementSet>>,
+}
+
+impl Section {
+    pub fn new(content: Spanned<Vec<ElementSet>>) -> Self {
+        Section { content }
+    }
 }
 
 impl Parent<Vec<ElementSet>> for Section {

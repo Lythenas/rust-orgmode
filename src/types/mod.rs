@@ -70,6 +70,12 @@ impl Span {
     }
 }
 
+impl<'i> From<pest::Span<'i>> for Span {
+    fn from(span: pest::Span<'i>) -> Self {
+        Span::new(span.start(), span.end())
+    }
+}
+
 /// Some greater elements, elements and objects can contain other objects or elements.
 ///
 /// These are then called parents to those other elements or objects.
@@ -337,9 +343,15 @@ pub enum ElementSet {
     Planning(Box<elements::Planning>),
     PropertyDrawer(Box<greater_elements::PropertyDrawer>),
     QuoteBlock(Box<greater_elements::QuoteBlock>),
-    Section(Box<greater_elements::Section>),
-    SpecialBlock(Box<greater_elements::Section>),
+    //Section(Box<greater_elements::Section>),
+    SpecialBlock(Box<greater_elements::SpecialBlock>),
     SrcBlock(Box<elements::SrcBlock>),
     Table(Box<greater_elements::Table>),
     VerseBlock(Box<greater_elements::VerseBlock>),
+}
+
+impl From<elements::Paragraph> for ElementSet {
+    fn from(paragraph: elements::Paragraph) -> Self {
+        ElementSet::Paragraph(Box::new(paragraph))
+    }
 }

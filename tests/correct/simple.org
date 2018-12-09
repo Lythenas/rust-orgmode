@@ -1,3 +1,5 @@
+This is the preface.
+
 * Headline one
 ** Headline two
 *** Headline three

@@ -21,3 +21,12 @@ pub struct Paragraph {
     /// TODO also store the ignored newlines somewhere/somehow.
     pub content: SecondaryString<StandardSet>,
 }
+
+impl Paragraph {
+    pub fn new(content: SecondaryString<StandardSet>) -> Self {
+        Paragraph {
+            affiliated_keywords: None,
+            content,
+        }
+    }
+}
