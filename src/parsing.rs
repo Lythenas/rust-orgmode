@@ -2,12 +2,16 @@
 
 use crate::types::document::Document;
 use crate::types::elements::Paragraph;
-use crate::types::greater_elements::{Headline, Section};
-use crate::types::{ElementSet, SecondaryString, Span, Spanned, StandardSet};
+use crate::types::greater_elements::{Headline, HeadlineContentSet, Section};
+use crate::types::{
+    ElementSet, SecondaryString, Span, Spanned, StandardSet, StandardSetNoLineBreak,
+};
 
 use pest::iterators::Pair;
 #[allow(unused_imports)]
 use pest::{self, Parser};
+
+use itertools::Itertools;
 
 #[derive(Parser)]
 #[grammar = "orgmode.pest"]
@@ -23,6 +27,11 @@ impl From<pest::error::Error<Rule>> for ParseError {
     fn from(error: pest::error::Error<Rule>) -> Self {
         ParseError::LexError(error)
     }
+}
+
+/// Helper function to create predicates to filter for or skip the specified rule.
+fn is_rule<'i>(rule: Rule) -> impl Fn(&Pair<'i, Rule>) -> bool {
+    move |pair| pair.as_rule() == rule
 }
 
 pub fn parse_document(s: &str) -> Result<Document, ParseError> {
@@ -42,9 +51,15 @@ pub fn parse_document(s: &str) -> Result<Document, ParseError> {
         // TODO maybe collect all errors and return them all instead of
         // just the first (using Itertools::partition_map)
         let headlines: Vec<_> = rules
+            .by_ref()
             .skip_while(|pair| pair.as_rule() == Rule::preface)
+            .peekable()
+            .peeking_take_while(is_rule(Rule::headline))
             .map(parse_headline)
             .collect::<Result<Vec<_>, _>>()?;
+
+        // TODO The last rule should be EOI, but assert fails
+        // assert_eq!(rules.next().map(|p| p.as_rule()), Some(Rule::EOI));
 
         return Ok(Document { preface, headlines });
     }
@@ -81,8 +96,87 @@ fn parse_paragraph<'i>(pair: Pair<'i, Rule>) -> Result<Paragraph, ParseError> {
     )))
 }
 
-fn parse_headline<'i>(_pair: Pair<'i, Rule>) -> Result<Headline, ParseError> {
-    unimplemented!()
+fn parse_headline<'i>(pair: Pair<'i, Rule>) -> Result<Headline, ParseError> {
+    assert_eq!(pair.as_rule(), Rule::headline);
+
+    let _span: Span = pair.as_span().into();
+
+    let mut inner = pair.into_inner().peekable();
+    let affiliated_keywords = inner
+        .by_ref()
+        .peeking_take_while(is_rule(Rule::affiliated_keywords))
+        .take(1)
+        .map(|_p| unimplemented!()) // TODO parse_affiliated_keywords
+        .next();
+    let stars = inner
+        .by_ref()
+        .take(1)
+        .filter(is_rule(Rule::stars))
+        .map(|p| p.as_str().len())
+        .next()
+        .unwrap(); // grammar guarantees at least one star
+    let stars = if stars <= u32::max_value() as usize {
+        stars as u32
+    } else {
+        return Err(ParseError::StructuralError(
+            "to many stars in headline (more than 2^32-1)",
+        ));
+    };
+    let title = inner
+        .by_ref()
+        .skip_while(is_rule(Rule::BLANK))
+        .take(1)
+        .filter(is_rule(Rule::title))
+        .map(parse_secondary_string_no_line_break)
+        .next()
+        .unwrap()?; // grammar guarantees a (empty) title
+    let planning = inner
+        .by_ref()
+        //.skip_while(is_rule(Rule::NEWLINE))
+        .peeking_take_while(is_rule(Rule::planning))
+        .take(1)
+        .map(|_p| unimplemented!())
+        .next();
+    let section = inner
+        .by_ref()
+        .peeking_take_while(is_rule(Rule::section))
+        .take(1)
+        .map(|_p| unimplemented!())
+        .next();
+    let nested = inner
+        .by_ref()
+        .peeking_take_while(is_rule(Rule::headline))
+        .map(|p| parse_headline(p))
+        .map(|r| r.map(|h| HeadlineContentSet::Headline(Box::new(h))))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let content = if nested.is_empty() {
+        None
+    } else {
+        // TODO figure out the correct span for the content
+        let span = _span.clone();
+        Some(Spanned::with_span(nested, span))
+    };
+
+    Ok(Headline {
+        affiliated_keywords,
+        content,
+        level: stars,
+        todo_keyword: None, // TODO
+        priority: None,     // TODO
+        title: Some(title), // TODO better error handling for title
+        tags: Vec::new(),   // TODO
+        planning,
+        property_drawer: None,
+    })
+}
+
+fn parse_secondary_string_no_line_break<'i>(
+    pair: Pair<'i, Rule>,
+) -> Result<SecondaryString<StandardSetNoLineBreak>, ParseError> {
+    Ok(SecondaryString::with_one(
+        StandardSetNoLineBreak::RawString(pair.as_str().to_string()),
+    ))
 }
 
 #[cfg(test)]

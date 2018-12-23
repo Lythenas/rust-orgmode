@@ -41,8 +41,8 @@ use super::*;
 /// usually right aligned at a specified column by the editor.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Headline {
-    affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
-    content: Spanned<Vec<HeadlineContentSet>>,
+    pub(crate) affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
+    pub(crate) content: Option<Spanned<Vec<HeadlineContentSet>>>,
     pub level: u32,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct
@@ -57,7 +57,7 @@ pub struct Headline {
 
 impl Parent<Vec<HeadlineContentSet>> for Headline {
     fn content(&self) -> Option<&Spanned<Vec<HeadlineContentSet>>> {
-        Some(&self.content)
+        self.content.as_ref()
     }
 }
 

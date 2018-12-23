@@ -35,7 +35,6 @@ fn parsing_succeeds() {
 }
 
 #[test]
-#[ignore]
 fn parsing_produces_document() {
     test_files().for_each(|mut file| {
         let mut contents = String::new();

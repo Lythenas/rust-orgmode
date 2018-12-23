@@ -9,15 +9,16 @@ document = {
 }
 preface = { section }
 headline =  {
-  (affiliated_keyword ~ NEWLINE)* ~
-  stars ~
-  title ~
+  affiliated_keywords? ~
+  stars ~ BLANK+ ~
+  title ~ BLANK* ~
   (EOI | NEWLINE) ~
   (planning ~ (EOI | NEWLINE))? ~
   (EOI | headline | section)
 }
-  stars = { "*"+ ~ BLANK+ }
-  title = { (!NEWLINE ~ ANY)* ~ BLANK* }
+// TODO figure out how to actually nest headlines
+  stars = { "*"+ }
+  title = { (!NEWLINE ~ ANY)* }
 
 // TODO extend this to recognize greater elements, elements and objects
 section = {
@@ -27,6 +28,9 @@ section = {
 secondary_string = { (text | object)* }
 text = { TODO }
 
+affiliated_keywords = {
+  (affiliated_keyword ~ NEWLINE)+
+}
 affiliated_keyword = {
   "#+" ~
   (attr | caption | results | other) ~
