@@ -135,6 +135,9 @@ impl<T> Spanned<T> {
             value: f(self.value),
         }
     }
+    pub fn get_mut_value(&mut self) -> &mut T {
+        &mut self.value
+    }
 }
 
 trait IntoSpanned<T> {

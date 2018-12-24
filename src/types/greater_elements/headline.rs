@@ -42,7 +42,6 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Headline {
     pub(crate) affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
-    pub(crate) content: Option<Spanned<Vec<HeadlineContentSet>>>,
     pub level: u32,
     pub todo_keyword: Option<TodoKeyword>,
     pub priority: Option<char>, // TODO maybe make separate struct
@@ -50,6 +49,7 @@ pub struct Headline {
     pub tags: Vec<String>,
     pub planning: Option<elements::Planning>,
     pub property_drawer: Option<PropertyDrawer>,
+    pub(crate) content: Option<Spanned<Vec<HeadlineContentSet>>>,
     // quotedp ?
     // hiddenp: bool,
     // pre_blank: u32 // TODO (maybe) blank lines before the content starts
@@ -76,6 +76,13 @@ impl Headline {
     }
     pub fn is_archived(&self) -> bool {
         self.tags.contains(&"ARCHIVE".to_string())
+    }
+
+    pub fn push_content(&mut self, content: impl IntoIterator<Item=HeadlineContentSet>) {
+        self.content
+            .get_or_insert_with(|| Spanned::new(Vec::new()))
+            .get_mut_value()
+            .extend(content);
     }
 }
 

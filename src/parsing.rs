@@ -13,6 +13,8 @@ use pest::{self, Parser};
 
 use itertools::Itertools;
 
+use std::iter::Peekable;
+
 #[derive(Parser)]
 #[grammar = "orgmode.pest"]
 pub struct OrgModeParser;
@@ -61,10 +63,54 @@ pub fn parse_document(s: &str) -> Result<Document, ParseError> {
         // TODO The last rule should be EOI, but assert fails
         // assert_eq!(rules.next().map(|p| p.as_rule()), Some(Rule::EOI));
 
-        return Ok(Document { preface, headlines });
+        let nested_headlines = nest_headlines(&mut headlines.into_iter().peekable());
+
+        return Ok(Document {
+            preface,
+            headlines: nested_headlines,
+        });
     }
     // The document rule can't fail. Worst case it is just empty ("SOI ~ EOI").
     unreachable!("document rule can't fail")
+}
+
+/// Nests headlines correctly.
+///
+/// This function calls itself recursively and returns a list of modified
+/// headlines of the lowest level with higher level headlines nested in them
+/// correctly.
+///
+/// The iterator is peekable because the recursive calls skip over all the nested
+/// headlines and return to the lower level headlines. Without peekable we would skip
+/// headlines.
+fn nest_headlines(headlines: &mut Peekable<impl Iterator<Item = Headline>>) -> Vec<Headline> {
+    let mut collector = Vec::new();
+    collector.push(match headlines.next() {
+        None => return collector,
+        Some(h) => h,
+    });
+
+    while let Some(headline) = headlines.peek() {
+        let level = collector.last().unwrap().level;
+        let current = collector.last_mut().unwrap();
+        if headline.level > level {
+            // nest the headline
+            current.push_content(
+                nest_headlines(headlines)
+                    .into_iter()
+                    .map(Box::new)
+                    .map(HeadlineContentSet::Headline),
+            )
+        } else if headline.level < level {
+            // return to higher headline
+            return collector;
+        } else {
+            // insert the headline at the same level
+            collector.push(headlines.next().unwrap());
+        }
+    }
+
+    collector
 }
 
 fn parse_preface<'i>(pair: Pair<'i, Rule>) -> Result<Section, ParseError> {
@@ -143,20 +189,9 @@ fn parse_headline<'i>(pair: Pair<'i, Rule>) -> Result<Headline, ParseError> {
         .take(1)
         .map(|_p| unimplemented!())
         .next();
-    let nested = inner
-        .by_ref()
-        .peeking_take_while(is_rule(Rule::headline))
-        .map(|p| parse_headline(p))
-        .map(|r| r.map(|h| HeadlineContentSet::Headline(Box::new(h))))
-        .collect::<Result<Vec<_>, _>>()?;
 
-    let content = if nested.is_empty() {
-        None
-    } else {
-        // TODO figure out the correct span for the content
-        let span = _span.clone();
-        Some(Spanned::with_span(nested, span))
-    };
+    // TODO figure out the correct span (probably directly when finding the section)
+    let content = section.map(Spanned::new);
 
     Ok(Headline {
         affiliated_keywords,

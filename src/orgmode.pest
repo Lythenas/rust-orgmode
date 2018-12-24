@@ -14,7 +14,7 @@ headline =  {
   title ~ BLANK* ~
   (EOI | NEWLINE) ~
   (planning ~ (EOI | NEWLINE))? ~
-  (EOI | headline | section)
+  (EOI | section)?
 }
 // TODO figure out how to actually nest headlines
   stars = { "*"+ }
