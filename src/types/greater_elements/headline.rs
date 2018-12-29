@@ -39,7 +39,7 @@ use super::*;
 /// hash signs and percent signs. Tags are separated and surrounded by `:`s. There can be an
 /// arbitraty amount of whitespace (except newlines) between `TITLE` and `TAGS`. Tags are
 /// usually right aligned at a specified column by the editor.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct Headline {
     pub(crate) affiliated_keywords: Option<Spanned<AffiliatedKeywords>>,
     pub level: u32,

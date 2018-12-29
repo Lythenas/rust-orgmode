@@ -2,7 +2,7 @@
 
 use crate::types::document::Document;
 use crate::types::elements::Paragraph;
-use crate::types::greater_elements::{Headline, HeadlineContentSet, Section};
+use crate::types::greater_elements::{Headline, HeadlineContentSet, Section, TodoKeyword};
 use crate::types::{
     ElementSet, SecondaryString, Span, Spanned, StandardSet, StandardSetNoLineBreak,
 };
@@ -168,14 +168,44 @@ fn parse_headline<'i>(pair: Pair<'i, Rule>) -> Result<Headline, ParseError> {
             "to many stars in headline (more than 2^32-1)",
         ));
     };
+    // TODO title is currently only a string and not a parsed secondary string
     let title = inner
         .by_ref()
         .skip_while(is_rule(Rule::BLANK))
         .take(1)
         .filter(is_rule(Rule::title))
-        .map(parse_secondary_string_no_line_break)
-        .next()
-        .unwrap()?; // grammar guarantees a (empty) title
+        .map(|p| p.as_str().to_string())
+        .next();
+    // TODO better error handling for title and everything that is derived
+    //      from title
+    // TODO make this all a little simpler
+    let todo_keyword = title
+        .as_ref()
+        .and_then(|title| extract_todo_keyword(&title));
+    let (todo_keyword, title) = if let Some((todo_keyword, new_title)) = todo_keyword {
+        (Some(todo_keyword), Some(new_title.trim_start().to_string()))
+    } else {
+        (None, title)
+    };
+    let priority = title.as_ref().and_then(|title| extract_priority(&title));
+    let (priority, title) = if let Some((priority, new_title)) = priority {
+        (Some(priority), Some(new_title.trim_start().to_string()))
+    } else {
+        (None, title)
+    };
+    let tags = title
+        .as_ref()
+        .map(|title| extract_tags(title))
+        .unwrap_or_default();
+    let title = title.and_then(|title| {
+        if title.is_empty() {
+            None
+        } else {
+            Some(SecondaryString::with_one(
+                StandardSetNoLineBreak::RawString(title),
+            ))
+        }
+    });
     let planning = inner
         .by_ref()
         //.skip_while(is_rule(Rule::NEWLINE))
@@ -190,31 +220,133 @@ fn parse_headline<'i>(pair: Pair<'i, Rule>) -> Result<Headline, ParseError> {
         .map(|_p| unimplemented!())
         .next();
 
-    // TODO figure out the correct span (probably directly when finding the section)
+    // TODO figure out the correct span (probably directly when finding the
+    //      section)
     let content = section.map(Spanned::new);
 
     Ok(Headline {
         affiliated_keywords,
         content,
         level: stars,
-        todo_keyword: None, // TODO
-        priority: None,     // TODO
-        title: Some(title), // TODO better error handling for title
-        tags: Vec::new(),   // TODO
+        todo_keyword,
+        priority,
+        title: title,
+        tags,
         planning,
         property_drawer: None,
     })
 }
 
-fn parse_secondary_string_no_line_break<'i>(
-    pair: Pair<'i, Rule>,
-) -> Result<SecondaryString<StandardSetNoLineBreak>, ParseError> {
-    Ok(SecondaryString::with_one(
-        StandardSetNoLineBreak::RawString(pair.as_str().to_string()),
-    ))
+fn extract_todo_keyword(title: &str) -> Option<(TodoKeyword, &str)> {
+    // TODO dynamically load (rules for) todo keywords from somewhere
+    let todo_keywords = ["TODO", "NEXT"];
+    let done_keywords = ["DONE"];
+
+    for tkw in &todo_keywords {
+        if title.starts_with(tkw) {
+            let x = tkw.len();
+            return Some((TodoKeyword::Todo(tkw.to_string()), &title[x..]));
+        }
+    }
+    for dkw in &done_keywords {
+        if title.starts_with(dkw) {
+            let x = dkw.len();
+            return Some((TodoKeyword::Done(dkw.to_string()), &title[x..]));
+        }
+    }
+
+    None
+}
+fn extract_priority(title: &str) -> Option<(char, &str)> {
+    // TODO skip over todo keyword if one precedes the priority
+    // priority is of the form: "[#A]"
+    if let Some(s) = title.trim_start().get(..4) {
+        let mut cs = s.chars();
+        if cs.next() == Some('[') && cs.next() == Some('#') {
+            if let Some(priority) = cs.next() {
+                if cs.next() == Some(']') {
+                    return Some((priority, &title.trim_start()[4..]));
+                }
+            }
+        }
+    }
+    None
+}
+fn extract_tags(_title: &str) -> Vec<String> {
+    // TODO
+    Vec::new()
 }
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
+    use super::*;
+
+    mod parse_headline {
+        use super::*;
+
+        #[test]
+        fn empty() {
+            let s = "*";
+            let pair = OrgModeParser::parse(Rule::headline, &s)
+                .unwrap()
+                .next()
+                .unwrap();
+            let headline = parse_headline(pair);
+            let expected = Ok(Headline {
+                level: 1,
+                ..Headline::default()
+            });
+            assert_eq!(headline, expected);
+        }
+        #[test]
+        fn priority_no_title() {
+            let s = "* [#A]";
+            let pair = OrgModeParser::parse(Rule::headline, &s)
+                .unwrap()
+                .next()
+                .unwrap();
+            let headline = parse_headline(pair);
+            let expected = Ok(Headline {
+                level: 1,
+                priority: Some('A'),
+                title: None,
+                ..Headline::default()
+            });
+            assert_eq!(headline, expected);
+        }
+        #[test]
+        fn todo_no_title() {
+            let s = "* TODO";
+            let pair = OrgModeParser::parse(Rule::headline, &s)
+                .unwrap()
+                .next()
+                .unwrap();
+            let headline = parse_headline(pair);
+            let expected = Ok(Headline {
+                level: 1,
+                todo_keyword: Some(TodoKeyword::Todo("TODO".to_string())),
+                title: None,
+                ..Headline::default()
+            });
+            assert_eq!(headline, expected);
+        }
+        #[test]
+        fn todo_with_title() {
+            let s = "* TODO Something todo";
+            let pair = OrgModeParser::parse(Rule::headline, &s)
+                .unwrap()
+                .next()
+                .unwrap();
+            let headline = parse_headline(pair);
+            let expected = Ok(Headline {
+                level: 1,
+                todo_keyword: Some(TodoKeyword::Todo("TODO".to_string())),
+                title: Some(SecondaryString::with_one(
+                    StandardSetNoLineBreak::RawString("Something todo".to_string()),
+                )),
+                ..Headline::default()
+            });
+            assert_eq!(headline, expected);
+        }
+    }
 }

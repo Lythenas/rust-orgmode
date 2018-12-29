@@ -10,8 +10,8 @@ document = {
 preface = { section }
 headline =  {
   affiliated_keywords? ~
-  stars ~ BLANK+ ~
-  title ~ BLANK* ~
+  stars ~
+  (BLANK+ ~ title ~ BLANK*)? ~
   (EOI | NEWLINE) ~
   (planning ~ (EOI | NEWLINE))? ~
   (EOI | section)?
