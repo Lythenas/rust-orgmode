@@ -178,21 +178,9 @@ fn parse_headline<'i>(pair: Pair<'i, Rule>) -> Result<Headline, ParseError> {
         .next();
     // TODO better error handling for title and everything that is derived
     //      from title
-    // TODO make this all a little simpler
-    let todo_keyword = title
-        .as_ref()
-        .and_then(|title| extract_todo_keyword(&title));
-    let (todo_keyword, title) = if let Some((todo_keyword, new_title)) = todo_keyword {
-        (Some(todo_keyword), Some(new_title.trim_start().to_string()))
-    } else {
-        (None, title)
-    };
-    let priority = title.as_ref().and_then(|title| extract_priority(&title));
-    let (priority, title) = if let Some((priority, new_title)) = priority {
-        (Some(priority), Some(new_title.trim_start().to_string()))
-    } else {
-        (None, title)
-    };
+
+    let (todo_keyword, title) = extract_value(title, extract_todo_keyword);
+    let (priority, title) = extract_value(title, extract_priority);
     let tags = title
         .as_ref()
         .map(|title| extract_tags(title))
@@ -237,6 +225,21 @@ fn parse_headline<'i>(pair: Pair<'i, Rule>) -> Result<Headline, ParseError> {
     })
 }
 
+/// Extract a value from the start of the title and
+/// remove the string from the title.
+///
+/// Also trims the start of the new title.
+fn extract_value<T, F>(opt_str: Option<String>, f: F) -> (Option<T>, Option<String>)
+where
+    F: FnOnce(&str) -> Option<(T, &str)>,
+{
+    if let Some((res, new_str)) = opt_str.as_ref().and_then(|s| f(&s)) {
+        (Some(res), Some(new_str.trim_start().to_string()))
+    } else {
+        (None, opt_str)
+    }
+}
+
 fn extract_todo_keyword(title: &str) -> Option<(TodoKeyword, &str)> {
     // TODO dynamically load (rules for) todo keywords from somewhere
     let todo_keywords = ["TODO", "NEXT"];
@@ -258,8 +261,6 @@ fn extract_todo_keyword(title: &str) -> Option<(TodoKeyword, &str)> {
     None
 }
 fn extract_priority(title: &str) -> Option<(char, &str)> {
-    // TODO skip over todo keyword if one precedes the priority
-    // priority is of the form: "[#A]"
     if let Some(s) = title.trim_start().get(..4) {
         let mut cs = s.chars();
         if cs.next() == Some('[') && cs.next() == Some('#') {
